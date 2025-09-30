@@ -8,6 +8,8 @@ import {
   FaGithub,
 } from "react-icons/fa";
 
+import bgImage from "../../assets/img/loginBg.png";
+
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: "",
@@ -63,10 +65,8 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
-      <div className="absolute inset-0 z-0 bg-[url('https://cdn2.tuoitre.vn/thumb_w/800/471584752817336320/2025/1/3/vinfast-1-1735899527194554367571.jpg')] bg-cover bg-center bg-no-repeat">
-        <div className="absolute inset-0 bg-black/40"></div>
-      </div>
-
+      <img src={bgImage} alt="img" className="absolute inset-0 z-0 w-full h-full object-cover" />
+      
       <div className="max-w-md w-full space-y-8 bg-white/95 backdrop-blur-md p-10 rounded-2xl shadow-2xl border border-white/20 relative z-10 mx-4">
         <div>
           <div className="text-center mb-8">
