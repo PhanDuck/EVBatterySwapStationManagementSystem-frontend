@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   FaUser,
-  FaVenusMars,
   FaEnvelope,
   FaPhone,
   FaLock,
@@ -12,7 +11,6 @@ import {
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
     fullName: "",
-    gender: "MALE",
     email: "",
     phone: "",
     password: "",
@@ -34,10 +32,6 @@ const RegisterPage = () => {
 
     if (!formData.fullName.trim()) {
       newErrors.fullName = "Full name is required";
-    }
-
-    if (!formData.gender) {
-      newErrors.gender = "Please select a gender";
     }
 
     if (!formData.email) {
@@ -92,7 +86,6 @@ const RegisterPage = () => {
       // Simulate API call. Payload shaped as you specified.
       const payload = {
         fullName: formData.fullName.trim(),
-        gender: formData.gender,
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         password: formData.password,
@@ -145,32 +138,8 @@ const RegisterPage = () => {
               )}
             </div>
 
-            {/* Gender */}
-            <div className="relative">
-              <label htmlFor="gender" className="sr-only">
-                Gender
-              </label>
-              <FaVenusMars className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
-              <select
-                id="gender"
-                name="gender"
-                value={formData.gender}
-                onChange={handleInputChange}
-                className={`appearance-none rounded-lg block w-full pl-10 pr-8 py-2 border ${
-                  errors.gender ? "border-red-300" : "border-gray-300"
-                } text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition`}
-              >
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-              </select>
-              {errors.gender && (
-                <p className="mt-1 text-sm text-red-600">{errors.gender}</p>
-              )}
-            </div>
-
             {/* Phone */}
-            <div className="relative">
+            <div className="relative md:col-span-2">
               <label htmlFor="phone" className="sr-only">
                 Phone
               </label>
