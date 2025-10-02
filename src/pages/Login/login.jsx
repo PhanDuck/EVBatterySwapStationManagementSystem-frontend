@@ -94,7 +94,7 @@ const LoginPage = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className={`appearance-none rounded-xl relative block w-full pl-12 pr-4 py-3 border-2 ${
+                  className={`appearance-none rounded-xl relative block w-full pl-12 pr-4 py-3 border-2  ${
                     errors.email
                       ? "border-red-300 focus:border-red-500"
                       : "border-gray-200 focus:border-blue-500"
