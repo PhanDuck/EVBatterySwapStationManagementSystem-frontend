@@ -3,21 +3,19 @@
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Dashboard from "./components/dashboard";
-import ManageBike from "./pages/bike";
-import ManageCategory from "./pages/category";
 import { ToastContainer } from "react-toastify";
-import RegisterPage from "./pages/Register";
+import RegisterPage from "./pages/Register/Register";
 import Home from "./pages/Home/home";
 import LoginPage from "./pages/Login/login";
-import VehiclePage from "./pages/Vehicle";
-import AccountPage from "./pages/Account";
-import BatteryPage from "./pages/Battery";
-import StationPage from "./pages/Station";
-import PackagePage from "./pages/Package";
-import TransactionsPage from "./pages/Transactions";
-import SubscriptionsPage from "./pages/Subscriptions";
-import SupportPage from "./pages/Support";
-import ResponsePage from "./pages/Response";
+import VehiclePage from "./pages/Vehicle/Vehicle";
+import AccountPage from "./pages/Account/Account";
+import BatteryPage from "./pages/Battery/Battery";
+import StationPage from "./pages/Station/Station";
+import PackagePage from "./pages/Package/Package";
+import TransactionsPage from "./pages/Transactions/Transactions";
+import SupportPage from "./pages/Support/Support";
+import ResponsePage from "./pages/Response/Response";
+import SubscriptionsPage from "./pages/Subscriptions/Subscriptions";
 
 // 1. Component
 // là 1 cái function
