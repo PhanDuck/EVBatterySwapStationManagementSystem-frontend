@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 
 import bgImage from "../../assets/img/loginBg.png";
+import { Link } from "react-router-dom";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -232,9 +233,9 @@ const LoginPage = () => {
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Don't have an account?{" "}
-                <a href="#" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
                   Sign up here
-                </a>
+                </Link>
               </p>
             </div>
           </div>
