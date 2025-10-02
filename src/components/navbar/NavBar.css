@@ -1,0 +1,48 @@
+
+.menu {
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Shadow nhẹ đổ xuống */
+  z-index: 1000; /* Đảm bảo Navbar luôn ở trên */
+  position: sticky; /* Giữ Navbar ở trên cùng khi cuộn */
+  top: 0;
+}
+
+/* Loại bỏ các thuộc tính float không cần thiết vì đã dùng Flexbox (trong JSX) */
+.menu__logo,
+.menu_left,
+.menu_right {
+  float: none; /* Vô hiệu hóa float */
+  width: auto; /* Đảm bảo chiều rộng linh hoạt */
+}
+
+/* Cleanup các quy tắc không cần thiết */
+.menu__logo a {
+  display: flex; /* Dùng flex để căn giữa logo và text */
+  align-items: center;
+  /* Loại bỏ padding cũ vì đã dùng p-4/py-4 trong JSX */
+  /* padding: 19px 20px; */
+}
+
+/* -------------------------------------- */
+/* Dưới đây là các quy tắc Ant Design (giữ lại nếu cần) */
+/* -------------------------------------- */
+
+.menu__container .ant-menu-item {
+  padding: 0px 5px;
+}
+
+/* ... (giữ lại các quy tắc Ant Design khác nếu chúng vẫn áp dụng) ... */
+
+/* Media Query cho Mobile: Giữ lại để ẩn menu */
+@media (max-width: 767px) {
+  /* Giữ lại khối này để đảm bảo menu_left và menu_right ẩn trên mobile */
+  .menu_left,
+  .menu_right {
+    display: none;
+  }
+
+  /* Điều chỉnh logo trên mobile nếu cần */
+  .menu__logo a {
+    padding: 10px 0;
+  }
+}
