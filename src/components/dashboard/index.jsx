@@ -18,8 +18,15 @@ function getItem(label, key, icon, children) {
   };
 }
 const items = [
-  getItem("Manage Bike", "bike", <PieChartOutlined />),
-  getItem("Manage Category", "category", <PieChartOutlined />),
+  getItem("Account", "account", <PieChartOutlined />),
+  getItem("Battery", "battery", <PieChartOutlined />),
+  getItem("Station", "station", <PieChartOutlined />),
+  getItem("Vehicle", "vehicle", <PieChartOutlined />),
+  getItem("Package", "package", <PieChartOutlined />),
+  getItem("Transactions", "transactions", <UserOutlined />),
+  getItem("Subscriptions", "subscriptions", <TeamOutlined />),
+  getItem("Support Ticket", "support", <PieChartOutlined />),
+  getItem("Response Ticket", "response", <PieChartOutlined />),
 ];
 
 const Dashboard = () => {

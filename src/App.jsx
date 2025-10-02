@@ -9,6 +9,15 @@ import { ToastContainer } from "react-toastify";
 import RegisterPage from "./pages/Register";
 import Home from "./pages/Home/home";
 import LoginPage from "./pages/Login/login";
+import VehiclePage from "./pages/Vehicle";
+import AccountPage from "./pages/Account";
+import BatteryPage from "./pages/Battery";
+import StationPage from "./pages/Station";
+import PackagePage from "./pages/Package";
+import TransactionsPage from "./pages/Transactions";
+import SubscriptionsPage from "./pages/Subscriptions";
+import SupportPage from "./pages/Support";
+import ResponsePage from "./pages/Response";
 
 // 1. Component
 // là 1 cái function
@@ -28,13 +37,41 @@ function App() {
       path: "/admin",
       element: <Dashboard />,
       children: [
-        {
-          path: "bike",
-          element: <ManageBike />, // Outlet
+         {
+          path: "Account",
+          element: <AccountPage />,
         },
         {
-          path: "category",
-          element: <ManageCategory />, // Outlet
+          path: "Battery",
+          element: <BatteryPage />,
+        },
+        {
+          path: "Station",
+          element: <StationPage />,
+        },
+        {
+          path: "Vehicle",
+          element: <VehiclePage />,
+        },
+        {
+          path: "Package",
+          element: <PackagePage />,
+        },
+        {
+          path: "Transactions",
+          element: <TransactionsPage />,
+        },
+        {
+          path: "Subscriptions",
+          element: <SubscriptionsPage />,
+        },
+        {
+          path: "Support",
+          element: <SupportPage />,
+        },
+        {
+          path: "Response",
+          element: <ResponsePage />,
         },
       ],
     },
