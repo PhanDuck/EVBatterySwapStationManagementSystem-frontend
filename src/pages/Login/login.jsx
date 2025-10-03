@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import bgImage from "../../assets/img/loginBg.png";
+import { Link } from "react-router-dom";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -94,7 +95,7 @@ const LoginPage = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className={`appearance-none rounded-xl relative block w-full pl-12 pr-4 py-3 border-2  ${
+                  className={`appearance-none rounded-xl relative block w-full pl-4 pr-4 py-3 border-2  ${
                     errors.email
                       ? "border-red-300 focus:border-red-500"
                       : "border-gray-200 focus:border-blue-500"
@@ -130,7 +131,7 @@ const LoginPage = () => {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
-                  className={`appearance-none rounded-xl relative block w-full pl-12 pr-12 py-3 border-2 ${
+                  className={`appearance-none rounded-xl relative block w-full pl-4 pr-12 py-3 border-2 ${
                     errors.password
                       ? "border-red-300 focus:border-red-500"
                       : "border-gray-200 focus:border-blue-500"
@@ -211,13 +212,17 @@ const LoginPage = () => {
               type="submit"
               disabled={isLoading}
               className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              style={{ color: 'white' }}
             >
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                 {isLoading && (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 )}
               </span>
-              {isLoading ? "Signing in..." : "Sign in"}
+              
+              <span style={{ color: 'white' }}>
+                {isLoading ? "Signing in..." : "Sign in"}
+              </span>
             </button>
           </div>
 
@@ -225,12 +230,12 @@ const LoginPage = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
-              <a
-                href="#"
+              <Link
+                to="/register"
                 className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
               >
                 Sign up here
-              </a>
+              </Link>
             </p>
           </div>
         </form>

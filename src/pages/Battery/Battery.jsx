@@ -90,36 +90,6 @@ const BatteryPage = () => {
       render: (capacity) => `${capacity} kWh`,
     },
     {
-      title: "Charge Level",
-      dataIndex: "currentCharge",
-      key: "currentCharge",
-      render: (charge, record) => (
-        <Space direction="vertical" size="small" style={{ width: "100%" }}>
-          <Progress
-            percent={charge}
-            size="small"
-            status={
-              charge < 20 ? "exception" : charge < 50 ? "active" : "success"
-            }
-          />
-          <span>
-            {charge}% ({((charge * record.capacity) / 100).toFixed(1)} kWh)
-          </span>
-        </Space>
-      ),
-    },
-    {
-      title: "Voltage",
-      dataIndex: "voltage",
-      key: "voltage",
-      render: (voltage) => (
-        <Space>
-          <ThunderboltOutlined />
-          {voltage} V
-        </Space>
-      ),
-    },
-    {
       title: "Status",
       dataIndex: "status",
       key: "status",
@@ -296,43 +266,6 @@ const BatteryPage = () => {
                 style={{ width: "100%" }}
               />
             </Form.Item>
-
-            <Form.Item
-              name="currentCharge"
-              label="Current Charge (%)"
-              rules={[
-                { required: true, message: "Please input current charge!" },
-              ]}
-            >
-              <InputNumber
-                placeholder="Enter charge level"
-                min={0}
-                max={100}
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "16px",
-            }}
-          >
-            <Form.Item
-              name="voltage"
-              label="Voltage (V)"
-              rules={[{ required: true, message: "Please input voltage!" }]}
-            >
-              <InputNumber
-                placeholder="Enter voltage"
-                min={0}
-                max={1000}
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-
             <Form.Item
               name="cycles"
               label="Charge Cycles"

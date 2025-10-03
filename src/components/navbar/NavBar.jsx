@@ -2,13 +2,14 @@ import React from "react";
 import "./Navbar.css";
 import { Button } from "antd";
 import { Link } from "react-router-dom";
+import logo from "../../assets/img/Logo1.png";
 
 const Navbar = () => {
   return (
     <nav className="menu flex items-center justify-between border-b-blue-950 bg-blue-900 p-4">
       <div className="menu__logo">
         <a href="/">
-          <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
+          <img src={logo} alt="Logo" className="h-15 w-auto" />
         </a>
       </div>
       <div className="menu_right flex gap-2 rounded-lg p-2">

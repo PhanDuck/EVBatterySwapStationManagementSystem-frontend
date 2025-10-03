@@ -1,4 +1,4 @@
-.compact-menu .ant-menu-item,
+/* .compact-menu .ant-menu-item,
 .compact-menu .ant-menu-submenu-title {
   height: 36px !important;
   line-height: 36px !important;
@@ -8,11 +8,11 @@
 
 .compact-menu .ant-menu-item .ant-menu-title-content,
 .compact-menu .ant-menu-submenu-title .ant-menu-title-content {
-  font-size: 13px !important;
+  font-size: 18px !important;
 }
 
 .compact-menu .anticon {
-  font-size: 14px !important;
+  font-size: 18px !important;
   margin-right: 8px !important;
 }
 
@@ -22,4 +22,20 @@
 .compact-menu.ant-menu-inline .ant-menu-item-selected {
   background-color: #1890ff !important;
   color: #fff !important;
+} */
+.ant-menu-item a{
+  font-size: 18px !important;
+  margin: 12px 0!important;
+}
+.ant-menu-inline-collapsed >.ant-menu-item{
+  padding-inline:calc(30%) !important;
+  padding-top: 5px;
+}
+.ant-menu-item{
+  margin: 8px 0!important; /* change size */
+  
+  transition: all .5s;
+}
+.ant-menu-item:hover{
+  background-color: rgb(22, 119, 255,0.5) !important;
 }

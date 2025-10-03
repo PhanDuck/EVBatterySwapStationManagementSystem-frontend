@@ -2,7 +2,7 @@
 // phối hợp JS & HTML 1 cách dễ dàng
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Dashboard from "./components/dashboard";
+import Dashboard from "./components/dashboard/Dashboard";
 import { ToastContainer } from "react-toastify";
 import RegisterPage from "./pages/Register/Register";
 import Home from "./pages/Home/home";
