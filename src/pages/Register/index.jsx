@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../../config/axios";
 import {
   FaUser,
   FaEnvelope,
@@ -22,6 +24,7 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const validateEmail = (email) => /\S+@\S+\.\S+/.test(email);
   // Simple VN-friendly phone rule: starts with 0, 10–11 digits total
@@ -83,18 +86,19 @@ const RegisterPage = () => {
 
     setIsLoading(true);
     try {
-      // Simulate API call. Payload shaped as you specified.
+      // Map exactly to Swagger: fullName, email, phoneNumber, passwordHash
       const payload = {
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        password: formData.password,
+        phoneNumber: formData.phone.trim(),
+        passwordHash: formData.password,
       };
-      await new Promise((r) => setTimeout(r, 1500));
-      console.log("Register success", payload);
-      // TODO: navigate to login or auto-sign-in
+      await api.post('/register', payload);
+      // Redirect to login after successful registration
+      navigate('/login');
     } catch (error) {
-      setErrors({ submit: "Registration failed. Please try again." });
+      const message = error?.response?.data?.message || "Registration failed. Please try again.";
+      setErrors({ submit: message });
     } finally {
       setIsLoading(false);
     }
