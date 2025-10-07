@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
+import { setToken, getCurrentRole } from "../../config/auth";
 import {
   FaEnvelope,
   FaPhone,
@@ -51,29 +52,39 @@ const LoginPage = () => {
           password: formData.password,
         });
 
-        const token = res?.data?.token || res?.data?.accessToken || res?.data?.data || res?.data;
+        const token = res?.data?.token || res?.data?.accessToken || res?.data?.jwt || res?.data?.data || res?.data;
         if (!token) throw new Error("Token not found in response");
 
         // Store token per rememberMe
-        if (formData.rememberMe) {
-          localStorage.setItem("authToken", token);
-          sessionStorage.removeItem("authToken");
-        } else {
-          sessionStorage.setItem("authToken", token);
-          localStorage.removeItem("authToken");
-        }
+        setToken(token, formData.rememberMe);
 
         // Optionally fetch current user
-        try {
-          const me = await api.get("/Current"); // per swagger /api/Current
-          if (me?.data) {
-            localStorage.setItem("currentUser", JSON.stringify(me.data));
+        // Try to capture user info from login response if present
+        if (res?.data?.user || res?.data?.currentUser) {
+          localStorage.setItem("currentUser", JSON.stringify(res.data.user || res.data.currentUser));
+        } else {
+          try {
+            const me = await api.get("/Current"); // common pattern
+            if (me?.data) {
+              localStorage.setItem("currentUser", JSON.stringify(me.data));
+            }
+          } catch {
+            try {
+              const me2 = await api.get("/current");
+              if (me2?.data) {
+                localStorage.setItem("currentUser", JSON.stringify(me2.data));
+              }
+            } catch {
+              // ignore if backend path differs; user will still be logged in
+            }
           }
-        } catch {
-          // ignore
         }
 
-        navigate("/");
+        // Role-based redirect (normalize to Admin/Staff/Driver)
+        const role = getCurrentRole();
+        if (role === "Staff") navigate("/staff");
+        else if (role === "Admin") navigate("/admin");
+        else navigate("/");
       } catch (error) {
         const message = error?.response?.data?.message || "Login failed. Please try again.";
         setErrors({ submit: message });

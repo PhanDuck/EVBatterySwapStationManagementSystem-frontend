@@ -3,11 +3,12 @@ import React from "react";
 import "./Navbar.css";
 import { Button, Dropdown } from "antd";
 import { Link, useNavigate } from "react-router-dom";
+import { clearAuth } from "../../config/auth";
 
 const Navbar = () => {
     const navigate = useNavigate();
 
-    const isAuthenticated = !!localStorage.getItem("authToken");
+    const isAuthenticated = !!(localStorage.getItem("authToken") || sessionStorage.getItem("authToken"));
 
     const handleGuardedNav = (path) => {
         if (!isAuthenticated) {
@@ -87,7 +88,7 @@ const Navbar = () => {
                     </>
                 ) : (
                     <Button 
-                        onClick={() => { localStorage.removeItem("authToken"); navigate("/"); }}
+                        onClick={() => { clearAuth(); navigate("/"); }}
                         type="default"
                         style={{ backgroundColor: "transparent", color: "#fff", borderColor: "#fff" }}
                     >
