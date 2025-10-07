@@ -1,6 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../../config/axios";
+import { setToken, getCurrentRole } from "../../config/auth";
 import {
   FaEnvelope,
+  FaPhone,
   FaLock,
   FaEye,
   FaEyeSlash,
@@ -13,24 +17,25 @@ import { Link } from "react-router-dom";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    email: "",
+    phoneNumber: "",
     password: "",
     rememberMe: false,
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
+    if (!formData.phoneNumber) {
+      newErrors.phoneNumber = "Phone number is required";
+    } else if (!/^\+?\d{8,13}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "Please enter a valid phone number";
     }
     if (!formData.password) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
+    } else if (formData.password.length < 5) {
       newErrors.password = "Password must be at least 8 characters";
     }
     setErrors(newErrors);
@@ -42,11 +47,48 @@ const LoginPage = () => {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        console.log("Login successful", formData);
+        // Call login API
+        const res = await api.post("/login", {
+          phone: formData.phoneNumber,
+          password: formData.password,
+        });
+
+        const token = res?.data?.token || res?.data?.accessToken || res?.data?.jwt || res?.data?.data || res?.data;
+        if (!token) throw new Error("Token not found in response");
+
+        // Store token per rememberMe
+        setToken(token, formData.rememberMe);
+
+        // Optionally fetch current user
+        // Try to capture user info from login response if present
+        if (res?.data?.user || res?.data?.currentUser) {
+          localStorage.setItem("currentUser", JSON.stringify(res.data.user || res.data.currentUser));
+        } else {
+          try {
+            const me = await api.get("/Current"); // common pattern
+            if (me?.data) {
+              localStorage.setItem("currentUser", JSON.stringify(me.data));
+            }
+          } catch {
+            try {
+              const me2 = await api.get("/current");
+              if (me2?.data) {
+                localStorage.setItem("currentUser", JSON.stringify(me2.data));
+              }
+            } catch {
+              // ignore if backend path differs; user will still be logged in
+            }
+          }
+        }
+
+        // Role-based redirect (normalize to Admin/Staff/Driver)
+        const role = getCurrentRole();
+        if (role === "Staff") navigate("/staff");
+        else if (role === "Admin") navigate("/admin");
+        else navigate("/");
       } catch (error) {
-        setErrors({ submit: "Login failed. Please try again." });
+        const message = error?.response?.data?.message || "Login failed. Please try again.";
+        setErrors({ submit: message });
       } finally {
         setIsLoading(false);
       }
@@ -86,29 +128,29 @@ const LoginPage = () => {
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-5">
             <div className="relative group">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                Số điện thoại
               </label>
               <div className="relative">
-                <FaEnvelope className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                <FaPhone className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  autoComplete="tel"
                   required
                   className={`appearance-none rounded-xl relative block w-full pl-12 pr-4 py-3 border-2 ${
-                    errors.email ? "border-red-300 focus:border-red-500" : "border-gray-200 focus:border-blue-500"
+                    errors.phoneNumber ? "border-red-300 focus:border-red-500" : "border-gray-200 focus:border-blue-500"
                   } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-gray-50 focus:bg-white`}
-                  placeholder="Enter your email address"
-                  value={formData.email}
+                  placeholder="Nhập số điện thoại"
+                  value={formData.phoneNumber}
                   onChange={handleInputChange}
                 />
               </div>
-              {errors.email && (
+              {errors.phoneNumber && (
                 <p className="mt-2 text-sm text-red-600 flex items-center">
                   <span className="w-4 h-4 rounded-full bg-red-100 text-red-600 text-xs flex items-center justify-center mr-2">!</span>
-                  {errors.email}
+                  {errors.phoneNumber}
                 </p>
               )}
             </div>
