@@ -1,5 +1,5 @@
 import React from "react";
-import videohomepage from "../../assets/img/videohomepage.mp4";
+import videohomepage from "../../assets/videos/videohomepage.mp4";
 import NavBar from "../../components/navbar/navBar";
 import { Button, Card, Row, Col, Typography } from 'antd';
 import { ThunderboltOutlined, ClockCircleOutlined, SafetyOutlined, EnvironmentOutlined,UserOutlined, CloudTwoTone } from '@ant-design/icons';
@@ -98,7 +98,7 @@ function Home() {
             </Col>
 
             <Col xs={24} md={8}>
-              <Card style={{ height: '100%', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)', overflow: 'hidden' }} bodyStyle={{ padding: '24px' }} hoverable>
+              <Card style={{ height: '100%', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)', overflow: 'hidden' }} styles={{ body: { padding: '24px' } }} hoverable>
                 <div style={{ width: '70px', height: '70px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', background: 'rgba(76, 175, 80, 0.15)' }}>
                   <SafetyOutlined style={{ fontSize: '32px', color: '#4CAF50' }} />
                 </div>

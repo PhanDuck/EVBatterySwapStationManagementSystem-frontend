@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import NavBar from "../components/navbar/navBar";
+import NavBar from "../../components/navbar/navBar";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 
 const containerStyle = { width: '100%', height: '70vh', borderRadius: 12, overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' };

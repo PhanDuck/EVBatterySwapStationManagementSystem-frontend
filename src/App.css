@@ -1,1 +1,11 @@
-//. 
+.ant-layout-sider {
+  min-height: 100vh;
+}
+
+.ant-menu-item a {
+  color: white !important;
+}
+
+.ant-menu-item-selected {
+  background-color: #1890ff !important;
+}

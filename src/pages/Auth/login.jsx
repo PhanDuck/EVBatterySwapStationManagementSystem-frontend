@@ -53,7 +53,12 @@ const LoginPage = () => {
           password: formData.password,
         });
 
-        const token = res?.data?.token || res?.data?.accessToken || res?.data?.jwt || res?.data?.data || res?.data;
+        const token =
+          res?.data?.token ||
+          res?.data?.accessToken ||
+          res?.data?.jwt ||
+          res?.data?.data ||
+          res?.data;
         if (!token) throw new Error("Token not found in response");
 
         // Store token per rememberMe
@@ -62,7 +67,10 @@ const LoginPage = () => {
         // Optionally fetch current user
         // Try to capture user info from login response if present
         if (res?.data?.user || res?.data?.currentUser) {
-          localStorage.setItem("currentUser", JSON.stringify(res.data.user || res.data.currentUser));
+          localStorage.setItem(
+            "currentUser",
+            JSON.stringify(res.data.user || res.data.currentUser)
+          );
         } else {
           try {
             const me = await api.get("/Current"); // common pattern
@@ -85,9 +93,11 @@ const LoginPage = () => {
         const role = getCurrentRole();
         if (role === "Staff") navigate("/staff");
         else if (role === "Admin") navigate("/admin");
+        else if (role === "Driver") navigate("/driver");
         else navigate("/");
       } catch (error) {
-        const message = error?.response?.data?.message || "Login failed. Please try again.";
+        const message =
+          error?.response?.data?.message || "Login failed. Please try again.";
         setErrors({ submit: message });
       } finally {
         setIsLoading(false);
@@ -108,17 +118,19 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
-      <img src={bgImage} alt="img" className="absolute inset-0 z-0 w-full h-full object-cover" />
-      
+      <img
+        src={bgImage}
+        alt="img"
+        className="absolute inset-0 z-0 w-full h-full object-cover"
+      />
+
       <div className="max-w-md w-full space-y-8 bg-white/95 backdrop-blur-md p-10 rounded-2xl shadow-2xl border border-white/20 relative z-10 mx-4">
         <div>
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center">
               <FaLock className="text-white text-2xl" />
             </div>
-            <h2 className="text-4xl font-bold text-gray-900">
-              Welcome Back
-            </h2>
+            <h2 className="text-4xl font-bold text-gray-900">Welcome Back</h2>
             <p className="mt-3 text-gray-600 font-medium">
               Sign in to your account
             </p>
@@ -128,7 +140,10 @@ const LoginPage = () => {
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-5">
             <div className="relative group">
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="phoneNumber"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Số điện thoại
               </label>
               <div className="relative">
@@ -139,8 +154,10 @@ const LoginPage = () => {
                   type="tel"
                   autoComplete="tel"
                   required
-                  className={`appearance-none rounded-xl relative block w-full pl-12 pr-4 py-3 border-2 ${
-                    errors.phoneNumber ? "border-red-300 focus:border-red-500" : "border-gray-200 focus:border-blue-500"
+                  className={`appearance-none rounded-xl relative block w-full pl-4 pr-4 py-3 border-2 ${
+                    errors.phoneNumber
+                      ? "border-red-300 focus:border-red-500"
+                      : "border-gray-200 focus:border-blue-500"
                   } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-gray-50 focus:bg-white`}
                   placeholder="Nhập số điện thoại"
                   value={formData.phoneNumber}
@@ -149,14 +166,19 @@ const LoginPage = () => {
               </div>
               {errors.phoneNumber && (
                 <p className="mt-2 text-sm text-red-600 flex items-center">
-                  <span className="w-4 h-4 rounded-full bg-red-100 text-red-600 text-xs flex items-center justify-center mr-2">!</span>
+                  <span className="w-4 h-4 rounded-full bg-red-100 text-red-600 text-xs flex items-center justify-center mr-2">
+                    !
+                  </span>
                   {errors.phoneNumber}
                 </p>
               )}
             </div>
 
             <div className="relative group">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Password
               </label>
               <div className="relative">
@@ -167,8 +189,10 @@ const LoginPage = () => {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
-                  className={`appearance-none rounded-xl relative block w-full pl-12 pr-12 py-3 border-2 ${
-                    errors.password ? "border-red-300 focus:border-red-500" : "border-gray-200 focus:border-blue-500"
+                  className={`appearance-none rounded-xl relative block w-full pl-4 pr-12 py-3 border-2 ${
+                    errors.password
+                      ? "border-red-300 focus:border-red-500"
+                      : "border-gray-200 focus:border-blue-500"
                   } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-gray-50 focus:bg-white`}
                   placeholder="Enter your password"
                   value={formData.password}
@@ -179,12 +203,18 @@ const LoginPage = () => {
                   className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors p-1"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <FaEyeSlash className="w-5 h-5" />
+                  ) : (
+                    <FaEye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
               {errors.password && (
                 <p className="mt-2 text-sm text-red-600 flex items-center">
-                  <span className="w-4 h-4 rounded-full bg-red-100 text-red-600 text-xs flex items-center justify-center mr-2">!</span>
+                  <span className="w-4 h-4 rounded-full bg-red-100 text-red-600 text-xs flex items-center justify-center mr-2">
+                    !
+                  </span>
                   {errors.password}
                 </p>
               )}
@@ -222,8 +252,12 @@ const LoginPage = () => {
           {errors.submit && (
             <div className="rounded-xl bg-red-50 border border-red-200 p-4">
               <div className="flex items-center">
-                <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 text-sm flex items-center justify-center mr-3">!</span>
-                <p className="text-sm text-red-700 font-medium">{errors.submit}</p>
+                <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 text-sm flex items-center justify-center mr-3">
+                  !
+                </span>
+                <p className="text-sm text-red-700 font-medium">
+                  {errors.submit}
+                </p>
               </div>
             </div>
           )}
@@ -242,44 +276,15 @@ const LoginPage = () => {
               {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </div>
-
-          <div className="mt-8">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500 font-medium">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                className="w-full inline-flex justify-center items-center py-3 px-4 rounded-xl shadow-sm bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md transform hover:-translate-y-0.5"
-              >
-                <FaGoogle className="mr-2 h-5 w-5 text-red-500" />
-                Google
-              </button>
-              <button
-                type="button"
-                className="w-full inline-flex justify-center items-center py-3 px-4 rounded-xl shadow-sm bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md transform hover:-translate-y-0.5"
-              >
-                <FaGithub className="mr-2 h-5 w-5 text-gray-900" />
-                GitHub
-              </button>
-            </div>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Don't have an account?{" "}
-                <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-                  Sign up here
-                </Link>
-              </p>
-            </div>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{" "}
+              <Link
+                to="/register"
+                className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                Sign up here
+              </Link>
+            </p>
           </div>
         </form>
       </div>

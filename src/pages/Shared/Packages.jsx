@@ -1,5 +1,5 @@
 import React from "react";
-import NavBar from "../components/navbar/navBar";
+import NavBar from "../../components/navbar/navBar";
 
 function Section({ title, children }) {
   return (
