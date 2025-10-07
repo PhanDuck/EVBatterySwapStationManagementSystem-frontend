@@ -1,30 +1,33 @@
 import { useState } from "react";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import bgImage from "../../assets/img/loginBg.png";
-import { Link } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
+import api from "../../config/axios";
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    email: "",
+    phoneNumber: "",
     password: "",
     rememberMe: false,
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
+    if (!formData.phoneNumber) {
+      newErrors.phoneNumber = "Phone number is required";
+    } else if (!/^\d{8,13}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "Please enter a valid phone number (8-13 digits)";
     }
+
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
       newErrors.password = "Password must be at least 8 characters";
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -34,11 +37,38 @@ const LoginPage = () => {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        console.log("Login successful", formData);
+        // Call login API
+        const res = await api.post("/login", {
+          phone: formData.phoneNumber,
+          password: formData.password,
+        });
+
+        const token = res?.data?.token || res?.data?.accessToken || res?.data?.data || res?.data;
+        if (!token) throw new Error("Token not found in response");
+
+        // Store token per rememberMe
+        if (formData.rememberMe) {
+          localStorage.setItem("authToken", token);
+          sessionStorage.removeItem("authToken");
+        } else {
+          sessionStorage.setItem("authToken", token);
+          localStorage.removeItem("authToken");
+        }
+
+        // Optionally fetch current user
+        try {
+          const me = await api.get("/Current"); // per swagger /api/Current
+          if (me?.data) {
+            localStorage.setItem("currentUser", JSON.stringify(me.data));
+          }
+        } catch {
+          // ignore
+        }
+
+        navigate("/");
       } catch (error) {
-        setErrors({ submit: "Login failed. Please try again." });
+        const message = error?.response?.data?.message || "Login failed. Please try again.";
+        setErrors({ submit: message });
       } finally {
         setIsLoading(false);
       }
@@ -79,38 +109,38 @@ const LoginPage = () => {
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-5">
-            {/* Email */}
+            {/* Phone Number */}
             <div className="relative group">
               <label
-                htmlFor="email"
+                htmlFor="phoneNumber"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Email Address
+                Phone Number
               </label>
               <div className="relative">
                 <FaEnvelope className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  autoComplete="tel"
                   required
                   className={`appearance-none rounded-xl relative block w-full pl-4 pr-4 py-3 border-2  ${
-                    errors.email
+                    errors.phoneNumber
                       ? "border-red-300 focus:border-red-500"
                       : "border-gray-200 focus:border-blue-500"
                   } placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-gray-50 focus:bg-white`}
-                  placeholder="Enter your email address"
-                  value={formData.email}
+                  placeholder="Enter your phone number"
+                  value={formData.phoneNumber}
                   onChange={handleInputChange}
                 />
               </div>
-              {errors.email && (
+              {errors.phoneNumber && (
                 <p className="mt-2 text-sm text-red-600 flex items-center">
                   <span className="w-4 h-4 rounded-full bg-red-100 text-red-600 text-xs flex items-center justify-center mr-2">
                     !
                   </span>
-                  {errors.email}
+                  {errors.phoneNumber}
                 </p>
               )}
             </div>
@@ -212,15 +242,15 @@ const LoginPage = () => {
               type="submit"
               disabled={isLoading}
               className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              style={{ color: 'white' }}
+              style={{ color: "white" }}
             >
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                 {isLoading && (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 )}
               </span>
-              
-              <span style={{ color: 'white' }}>
+
+              <span style={{ color: "white" }}>
                 {isLoading ? "Signing in..." : "Sign in"}
               </span>
             </button>
