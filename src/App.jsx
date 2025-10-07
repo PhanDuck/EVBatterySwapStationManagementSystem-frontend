@@ -68,7 +68,7 @@ function App() {
         <RequireRole roles={["Admin"]}>
           <Dashboard />
         </RequireRole>
-      ),
+     ),
       children: [
         { index: true, element: <AdminDashboard /> },
       ],
