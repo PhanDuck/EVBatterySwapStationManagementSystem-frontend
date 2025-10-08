@@ -1,8 +1,20 @@
 import { useState } from "react";
-import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
-import bgImage from "../../assets/img/loginBg.png";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
+import { setToken, getCurrentRole } from "../../config/auth";
+import {
+  FaEnvelope,
+  FaPhone,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+  FaGoogle,
+  FaGithub,
+} from "react-icons/fa";
+
+import bgImage from "../../assets/img/loginBg.png";
+import { Link } from "react-router-dom";
+
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     phoneNumber: "",
@@ -18,16 +30,14 @@ const LoginPage = () => {
     const newErrors = {};
     if (!formData.phoneNumber) {
       newErrors.phoneNumber = "Phone number is required";
-    } else if (!/^\d{8,13}$/.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = "Please enter a valid phone number (8-13 digits)";
+    } else if (!/^\+?\d{8,13}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "Please enter a valid phone number";
     }
-
     if (!formData.password) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
+    } else if (formData.password.length < 5) {
       newErrors.password = "Password must be at least 8 characters";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -43,31 +53,51 @@ const LoginPage = () => {
           password: formData.password,
         });
 
-        const token = res?.data?.token || res?.data?.accessToken || res?.data?.data || res?.data;
+        const token =
+          res?.data?.token ||
+          res?.data?.accessToken ||
+          res?.data?.jwt ||
+          res?.data?.data ||
+          res?.data;
         if (!token) throw new Error("Token not found in response");
 
         // Store token per rememberMe
-        if (formData.rememberMe) {
-          localStorage.setItem("authToken", token);
-          sessionStorage.removeItem("authToken");
-        } else {
-          sessionStorage.setItem("authToken", token);
-          localStorage.removeItem("authToken");
-        }
+        setToken(token, formData.rememberMe);
 
         // Optionally fetch current user
-        try {
-          const me = await api.get("/Current"); // per swagger /api/Current
-          if (me?.data) {
-            localStorage.setItem("currentUser", JSON.stringify(me.data));
+        // Try to capture user info from login response if present
+        if (res?.data?.user || res?.data?.currentUser) {
+          localStorage.setItem(
+            "currentUser",
+            JSON.stringify(res.data.user || res.data.currentUser)
+          );
+        } else {
+          try {
+            const me = await api.get("/Current"); // common pattern
+            if (me?.data) {
+              localStorage.setItem("currentUser", JSON.stringify(me.data));
+            }
+          } catch {
+            try {
+              const me2 = await api.get("/current");
+              if (me2?.data) {
+                localStorage.setItem("currentUser", JSON.stringify(me2.data));
+              }
+            } catch {
+              // ignore if backend path differs; user will still be logged in
+            }
           }
-        } catch {
-          // ignore
         }
 
-        navigate("/");
+        // Role-based redirect (normalize to Admin/Staff/Driver)
+        const role = getCurrentRole();
+        if (role === "Staff") navigate("/staff");
+        else if (role === "Admin") navigate("/admin");
+        else if (role === "Driver") navigate("/driver");
+        else navigate("/");
       } catch (error) {
-        const message = error?.response?.data?.message || "Login failed. Please try again.";
+        const message =
+          error?.response?.data?.message || "Login failed. Please try again.";
         setErrors({ submit: message });
       } finally {
         setIsLoading(false);
@@ -109,28 +139,27 @@ const LoginPage = () => {
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-5">
-            {/* Phone Number */}
             <div className="relative group">
               <label
                 htmlFor="phoneNumber"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Phone Number
+                Số điện thoại
               </label>
               <div className="relative">
-                <FaEnvelope className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                <FaPhone className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
                 <input
                   id="phoneNumber"
                   name="phoneNumber"
                   type="tel"
                   autoComplete="tel"
                   required
-                  className={`appearance-none rounded-xl relative block w-full pl-4 pr-4 py-3 border-2  ${
+                  className={`appearance-none rounded-xl relative block w-full pl-4 pr-4 py-3 border-2 ${
                     errors.phoneNumber
                       ? "border-red-300 focus:border-red-500"
                       : "border-gray-200 focus:border-blue-500"
-                  } placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-gray-50 focus:bg-white`}
-                  placeholder="Enter your phone number"
+                  } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-gray-50 focus:bg-white`}
+                  placeholder="Nhập số điện thoại"
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
                 />
@@ -145,7 +174,6 @@ const LoginPage = () => {
               )}
             </div>
 
-            {/* Password */}
             <div className="relative group">
               <label
                 htmlFor="password"
@@ -165,7 +193,7 @@ const LoginPage = () => {
                     errors.password
                       ? "border-red-300 focus:border-red-500"
                       : "border-gray-200 focus:border-blue-500"
-                  } placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-gray-50 focus:bg-white`}
+                  } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-gray-50 focus:bg-white`}
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleInputChange}
@@ -193,7 +221,6 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Remember me + Forgot password */}
           <div className="flex items-center justify-between py-2">
             <div className="flex items-center">
               <input
@@ -222,7 +249,6 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Submit error */}
           {errors.submit && (
             <div className="rounded-xl bg-red-50 border border-red-200 p-4">
               <div className="flex items-center">
@@ -236,34 +262,26 @@ const LoginPage = () => {
             </div>
           )}
 
-          {/* Submit button */}
           <div className="space-y-4">
             <button
               type="submit"
               disabled={isLoading}
               className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              style={{ color: "white" }}
             >
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                 {isLoading && (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 )}
               </span>
-
-              <span style={{ color: "white" }}>
-                {isLoading ? "Signing in..." : "Sign in"}
-              </span>
+              {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </div>
-
-          {/* Sign up link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
               <Link
                 to="/register"
-                className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-              >
+                className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
                 Sign up here
               </Link>
             </p>

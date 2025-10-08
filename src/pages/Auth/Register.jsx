@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../../config/axios";
 import {
   FaUser,
   FaEnvelope,
@@ -22,6 +24,7 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const validateEmail = (email) => /\S+@\S+\.\S+/.test(email);
   // Simple VN-friendly phone rule: starts with 0, 10–11 digits total
@@ -83,18 +86,19 @@ const RegisterPage = () => {
 
     setIsLoading(true);
     try {
-      // Simulate API call. Payload shaped as you specified.
+      // Map exactly to Swagger: fullName, email, phoneNumber, passwordHash
       const payload = {
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        password: formData.password,
+        phoneNumber: formData.phone.trim(),
+        passwordHash: formData.password,
       };
-      await new Promise((r) => setTimeout(r, 1500));
-      console.log("Register success", payload);
-      // TODO: navigate to login or auto-sign-in
+      await api.post('/register', payload);
+      // Redirect to login after successful registration
+      navigate('/login');
     } catch (error) {
-      setErrors({ submit: "Registration failed. Please try again." });
+      const message = error?.response?.data?.message || "Registration failed. Please try again.";
+      setErrors({ submit: message });
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +121,7 @@ const RegisterPage = () => {
         <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Full Name */}
-            <div className="relative md:col-span-2 h-10">
+            <div className="relative md:col-span-2">
               <label htmlFor="fullName" className="sr-only">
                 Full Name
               </label>
@@ -139,16 +143,16 @@ const RegisterPage = () => {
             </div>
 
             {/* Phone */}
-            <div className="relative md:col-span-2 h-10">
+            <div className="relative md:col-span-2">
               <label htmlFor="phone" className="sr-only">
                 Phone
               </label>
-              <FaPhone className="absolute top-1/2 left-3 -translate-y-1/2 rotate-90 text-gray-400" />
+              <FaPhone className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
               <input
                 id="phone"
                 name="phone"
                 type="tel"
-                placeholder="Phone Number"
+                placeholder="Phone (e.g. 09xxxxxxxx)"
                 value={formData.phone}
                 onChange={handleInputChange}
                 className={`appearance-none rounded-lg block w-full pl-10 pr-3 py-2 border ${
@@ -161,12 +165,12 @@ const RegisterPage = () => {
             </div>
 
             {/* Email */}
-            <div className="relative md:col-span-2 h-10">             
+            <div className="relative md:col-span-2">
               <label htmlFor="email" className="sr-only">
                 Email
               </label>
               <FaEnvelope className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
-              <input 
+              <input
                 id="email"
                 name="email"
                 type="email"
@@ -174,7 +178,7 @@ const RegisterPage = () => {
                 placeholder="Email address"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={ `relative md:col-span-2appearance-none rounded-lg block w-full pl-10 pr-3 py-2 border ${
+                className={`appearance-none rounded-lg block w-full pl-10 pr-3 py-2 border ${
                   errors.email ? "border-red-300" : "border-gray-300"
                 } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition`}
               />
@@ -184,7 +188,7 @@ const RegisterPage = () => {
             </div>
 
             {/* Password */}
-            <div className="relative md:col-span-1 h-9">
+            <div className="relative md:col-span-1">
               <label htmlFor="password" className="sr-only">
                 Password
               </label>
@@ -214,7 +218,7 @@ const RegisterPage = () => {
             </div>
 
             {/* Confirm Password */}
-            <div className="relative md:col-span-1 h-9">
+            <div className="relative md:col-span-1">
               <label htmlFor="confirmPassword" className="sr-only">
                 Confirm Password
               </label>
@@ -272,34 +276,21 @@ const RegisterPage = () => {
               <p className="text-sm text-red-600">{errors.submit}</p>
             </div>
           )}
-          {/* Submit button */}
-          <div className="space-y-4">
+
           <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              style={{ color: 'white' }}
-            >
-              <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                {isLoading && (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                )}
-              </span>
-              
-              <span style={{ color: 'white' }}>
-                {isLoading ? "Creating account..." : "Create account"}
-              </span>
-            </button>
-            </div>     
-          {/* Sign in link */}
-          <div className="mt-6 text-center">    
+            type="submit"
+            disabled={isLoading}
+            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
+          >
+            {isLoading ? "Creating account..." : "Create account"}
+          </button>
+
           <p className="text-center text-sm text-gray-600">
             Already have an account?{" "}
-            <a href="/login" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+            <a href="/login" className="text-blue-600 hover:text-blue-500">
               Sign in
             </a>
           </p>
-          </div>
         </form>
       </div>
     </div>

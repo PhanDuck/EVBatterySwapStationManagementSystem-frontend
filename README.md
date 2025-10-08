@@ -1,12 +1,57 @@
-# React + Vite
+# Website Hệ thống quản lý trạm đổi pin xe điện
+## 📌 Giới thiệu
+Website Hệ thống quản lý trạm đổi pin xe điện là nền tảng trực tuyến giúp cộng đồng người dùng xe điện tiếp cận các dịch vụ, quản lý tài khoản, và đặt lịch đổi pin. Hệ thống cũng hỗ trợ các nhân viên trạm và quản trị viên quản lý pin, giao dịch, và theo dõi hiệu suất hoạt động của các trạm đổi pin.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 🚀 Công nghệ sử dụng
+ReactJS - Phát triển giao diện người dùng (Frontend)
 
-Currently, two official plugins are available:
+Spring Boot - Xây dựng API và xử lý logic nghiệp vụ (Backend)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+HTML/CSS/JavaScript - Ngôn ngữ phát triển web
 
-## Expanding the ESLint configuration
+SQL - Hệ quản trị cơ sở dữ liệu để lưu trữ và quản lý thông tin
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Firebase Authentication - Xác thực và quản lý đăng ký/đăng nhập người dùng
+
+Online Payment Gateway - (VNPAY)
+
+## 📜 Các tính năng chính
+### 🌐 Người dùng (EV Driver)
+#### Khách:
+- Xem và truy cập trang giới thiệu thông tin, chia sẻ kinh nghiệm, blog.
+
+- Tìm kiếm và đặt lịch hẹn đổi pin.
+
+- Thực hiện thanh toán và quản lý gói dịch vụ.
+
+- Gửi yêu cầu hỗ trợ và đánh giá dịch vụ.
+
+#### Thành viên:
+- Quản lý hồ sơ cá nhân.
+
+- Xem lịch sử đặt lịch hẹn đổi pin.
+
+- Theo dõi lịch sử giao dịch.
+
+### ⚙️ Quản trị viên (BSS Staff, Admin)
+#### Quản lý chương trình:
+- Quản lý các chương trình truyền thông và giáo dục cộng đồng về ma túy.
+
+- Tạo và quản lý khảo sát trước/sau chương trình để đánh giá hiệu quả.
+
+- Quản lý chuyên viên tư vấn:
+
+- Quản lý thông tin cá nhân, bằng cấp, chuyên môn, lịch làm việc của các chuyên viên.
+
+#### Quản lý người dùng:
+- Quản lý hồ sơ người dùng.
+
+- Báo cáo & Thống kê:
+
+- Xem Dashboard và các báo cáo tổng hợp về hoạt động của hệ thống.
+
+#### Quản lý nội dung:
+
+- Quản lý các khóa học trực tuyến, bài viết blog, thông tin giới thiệu.
+
+- Duyệt/Quản lý cuộc hẹn đổi pin.

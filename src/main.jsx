@@ -1,15 +1,17 @@
-import { createRoot } from "react-dom/client";
-import App from "./App";
-import 'antd/dist/reset.css';
+// import { createRoot } from "react-dom/client";
+// import App from "./App";
+// import "./index.css";
+
+// createRoot(document.getElementById("root")).render(<App />);
+
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "antd/dist/reset.css";
+import App from "./App.jsx";
 import "./index.css";
 
-
-
-
-createRoot(document.getElementById("root")).render(<App />);
-
-// document.getElementById('root')
-// B1: tìm tới thẻ có tên là root
-// B2: render
-
-// chương trình sẽ chạy từ thằng main
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

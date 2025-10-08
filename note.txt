@@ -1,4 +1,0 @@
-1. folder src: nơi chứa code
-2. package.jason: nơi quản lý thông tin của project
-
-3. SPA => Single Page Application
