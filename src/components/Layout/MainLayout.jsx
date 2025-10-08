@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Layout,
   Menu,
@@ -24,7 +24,14 @@ import "./Dashboard.css";
 const { Header, Content, Footer, Sider } = Layout;
 
 export default function MainLayout({ children, sidebar, title }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      const raw = localStorage.getItem("sidebarCollapsed");
+      return raw ? JSON.parse(raw) : false;
+    } catch {
+      return false;
+    }
+  });
   const navigate = useNavigate();
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -36,10 +43,20 @@ export default function MainLayout({ children, sidebar, title }) {
     navigate("/login");
   };
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed));
+    } catch {
+      // noop
+    }
+  }, [collapsed]);
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
       {/* Sidebar */}
       <Sider
+        breakpoint="lg"
+        collapsedWidth={80}
         collapsed={collapsed}
         onCollapse={(value) => setCollapsed(value)}
         width={250}
@@ -56,7 +73,7 @@ export default function MainLayout({ children, sidebar, title }) {
           <Button
             type="text"
             icon={<IoMenu size={28} color="#fff" />}
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() => setCollapsed((c) => !c)}
           />
           <h1
             style={{
@@ -72,8 +89,8 @@ export default function MainLayout({ children, sidebar, title }) {
           </h1>
         </div>
 
-        {/* Sidebar nội dung */}
-        {sidebar}
+  {/* Sidebar nội dung - forward collapsed prop if sidebar is a React element */}
+  {React.isValidElement(sidebar) ? React.cloneElement(sidebar, { collapsed }) : sidebar}
       </Sider>
 
       {/* Main content */}

@@ -10,9 +10,8 @@ import SupportTickets from "../Management/SupportTickets";
 
 export default function StaffDashboard() {
   return (
-    <MainLayout sidebar={<RoleSidebar role="STAFF" />} title="Staff Dashboard">
+    <MainLayout sidebar={<RoleSidebar role="STAFF" />} title="Trang nhân viên trạm">
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4">Trang nhân viên trạm</h1>
 
         <Routes>
           <Route index element={<Navigate to="bookings" />} />

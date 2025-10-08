@@ -8,9 +8,8 @@ import Transactions from "../Management/Transactions";
 
 export default function DriverDashboard() {
   return (
-    <MainLayout sidebar={<RoleSidebar role="DRIVER" />} title="Driver Dashboard">
+    <MainLayout sidebar={<RoleSidebar role="DRIVER" />} title="Trang tài xế">
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4">Trang tài xế</h1>
         <Routes>
           <Route index element={<Navigate to="bookings" />} />
           <Route path="bookings" element={<Bookings />} />
