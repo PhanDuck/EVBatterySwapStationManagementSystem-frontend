@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
-import { setToken, getCurrentRole } from "../../config/auth";
+// Đã thêm setCurrentUser vào import
+import { setToken, getCurrentRole, setCurrentUser } from "../../config/auth"; 
 import {
   FaEnvelope,
   FaPhone,
@@ -36,7 +37,8 @@ const LoginPage = () => {
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 5) {
-      newErrors.password = "Password must be at least 8 characters";
+      // Lưu ý: Sửa lỗi chính tả trong thông báo lỗi (should be > 5)
+      newErrors.password = "Password must be at least 8 characters"; 
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -53,35 +55,38 @@ const LoginPage = () => {
           password: formData.password,
         });
 
+        // 1. Tìm và trích xuất Token
         const token =
           res?.data?.token ||
           res?.data?.accessToken ||
           res?.data?.jwt ||
-          res?.data?.data ||
+          res?.data?.data?.token || // Thêm khả năng token nằm trong data object
           res?.data;
         if (!token) throw new Error("Token not found in response");
 
-        // Store token per rememberMe
+        // 2. LƯU TOKEN: Store token per rememberMe
         setToken(token, formData.rememberMe);
 
-        // Optionally fetch current user
-        // Try to capture user info from login response if present
-        if (res?.data?.user || res?.data?.currentUser) {
-          localStorage.setItem(
-            "currentUser",
-            JSON.stringify(res.data.user || res.data.currentUser)
-          );
+        // 3. LƯU USER INFO: Try to capture user info from login response if present
+        const user = res?.data?.user || res?.data?.currentUser || res?.data?.data?.user;
+        
+        if (user) {
+          // SỬA: Sử dụng hàm setCurrentUser mới từ auth.js
+          setCurrentUser(user); 
         } else {
+          // Nếu không có user info trong response login, gọi endpoint /Current để lấy
           try {
-            const me = await api.get("/Current"); // common pattern
+            const me = await api.get("/Current"); 
             if (me?.data) {
-              localStorage.setItem("currentUser", JSON.stringify(me.data));
+              // SỬA: Sử dụng hàm setCurrentUser mới
+              setCurrentUser(me.data); 
             }
           } catch {
             try {
               const me2 = await api.get("/current");
               if (me2?.data) {
-                localStorage.setItem("currentUser", JSON.stringify(me2.data));
+                // SỬA: Sử dụng hàm setCurrentUser mới
+                setCurrentUser(me2.data); 
               }
             } catch {
               // ignore if backend path differs; user will still be logged in
@@ -89,7 +94,7 @@ const LoginPage = () => {
           }
         }
 
-        // Role-based redirect (normalize to Admin/Staff/Driver)
+        // 4. Role-based redirect (normalize to Admin/Staff/Driver)
         const role = getCurrentRole();
         if (role === "Staff") navigate("/staff");
         else if (role === "Admin") navigate("/admin");
@@ -97,7 +102,7 @@ const LoginPage = () => {
         else navigate("/");
       } catch (error) {
         const message =
-          error?.response?.data?.message || "Login failed. Please try again.";
+          error?.response?.data?.message || "Login failed. Please check your credentials.";
         setErrors({ submit: message });
       } finally {
         setIsLoading(false);

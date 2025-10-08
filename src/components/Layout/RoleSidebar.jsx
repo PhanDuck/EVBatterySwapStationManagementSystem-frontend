@@ -11,12 +11,16 @@ export default function RoleSidebar({ role }) {
       { path: "bookings", label: "📅 Đặt lịch" },
       { path: "transactions", label: "💳 Giao dịch" },
       { path: "tickets", label: "🎫 Hỗ trợ" },
+      { path: "inventory", label: "🎁 Tồn kho pin" },
+      { path: "swaps", label: "🔄 Giao dịch đổi pin" },
     ],
     STAFF: [
       { path: "bookings", label: "📅 Đặt lịch" },
       { path: "stations", label: "🏭 Trạm sạc" },
       { path: "vehicles", label: "🚗 Xe điện" },
       { path: "tickets", label: "🎫 Hỗ trợ" },
+      { path: "inventory", label: "🎁 Tồn kho pin" },
+      { path: "swaps", label: "🔄 Giao dịch đổi pin" },
     ],
     DRIVER: [
       { path: "bookings", label: "📅 Lịch đặt của tôi" },

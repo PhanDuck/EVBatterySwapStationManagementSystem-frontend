@@ -1,4 +1,7 @@
 // Simple auth utilities for token and user role handling
+
+// ======================= TOKEN HANDLER =======================
+
 export const getToken = () => {
   try {
     return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -21,11 +24,13 @@ export const setToken = (token, remember) => {
   }
 };
 
-export const clearAuth = () => {
+// ======================= USER HANDLER =======================
+
+// BỔ SUNG QUAN TRỌNG: LƯU THÔNG TIN USER VÀO LOCAL STORAGE
+export const setCurrentUser = (user) => {
   try {
-    localStorage.removeItem('authToken');
-    sessionStorage.removeItem('authToken');
-    localStorage.removeItem('currentUser');
+    // Thông tin user nên luôn được lưu vào localStorage
+    localStorage.setItem('currentUser', JSON.stringify(user));
   } catch {
     // ignore
   }
@@ -40,11 +45,30 @@ export const getCurrentUser = () => {
   }
 };
 
+// ======================= CLEAR & STATUS =======================
+
+export const clearAuth = () => {
+  try {
+    // Xóa cả Token và User
+    localStorage.removeItem('authToken');
+    sessionStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser'); 
+  } catch {
+    // ignore
+  }
+};
+
+export const isAuthenticated = () => !!getToken();
+
+// ======================= ROLE HANDLER =======================
+
 export const getCurrentRole = () => {
   const user = getCurrentUser();
   if (!user) return null;
-  // Common fields from different backends
+  
+  // Logic tìm kiếm vai trò linh hoạt
   let candidate = user.role || user.Role || user.userRole || user.roleName || user.RoleName;
+  
   if (!candidate && Array.isArray(user.roles) && user.roles.length > 0) {
     candidate = user.roles[0];
   }
@@ -52,14 +76,15 @@ export const getCurrentRole = () => {
     const first = user.authorities[0];
     candidate = typeof first === 'string' ? first : (first?.authority || first?.name || first?.role);
   }
+  
   if (!candidate) return null;
+  
   const upper = String(candidate).toUpperCase();
+  
+  // Ánh xạ vai trò chính
   if (upper.includes('ADMIN')) return 'Admin';
   if (upper.includes('STAFF')) return 'Staff';
   if (upper.includes('DRIVER')) return 'Driver';
+  
   return candidate;
 };
-
-export const isAuthenticated = () => !!getToken();
-
-
