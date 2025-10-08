@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, Table, Button, Space, Modal, Form, Input, DatePicker, Select, Tag, message } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
@@ -33,6 +33,8 @@ export default function BookingsPage() {
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
   const [filterStatus, setFilterStatus] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [dateRange, setDateRange] = useState(null);
 
   const columns = [
     { title: "Booking ID", dataIndex: "id", key: "id" },
@@ -67,7 +69,20 @@ export default function BookingsPage() {
     },
   ];
 
-  const filtered = bookings.filter((b) => (filterStatus ? b.status === filterStatus : true));
+  const filtered = useMemo(() => bookings.filter((b) => {
+    if (filterStatus && b.status !== filterStatus) return false;
+    if (searchText) {
+      const q = searchText.toLowerCase();
+      if (!b.user.toLowerCase().includes(q) && !b.vehicle.toLowerCase().includes(q) && !b.station.toLowerCase().includes(q)) return false;
+    }
+    if (dateRange && dateRange.length === 2) {
+      const start = dateRange[0];
+      const end = dateRange[1];
+      const d = b.date;
+      if (d < start || d > end) return false;
+    }
+    return true;
+  }), [bookings, filterStatus, searchText, dateRange]);
 
   function openEdit(record) {
     setEditing(record);
@@ -113,11 +128,13 @@ export default function BookingsPage() {
         title="Bookings"
         extra={
           <Space>
+            <Input placeholder="Search user, vehicle, station" value={searchText} onChange={(e) => setSearchText(e.target.value)} style={{ width: 240 }} />
             <Select placeholder="Filter by status" allowClear style={{ width: 160 }} onChange={(v) => setFilterStatus(v)}>
               <Option value="Confirmed">Confirmed</Option>
               <Option value="Pending">Pending</Option>
               <Option value="Cancelled">Cancelled</Option>
             </Select>
+            <DatePicker.RangePicker onChange={(vals) => setDateRange(vals && vals.map(d => d.format('YYYY-MM-DD')))} />
             <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>
               New Booking
             </Button>

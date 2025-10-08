@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, message } from 'antd';
+import React, { useState, useMemo } from 'react';
+import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, message, DatePicker } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
@@ -35,6 +35,10 @@ const AccountPage = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [form] = Form.useForm();
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [dateRange, setDateRange] = useState(null);
 
   const columns = [
     {
@@ -159,23 +163,52 @@ const AccountPage = () => {
     form.resetFields();
   };
 
+  const filteredAccounts = useMemo(() => accounts.filter(a => {
+    if (statusFilter !== 'all' && a.status !== statusFilter) return false;
+    if (roleFilter !== 'all' && a.role !== roleFilter) return false;
+    if (searchText) {
+      const q = searchText.toLowerCase();
+      if (!a.username.toLowerCase().includes(q) && !a.email.toLowerCase().includes(q)) return false;
+    }
+    if (dateRange && dateRange.length === 2) {
+      const created = a.createdAt;
+      if (created < dateRange[0] || created > dateRange[1]) return false;
+    }
+    return true;
+  }), [accounts, searchText, statusFilter, roleFilter, dateRange]);
+
   return (
     <div style={{ padding: '24px' }}>
       <Card
         title="Account Management"
         extra={
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={handleAdd}
-          >
-            Add Account
-          </Button>
+          <Space>
+            <Input placeholder="Search username or email" value={searchText} onChange={(e) => setSearchText(e.target.value)} style={{ width: 220 }} />
+            <Select value={roleFilter} onChange={setRoleFilter} style={{ width: 140 }}>
+              <Option value="all">All Roles</Option>
+              <Option value="Admin">Admin</Option>
+              <Option value="Operator">Operator</Option>
+              <Option value="User">User</Option>
+            </Select>
+            <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 140 }}>
+              <Option value="all">All Status</Option>
+              <Option value="Active">Active</Option>
+              <Option value="Inactive">Inactive</Option>
+            </Select>
+            <DatePicker.RangePicker onChange={(vals) => setDateRange(vals && vals.map(d => d.format('YYYY-MM-DD')))} />
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={handleAdd}
+            >
+              Add Account
+            </Button>
+          </Space>
         }
       >
         <Table
           columns={columns}
-          dataSource={accounts}
+          dataSource={filteredAccounts}
           rowKey="id"
           pagination={{
             pageSize: 10,

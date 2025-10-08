@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Card,
   Table,
@@ -6,6 +6,7 @@ import {
   Space,
   Tag,
   Modal,
+  DatePicker,
   Form,
   Input,
   Select,
@@ -16,10 +17,11 @@ import {
   EditOutlined,
   DeleteOutlined,
   CarOutlined,
-  ThunderboltOutlined, // thay cho BatteryOutlined
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 const VehiclePage = () => {
   const [vehicles, setVehicles] = useState([
@@ -71,6 +73,11 @@ const VehiclePage = () => {
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [form] = Form.useForm();
 
+  // filter/search state
+  const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRange, setDateRange] = useState(null);
+
   const columns = [
     {
       title: "Vehicle ID",
@@ -90,16 +97,13 @@ const VehiclePage = () => {
       render: (text) => <strong>{text}</strong>,
     },
     {
-      title: "Vehicle Info",
-      key: "vehicleInfo",
+      title: "Vehicle Model",
+      key: "vehicleModel",
       render: (_, record) => (
         <Space direction="vertical" size="small">
           <span>
-            <strong>
-              {record.make} {record.model}
-            </strong>
+            <strong>{record.model}</strong>
           </span>
-          <span style={{ color: "#666" }}>Year: {record.year}</span>
         </Space>
       ),
     },
@@ -111,11 +115,7 @@ const VehiclePage = () => {
           <span>{record.batteryType}</span>
           <Space>
             <ThunderboltOutlined />
-            <span
-              style={{
-                color: record.currentBattery === "None" ? "#ff4d4f" : "#52c41a",
-              }}
-            >
+            <span style={{ color: record.currentBattery === "None" ? "#ff4d4f" : "#52c41a" }}>
               {record.currentBattery}
             </span>
           </Space>
@@ -163,21 +163,10 @@ const VehiclePage = () => {
       key: "actions",
       render: (_, record) => (
         <Space size="middle">
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => handleEdit(record)}
-          >
+          <Button type="primary" icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)}>
             Edit
           </Button>
-          <Button
-            type="primary"
-            danger
-            icon={<DeleteOutlined />}
-            size="small"
-            onClick={() => handleDelete(record.id)}
-          >
+          <Button type="primary" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record.id)}>
             Remove
           </Button>
         </Space>
@@ -205,7 +194,7 @@ const VehiclePage = () => {
       okType: "danger",
       cancelText: "No",
       onOk() {
-        setVehicles(vehicles.filter((vehicle) => vehicle.id !== id));
+        setVehicles((prev) => prev.filter((vehicle) => vehicle.id !== id));
         message.success("Vehicle removed successfully");
       },
     });
@@ -213,117 +202,82 @@ const VehiclePage = () => {
 
   const handleSubmit = (values) => {
     if (editingVehicle) {
-      // Update existing vehicle
-      setVehicles(
-        vehicles.map((vehicle) =>
-          vehicle.id === editingVehicle.id ? { ...vehicle, ...values } : vehicle
-        )
-      );
+      setVehicles((prev) => prev.map((vehicle) => (vehicle.id === editingVehicle.id ? { ...vehicle, ...values } : vehicle)));
       message.success("Vehicle updated successfully");
     } else {
-      // Add new vehicle
+      const newIdNumber = Math.max(0, ...vehicles.map((v) => parseInt(v.id.replace(/^VH/, '')))) + 1;
       const newVehicle = {
         ...values,
-        id: `VH${String(
-          Math.max(...vehicles.map((v) => parseInt(v.id.slice(2)))) + 1
-        ).padStart(3, "0")}`,
+        id: `VH${String(newIdNumber).padStart(3, '0')}`,
         lastSwap: "Never",
         totalSwaps: 0,
       };
-      setVehicles([...vehicles, newVehicle]);
+      setVehicles((prev) => [...prev, newVehicle]);
       message.success("Vehicle registered successfully");
     }
     setIsModalVisible(false);
     form.resetFields();
   };
 
+  const filteredData = useMemo(() => {
+    return vehicles.filter((v) => {
+      if (searchText) {
+        const q = searchText.toLowerCase();
+        if (!v.model.toLowerCase().includes(q) && !v.licensePlate.toLowerCase().includes(q) && !v.ownerName.toLowerCase().includes(q)) return false;
+      }
+      if (statusFilter !== 'all' && v.status !== statusFilter) return false;
+      return true;
+    });
+  }, [vehicles, searchText, statusFilter]);
+
   return (
     <div style={{ padding: "24px" }}>
       <Card
         title="Vehicle Management"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-            Register Vehicle
-          </Button>
+          <Space>
+            <Input placeholder="Search by model, plate, or owner" value={searchText} onChange={(e) => setSearchText(e.target.value)} style={{ width: 280 }} />
+            <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 150 }}>
+              <Option value="all">All Status</Option>
+              <Option value="Active">Active</Option>
+              <Option value="Maintenance">Maintenance</Option>
+              <Option value="Inactive">Inactive</Option>
+            </Select>
+            <Select value={'all'} style={{ width: 150 }}>
+              <Option value="all">All Types</Option>
+            </Select>
+            <RangePicker onChange={(vals) => setDateRange(vals)} />
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              Register Vehicle
+            </Button>
+          </Space>
         }
       >
-        <Table
-          columns={columns}
-          dataSource={vehicles}
-          rowKey="id"
-          scroll={{ x: 1200 }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} vehicles`,
-          }}
-        />
+        <Table columns={columns} dataSource={filteredData} rowKey="id" scroll={{ x: 1200 }} pagination={{ pageSize: 10, showSizeChanger: true, showQuickJumper: true, showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} vehicles` }} />
       </Card>
 
-      <Modal
-        title={editingVehicle ? "Edit Vehicle" : "Register New Vehicle"}
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-        width={600}
-      >
+      <Modal title={editingVehicle ? "Edit Vehicle" : "Register New Vehicle"} open={isModalVisible} onCancel={() => setIsModalVisible(false)} footer={null} width={600}>
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item
-            name="licensePlate"
-            label="License Plate"
-            rules={[{ required: true, message: "Please input license plate!" }]}
-          >
+          <Form.Item name="licensePlate" label="License Plate" rules={[{ required: true, message: "Please input license plate!" }]}>
             <Input placeholder="Enter license plate" />
           </Form.Item>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gap: "16px",
-            }}
-          >
-            <Form.Item
-              name="make"
-              label="Make"
-              rules={[{ required: true, message: "Please input make!" }]}
-            >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+            <Form.Item name="make" label="Make" rules={[{ required: true, message: "Please input make!" }]}>
               <Input placeholder="Tesla, BYD, NIO" />
             </Form.Item>
 
-            <Form.Item
-              name="model"
-              label="Model"
-              rules={[{ required: true, message: "Please input model!" }]}
-            >
+            <Form.Item name="model" label="Model" rules={[{ required: true, message: "Please input model!" }]}>
               <Input placeholder="Model 3, Tang EV" />
             </Form.Item>
 
-            <Form.Item
-              name="year"
-              label="Year"
-              rules={[{ required: true, message: "Please input year!" }]}
-            >
+            <Form.Item name="year" label="Year" style={{ display: 'none' }}>
               <Input placeholder="2023" />
             </Form.Item>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "16px",
-            }}
-          >
-            <Form.Item
-              name="batteryType"
-              label="Battery Type"
-              rules={[
-                { required: true, message: "Please select battery type!" },
-              ]}
-            >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <Form.Item name="batteryType" label="Battery Type" rules={[{ required: true, message: "Please select battery type!" }]}>
               <Select placeholder="Select battery type">
                 <Option value="Tesla Battery">Tesla Battery</Option>
                 <Option value="BYD Blade">BYD Blade</Option>
@@ -337,37 +291,17 @@ const VehiclePage = () => {
             </Form.Item>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "16px",
-            }}
-          >
-            <Form.Item
-              name="ownerName"
-              label="Owner Name"
-              rules={[{ required: true, message: "Please input owner name!" }]}
-            >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <Form.Item name="ownerName" label="Owner Name" rules={[{ required: true, message: "Please input owner name!" }]}>
               <Input placeholder="Enter owner name" />
             </Form.Item>
 
-            <Form.Item
-              name="ownerPhone"
-              label="Owner Phone"
-              rules={[
-                { required: true, message: "Please input phone number!" },
-              ]}
-            >
+            <Form.Item name="ownerPhone" label="Owner Phone" rules={[{ required: true, message: "Please input phone number!" }]}>
               <Input placeholder="Enter phone number" />
             </Form.Item>
           </div>
 
-          <Form.Item
-            name="status"
-            label="Status"
-            rules={[{ required: true, message: "Please select status!" }]}
-          >
+          <Form.Item name="status" label="Status" rules={[{ required: true, message: "Please select status!" }]}> 
             <Select placeholder="Select status">
               <Option value="Active">Active</Option>
               <Option value="Maintenance">Maintenance</Option>
@@ -378,9 +312,7 @@ const VehiclePage = () => {
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit">
-                {editingVehicle ? "Update" : "Register"}
-              </Button>
+              <Button type="primary" htmlType="submit">{editingVehicle ? "Update" : "Register"}</Button>
               <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
             </Space>
           </Form.Item>

@@ -1,13 +1,14 @@
-import React, { useState } from "react";
-import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Select, Tag, message } from "antd";
+import React, { useState, useMemo } from "react";
+import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Select, Tag, message, DatePicker } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import dayjs from 'dayjs';
 
 const { Option } = Select;
 
 const samplePackages = [
-  { id: 'PKG-001', name: 'Basic Swap', price: 5, duration: 30, maxSwaps: 1, popularity: 12 },
-  { id: 'PKG-002', name: 'Monthly Saver', price: 50, duration: 30, maxSwaps: 20, popularity: 54 },
-  { id: 'PKG-003', name: 'Unlimited Pro', price: 120, duration: 90, maxSwaps: 999, popularity: 8 },
+  { id: 'PKG-001', name: 'Basic Swap', price: 5, duration: 30, maxSwaps: 1, popularity: 12, createdAt: dayjs().subtract(14, 'day').toISOString() },
+  { id: 'PKG-002', name: 'Monthly Saver', price: 50, duration: 30, maxSwaps: 20, popularity: 54, createdAt: dayjs().subtract(40, 'day').toISOString() },
+  { id: 'PKG-003', name: 'Unlimited Pro', price: 120, duration: 90, maxSwaps: 999, popularity: 8, createdAt: dayjs().subtract(6, 'day').toISOString() },
 ];
 
 export default function ServicePackagesPage() {
@@ -15,6 +16,9 @@ export default function ServicePackagesPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
+  const [searchText, setSearchText] = useState('');
+  const [popularityFilter, setPopularityFilter] = useState('all');
+  const [dateRange, setDateRange] = useState(null);
 
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id' },
@@ -70,13 +74,46 @@ export default function ServicePackagesPage() {
     form.resetFields();
   }
 
+  const filteredPackages = useMemo(() => {
+    return packages.filter(p => {
+      const q = searchText.trim().toLowerCase();
+      if (q) {
+        const matches = (p.name || '').toLowerCase().includes(q) || (p.id || '').toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+
+      if (popularityFilter === 'high' && !(p.popularity > 30)) return false;
+      if (popularityFilter === 'low' && !(p.popularity <= 30)) return false;
+
+      if (dateRange && dateRange.length === 2) {
+        const start = dayjs(dateRange[0]);
+        const end = dayjs(dateRange[1]).endOf('day');
+        const created = dayjs(p.createdAt);
+        if (!created.isBetween(start, end, null, '[]')) return false;
+      }
+
+      return true;
+    });
+  }, [packages, searchText, popularityFilter, dateRange]);
+
   return (
     <div style={{ padding: 24 }}>
       <Card
         title="Service Packages"
-        extra={<Button type="primary" icon={<PlusOutlined />} onClick={openNew}>Add Package</Button>}
+        extra={
+          <Space>
+            <Input.Search placeholder="Search by id or name" onSearch={v => setSearchText(v)} onChange={e => setSearchText(e.target.value)} style={{ width: 220 }} allowClear />
+            <Select value={popularityFilter} onChange={setPopularityFilter} style={{ width: 140 }}>
+              <Select.Option value="all">All popularity</Select.Option>
+              <Select.Option value="high">High (&gt;30)</Select.Option>
+              <Select.Option value="low">Low (≤30)</Select.Option>
+            </Select>
+            <DatePicker.RangePicker onChange={(vals) => setDateRange(vals)} />
+            <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>Add Package</Button>
+          </Space>
+        }
       >
-        <Table columns={columns} dataSource={packages} rowKey={r => r.id} />
+        <Table columns={columns} dataSource={filteredPackages} rowKey={r => r.id} />
       </Card>
 
       <Modal title={editing ? 'Edit Package' : 'New Package'} open={isModalVisible} onCancel={() => setIsModalVisible(false)} footer={null}>

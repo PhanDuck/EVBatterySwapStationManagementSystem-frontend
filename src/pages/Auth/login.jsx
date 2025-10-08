@@ -267,13 +267,16 @@ const LoginPage = () => {
               type="submit"
               disabled={isLoading}
               className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              style={{ color: "white" }}
             >
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                 {isLoading && (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 )}
               </span>
-              {isLoading ? "Signing in..." : "Sign in"}
+              <span style={{ color: "white" }}>
+                {isLoading ? "Signing in..." : "Sign in"}
+              </span>
             </button>
           </div>
           <div className="mt-6 text-center">

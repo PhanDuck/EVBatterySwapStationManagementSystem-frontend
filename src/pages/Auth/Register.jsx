@@ -93,11 +93,13 @@ const RegisterPage = () => {
         phoneNumber: formData.phone.trim(),
         passwordHash: formData.password,
       };
-      await api.post('/register', payload);
+      await api.post("/register", payload);
       // Redirect to login after successful registration
-      navigate('/login');
+      navigate("/login");
     } catch (error) {
-      const message = error?.response?.data?.message || "Registration failed. Please try again.";
+      const message =
+        error?.response?.data?.message ||
+        "Registration failed. Please try again.";
       setErrors({ submit: message });
     } finally {
       setIsLoading(false);
@@ -119,9 +121,9 @@ const RegisterPage = () => {
         </div>
 
         <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
             {/* Full Name */}
-            <div className="relative md:col-span-2">
+            <div className="relative md:col-span-2 h-10">
               <label htmlFor="fullName" className="sr-only">
                 Full Name
               </label>
@@ -143,16 +145,16 @@ const RegisterPage = () => {
             </div>
 
             {/* Phone */}
-            <div className="relative md:col-span-2">
+            <div className="relative md:col-span-2 h-10">
               <label htmlFor="phone" className="sr-only">
                 Phone
               </label>
-              <FaPhone className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
+              <FaPhone className="absolute top-1/2 left-3 -translate-y-1/2 rotate-90 text-gray-400" />
               <input
                 id="phone"
                 name="phone"
                 type="tel"
-                placeholder="Phone (e.g. 09xxxxxxxx)"
+                placeholder="Phone"
                 value={formData.phone}
                 onChange={handleInputChange}
                 className={`appearance-none rounded-lg block w-full pl-10 pr-3 py-2 border ${
@@ -165,7 +167,7 @@ const RegisterPage = () => {
             </div>
 
             {/* Email */}
-            <div className="relative md:col-span-2">
+            <div className="relative md:col-span-2 h-10">
               <label htmlFor="email" className="sr-only">
                 Email
               </label>
@@ -188,7 +190,7 @@ const RegisterPage = () => {
             </div>
 
             {/* Password */}
-            <div className="relative md:col-span-1">
+            <div className="relative md:col-span-1 h-9">
               <label htmlFor="password" className="sr-only">
                 Password
               </label>
@@ -218,7 +220,7 @@ const RegisterPage = () => {
             </div>
 
             {/* Confirm Password */}
-            <div className="relative md:col-span-1">
+            <div className="relative md:col-span-1 h-9">
               <label htmlFor="confirmPassword" className="sr-only">
                 Confirm Password
               </label>
@@ -251,25 +253,28 @@ const RegisterPage = () => {
           </div>
 
           {/* Terms */}
-          <div className="flex items-start">
-            <input
-              id="agree"
-              name="agree"
-              type="checkbox"
-              className="h-4 w-4 mt-1 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              checked={formData.agree}
-              onChange={handleInputChange}
-            />
-            <label htmlFor="agree" className="ml-2 text-sm text-gray-700">
-              I agree to the{" "}
-              <a href="#" className="text-blue-600 hover:text-blue-500">
-                Terms & Privacy
-              </a>
-            </label>
+          <div className="flex flex-col items-start">
+            <div className="flex items-start">
+              <input
+                id="agree"
+                name="agree"
+                type="checkbox"
+                className="h-4 w-4 mt-1 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                checked={formData.agree}
+                onChange={handleInputChange}
+              />
+              <label htmlFor="agree" className="ml-2 text-sm text-gray-700">
+                I agree to the{" "}
+                <a href="#" className="text-blue-600 hover:text-blue-500">
+                  Terms & Privacy
+                </a>
+              </label>
+            </div>
+
+            {errors.agree && (
+              <p className="text-sm text-red-600 mt-1">{errors.agree}</p>
+            )}
           </div>
-          {errors.agree && (
-            <p className="text-sm text-red-600 -mt-2">{errors.agree}</p>
-          )}
 
           {errors.submit && (
             <div className="rounded-md bg-red-50 p-4">
@@ -280,14 +285,19 @@ const RegisterPage = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
+            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            style={{ color: "white" }}
           >
-            {isLoading ? "Creating account..." : "Create account"}
+            <span style={{ color: "white" }}>
+              {isLoading ? "Creating account..." : "Create account"}
+            </span>
           </button>
-
           <p className="text-center text-sm text-gray-600">
             Already have an account?{" "}
-            <a href="/login" className="text-blue-600 hover:text-blue-500">
+            <a
+              href="/login"
+              className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+            >
               Sign in
             </a>
           </p>

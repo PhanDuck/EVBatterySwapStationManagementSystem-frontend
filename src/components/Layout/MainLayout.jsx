@@ -43,6 +43,26 @@ export default function MainLayout({ children, sidebar, title }) {
     navigate("/login");
   };
 
+  function getDisplayName() {
+    try {
+      const sessionName = sessionStorage.getItem('displayName') || localStorage.getItem('displayName');
+      if (sessionName) return sessionName;
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        const parts = token.split('.');
+        if (parts.length >= 2) {
+          const payload = parts[1];
+          // atob for base64url handling
+          const json = JSON.parse(decodeURIComponent(escape(window.atob(payload.replace(/-/g, '+').replace(/_/g, '/')))));
+          return json.name || json.preferred_username || json.email || 'Admin';
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return 'Admin';
+  }
+
   useEffect(() => {
     try {
       localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed));
@@ -127,7 +147,7 @@ export default function MainLayout({ children, sidebar, title }) {
               style={{ backgroundColor: "#1890ff" }}
               icon={<UserOutlined />}
             />
-            <span style={{ fontWeight: "500" }}>Admin</span>
+            <span style={{ fontWeight: "500" }}>{getDisplayName()}</span>
 
             {/* Nút Logout */}
             <Button
