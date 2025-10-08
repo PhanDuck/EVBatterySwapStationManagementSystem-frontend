@@ -12,8 +12,10 @@
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",
     "@tailwindcss/vite": "^4.1.14",
+    "@vis.gl/react-maplibre": "^8.1.0",
     "antd": "^5.27.3",
     "axios": "^1.12.1",
+    "maplibre-gl": "^5.8.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-icons": "^5.5.0",
