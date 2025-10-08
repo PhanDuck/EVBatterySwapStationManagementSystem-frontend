@@ -8,6 +8,8 @@ import NotFound from "../pages/Error/NotFound";
 import AdminDashboard from "../pages/Dashboard/AdminDashboard";
 import DriverDashboard from "../pages/Dashboard/DriverDashboard";
 import StaffDashboard from "../pages/Dashboard/StaffDashboard";
+import StationsNearbyPage from "../pages/Shared/StationsNearby";
+import StationPage from "../pages/Management/Stations";
 
 export default function AppRouter() {
   return (
@@ -19,6 +21,7 @@ export default function AppRouter() {
         <Route path="/packages" element={<Packages />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="stations/nearby" element={<StationsNearbyPage />} />
 
         {/* Trang quản trị */}
         <Route path="/admin/*" element={<AdminDashboard />} />
