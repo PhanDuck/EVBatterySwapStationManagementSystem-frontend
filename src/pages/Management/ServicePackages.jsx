@@ -2,14 +2,48 @@ import React, { useState, useMemo } from "react";
 import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Select, Tag, message, DatePicker } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from 'dayjs';
+import api from "../../config/axios";
+
+// Local helper that wraps axios and returns normalized result
+async function callApi({
+  method = "get",
+  url,
+  data = null,
+  params = null,
+  config = {},
+}) {
+  try {
+    const res = await api.request({ method, url, data, params, ...config });
+    return { ok: true, data: res.data };
+  } catch (err) {
+    let status = null;
+    let messageText = "Network error";
+    let payload = null;
+    if (err && err.response) {
+      status = err.response.status;
+      payload = err.response.data;
+      messageText =
+        (err.response.data &&
+          (err.response.data.message || err.response.data.error)) ||
+        err.response.statusText ||
+        messageText;
+      // if unauthorized, clear stored tokens
+      if (status === 401) {
+        try { localStorage.removeItem('authToken'); sessionStorage.removeItem('authToken'); } catch { /* ignore storage errors */ }
+      }
+    } else if (err && err.request) {
+      messageText = "No response from server";
+    } else if (err && err.message) {
+      messageText = err.message;
+    }
+    return { ok: false, status, message: messageText, payload };
+  }
+}
 
 const { Option } = Select;
 
-const samplePackages = [
-  { id: 'PKG-001', name: 'Basic Swap', price: 5, duration: 30, maxSwaps: 1, popularity: 12, createdAt: dayjs().subtract(14, 'day').toISOString() },
-  { id: 'PKG-002', name: 'Monthly Saver', price: 50, duration: 30, maxSwaps: 20, popularity: 54, createdAt: dayjs().subtract(40, 'day').toISOString() },
-  { id: 'PKG-003', name: 'Unlimited Pro', price: 120, duration: 90, maxSwaps: 999, popularity: 8, createdAt: dayjs().subtract(6, 'day').toISOString() },
-];
+// start with empty list; we'll fetch from API
+const samplePackages = [];
 
 export default function ServicePackagesPage() {
   const [packages, setPackages] = useState(samplePackages);
@@ -19,6 +53,21 @@ export default function ServicePackagesPage() {
   const [searchText, setSearchText] = useState('');
   const [popularityFilter, setPopularityFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const fetchPackages = async () => {
+      setLoading(true);
+      const res = await callApi({ method: 'get', url: '/service-packages' });
+      if (!mounted) return;
+      if (res.ok && Array.isArray(res.data)) setPackages(res.data);
+      else setPackages([]);
+      setLoading(false);
+    };
+    fetchPackages();
+    return () => { mounted = false; };
+  }, []);
 
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id' },
@@ -113,7 +162,7 @@ export default function ServicePackagesPage() {
           </Space>
         }
       >
-        <Table columns={columns} dataSource={filteredPackages} rowKey={r => r.id} />
+    <Table columns={columns} dataSource={filteredPackages} rowKey={r => r.id} loading={loading} />
       </Card>
 
       <Modal title={editing ? 'Edit Package' : 'New Package'} open={isModalVisible} onCancel={() => setIsModalVisible(false)} footer={null}>

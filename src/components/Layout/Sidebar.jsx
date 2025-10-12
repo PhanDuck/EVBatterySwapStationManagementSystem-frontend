@@ -17,7 +17,9 @@ const { Sider } = Layout;
 
 export default function RoleSidebar({ role = "ADMIN" }) {
   const location = useLocation();
-
+  // static color (revert previous customization)
+  const roleColor = '#001529';
+  const headerColor = '#06263d';
   // =============================
   // 🌐 Cấu hình menu theo vai trò
   // =============================
@@ -61,12 +63,16 @@ export default function RoleSidebar({ role = "ADMIN" }) {
       collapsedWidth="70"
       theme="dark"
       className="min-h-screen"
-      style={{ position: "sticky", top: 0, left: 0, zIndex: 50 }}
+      style={{ position: "sticky", top: 0, left: 0, zIndex: 50, background: roleColor }}
     >
       {/* Logo hoặc tiêu đề */}
       <div
-        className="text-white text-center py-4 text-lg font-bold tracking-wide"
-        style={{ background: "#001529" }}
+        className="text-center py-4 text-lg font-bold tracking-wide"
+        style={{
+          background: `linear-gradient(180deg, ${headerColor}, ${roleColor})`,
+          color: role === 'STAFF' ? '#000' : '#fff',
+          borderBottom: role === 'STAFF' ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.06)'
+        }}
       >
         {role === "ADMIN"
           ? "EV ADMIN"

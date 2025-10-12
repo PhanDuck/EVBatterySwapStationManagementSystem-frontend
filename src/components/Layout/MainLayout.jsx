@@ -71,8 +71,13 @@ export default function MainLayout({ children, sidebar, title }) {
     }
   }, [collapsed]);
 
+  // static sidebar/header colors (revert customization)
+  const roleColor = '#001529';
+  const headerColor = '#06263d';
+  const headerBorder = 'rgba(255,255,255,0.06)';
+
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout className="ev-dashboard" style={{ minHeight: "100vh" }}>
       {/* Sidebar */}
       <Sider
         breakpoint="lg"
@@ -86,8 +91,9 @@ export default function MainLayout({ children, sidebar, title }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            backgroundColor: "#002140",
+            background: `linear-gradient(180deg, ${headerColor}, ${roleColor})`,
             padding: "18px 24px",
+            borderBottom: `1px solid ${headerBorder}`,
           }}
         >
           <Button

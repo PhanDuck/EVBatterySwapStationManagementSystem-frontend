@@ -87,7 +87,7 @@ const parseCoordinate = (text) => {
 // COMPONENT CHÍNH
 
 function StationsNearbyPage() {
-    const center = useMemo(() => FPT_SAIGON, []);
+    // using FPT_SAIGON directly as default center
 
     // 1. STATE DỮ LIỆU
     const [stations, setStations] = useState([]); 
@@ -97,7 +97,7 @@ function StationsNearbyPage() {
     // 2. STATE ROUTING
     const [selectedStationName, setSelectedStationName] = useState("");
     const [currentOrigin, setCurrentOrigin] = useState(FPT_SAIGON); // Thêm state Origin
-    const [originText, setOriginText] = useState(""); // Thêm state Origin Input Text
+    const [originText] = useState(""); // read-only origin text for now
     
     const [routeGeoJSON, setRouteGeoJSON] = useState(null); 
     const [routeLoading, setRouteLoading] = useState(false);

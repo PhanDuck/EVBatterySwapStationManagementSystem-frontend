@@ -5,10 +5,15 @@ import { Tooltip } from "antd";
 export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
   const base = role ? role.toLowerCase() : "";
 
+  // static sidebar color (revert customization)
+  const roleColor = '#001529';
+  const textColor = '#fff';
+  const headerDivider = 'rgba(255,255,255,0.06)';
+
   const menu = {
     ADMIN: [
       { path: "users", label: "Quản lý người dùng", icon: <FiUsers /> },
-      { path: "stations", label: "Trạm sạc", icon: <FiMap /> },
+      { path: "stations", label: "Trạm đổi pin", icon: <FiMap /> },
       { path: "vehicles", label: "Xe điện", icon: <FiTruck /> },
       { path: "bookings", label: "Đặt lịch", icon: <FiCalendar /> },
       { path: "transactions", label: "Giao dịch", icon: <FiCreditCard /> },
@@ -16,7 +21,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
     ],
     STAFF: [
       { path: "bookings", label: "Đặt lịch", icon: <FiCalendar /> },
-      { path: "stations", label: "Trạm sạc", icon: <FiMap /> },
+      { path: "stations", label: "Trạm đổi pin", icon: <FiMap /> },
       { path: "vehicles", label: "Xe điện", icon: <FiTruck /> },
       { path: "tickets", label: "Hỗ trợ", icon: <FiHelpCircle /> },
     ],
@@ -26,18 +31,22 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
     ],
   };
 
+
   return (
     <aside
-      className={`${collapsed ? "w-20" : "w-60"} bg-gray-900 text-white p-4 min-h-screen`}
-      style={{ transition: "width 220ms ease" }}
+      className={`${collapsed ? "w-20" : ""} p-4 min-h-screen`}
+      style={{ transition: "width 220ms ease", background: roleColor, color: textColor }}
     >
       <div className={`mb-6 flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
-        <div
-          className={`w-10 h-10 bg-yellow-500 rounded flex items-center justify-center text-black font-bold ${
-            collapsed ? "mx-auto" : ""
-          }`}
-        >
-          EV
+        <div style={{ paddingBottom: 12 }}>
+          <div
+            className={`w-10 h-10 rounded flex items-center justify-center font-bold ${
+              collapsed ? "mx-auto" : ""
+            }`}
+            style={{ background: '#f5af19', color: '#111' }}
+          >
+            EV
+          </div>
         </div>
         <div
           style={{
@@ -51,7 +60,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
           {!collapsed && (
             <>
               <div className="text-sm font-bold">EV Battery</div>
-              <div className="text-xs text-gray-300">{role}</div>
+              <div className="text-xs" style={{ opacity: 0.85 }}>{role}</div>
             </>
           )}
         </div>
