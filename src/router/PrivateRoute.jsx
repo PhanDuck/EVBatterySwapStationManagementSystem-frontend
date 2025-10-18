@@ -13,8 +13,9 @@ const PrivateRoute = ({ roles }) => {
   if (roles && !roles.includes(role)) {
     return <Navigate to="/" replace />;
   }
-
-  return <Outlet />;
+  if (role === "admin" || role === "staff") {
+    return <Outlet />;
+  }
 };
 
 export default PrivateRoute;

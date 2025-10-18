@@ -1,0 +1,13 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Vietnam" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[102.144, 8.599], [109.469, 8.599], [109.469, 23.392], [102.144, 23.392], [102.144, 8.599]]]
+      }
+    }
+  ]
+}

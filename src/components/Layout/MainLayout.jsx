@@ -9,14 +9,17 @@ import {
   Dropdown,
   Input,
   Badge,
+  Divider,
 } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { IoMenu } from "react-icons/io5";
 import {
   BellOutlined,
+  DownOutlined,
   LogoutOutlined,
   SearchOutlined,
   SettingOutlined,
+  SmileOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import "./Dashboard.css";
@@ -45,24 +48,58 @@ export default function MainLayout({ children, sidebar, title }) {
 
   function getDisplayName() {
     try {
-      const sessionName = sessionStorage.getItem('displayName') || localStorage.getItem('displayName');
-      if (sessionName) return sessionName;
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        const parts = token.split('.');
-        if (parts.length >= 2) {
-          const payload = parts[1];
-          // atob for base64url handling
-          const json = JSON.parse(decodeURIComponent(escape(window.atob(payload.replace(/-/g, '+').replace(/_/g, '/')))));
-          return json.name || json.preferred_username || json.email || 'Admin';
-        }
-      }
+      const sessionName =
+        sessionStorage.getItem("currentUser") ||
+        localStorage.getItem("currentUser");
+      const userObject = JSON.parse(sessionName);
+      console.log(userObject.fullName);
+      return userObject.fullName;
     } catch {
       // ignore
+      console.log("Can't get UserInfo");
     }
-    return 'Admin';
   }
 
+  const menu = (
+    <Menu>
+      <Menu.Item key="1">Item 1</Menu.Item>
+      <Menu.Divider />
+      <Menu.Item key="2">
+        <Button
+          type="primary"
+          danger
+          icon={<LogoutOutlined />}
+          onClick={handleLogout}
+        >
+          Logout
+        </Button>
+      </Menu.Item>
+    </Menu>
+  );
+  const items = [
+    {
+      key: "1",
+      label: (
+        <a>
+          Setting
+        </a>
+      ),
+    },
+    {
+      // Logout button
+      key: "2",
+      label: (
+        <Button
+          type="primary"
+          danger
+          icon={<LogoutOutlined />}
+          onClick={handleLogout}
+        >
+          Logout
+        </Button>
+      ),
+    },
+  ];
   useEffect(() => {
     try {
       localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed));
@@ -72,9 +109,9 @@ export default function MainLayout({ children, sidebar, title }) {
   }, [collapsed]);
 
   // static sidebar/header colors (revert customization)
-  const roleColor = '#001529';
-  const headerColor = '#06263d';
-  const headerBorder = 'rgba(255,255,255,0.06)';
+  const roleColor = "#001529";
+  const headerColor = "#06263d";
+  const headerBorder = "rgba(255,255,255,0.06)";
 
   return (
     <Layout className="ev-dashboard" style={{ minHeight: "100vh" }}>
@@ -90,7 +127,7 @@ export default function MainLayout({ children, sidebar, title }) {
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
+            gap: "12px",
             background: `linear-gradient(180deg, ${headerColor}, ${roleColor})`,
             padding: "18px 24px",
             borderBottom: `1px solid ${headerBorder}`,
@@ -106,17 +143,19 @@ export default function MainLayout({ children, sidebar, title }) {
               margin: 0,
               color: "#fff",
               fontWeight: "bolder",
-              fontSize: "16px",
+              fontSize: "20px",
               textTransform: "uppercase",
               display: collapsed ? "none" : "block",
             }}
           >
-            EV Battery Admin
+            EV Battery
           </h1>
         </div>
 
-  {/* Sidebar nội dung - forward collapsed prop if sidebar is a React element */}
-  {React.isValidElement(sidebar) ? React.cloneElement(sidebar, { collapsed }) : sidebar}
+        {/* Sidebar nội dung - forward collapsed prop if sidebar is a React element */}
+        {React.isValidElement(sidebar)
+          ? React.cloneElement(sidebar, { collapsed })
+          : sidebar}
       </Sider>
 
       {/* Main content */}
@@ -126,7 +165,7 @@ export default function MainLayout({ children, sidebar, title }) {
             padding: "0 24px",
             background: colorBgContainer,
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent: "flex-end",
             alignItems: "center",
             borderBottom: "1px solid #f0f0f0",
             height: "72px",
@@ -134,36 +173,26 @@ export default function MainLayout({ children, sidebar, title }) {
           }}
         >
           {/* Ô tìm kiếm */}
-          <div style={{ flex: 1, maxWidth: "400px", margin: "0 24px" }}>
-            <Input
-              placeholder="Tìm kiếm..."
-              prefix={<SearchOutlined />}
-              style={{ borderRadius: "20px" }}
-            />
-          </div>
 
           {/* Nút thông báo + Avatar + Logout */}
           <Space size="middle">
-            <Badge count={3} size="small">
+            {/* <Badge count={3} size="small">
               <Button type="text" icon={<BellOutlined />} />
-            </Badge>
-
+            </Badge> */}
             <Avatar
               size="small"
               style={{ backgroundColor: "#1890ff" }}
               icon={<UserOutlined />}
             />
-            <span style={{ fontWeight: "500" }}>{getDisplayName()}</span>
-
-            {/* Nút Logout */}
-            <Button
-              type="primary"
-              danger
-              icon={<LogoutOutlined />}
-              onClick={handleLogout}
-            >
-              Logout
-            </Button>
+            <Dropdown menu={{ items }} placement="bottom">
+              <a onClick={(e) => e.preventDefault()}>
+                <Space>
+                  <span style={{ fontWeight: "500", fontSize: "16px" }}>
+                    {getDisplayName()}
+                  </span>
+                </Space>
+              </a>
+            </Dropdown>
           </Space>
         </Header>
 

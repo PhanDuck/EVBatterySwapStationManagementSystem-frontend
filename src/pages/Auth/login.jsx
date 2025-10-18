@@ -63,6 +63,20 @@ const LoginPage = () => {
 
         // Store token per rememberMe
         setToken(token, formData.rememberMe);
+        let user = res?.data?.user || res?.data?.currentUser;
+        if (!user) {
+          try {
+            const me = await api.get("/Current");
+            if (me?.data) user = me.data;
+          } catch {
+            try {
+              const me2 = await api.get("/current");
+              if (me2?.data) user = me2.data;
+            } catch {
+              console.warn("⚠️ Không lấy được thông tin user hiện tại");
+            }
+          }
+        }
 
         // Optionally fetch current user
         // Try to capture user info from login response if present
@@ -284,7 +298,8 @@ const LoginPage = () => {
               Don't have an account?{" "}
               <Link
                 to="/register"
-                className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+              >
                 Sign up here
               </Link>
             </p>

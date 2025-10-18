@@ -16,73 +16,74 @@ import {
   PlusOutlined,
   EyeOutlined,
   MessageOutlined,
-  ClockCircleOutlined,
   DeleteOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
-import api from "../../config/axios"; // 
+import api from "../../config/axios";
 
 const { Option } = Select;
 const { TextArea } = Input;
 
-const SupportPage = () => {
-  const [tickets, setTickets] = useState([]);
+export default function SupportPage() {
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
-  const [editingTicket, setEditingTicket] = useState(null);
-  const [viewingTicket, setViewingTicket] = useState(null);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [viewingRecord, setViewingRecord] = useState(null);
   const [form] = Form.useForm();
+  const [searchText, setSearchText] = useState("");
 
-  // 🧩 Load danh sách tickets
-  useEffect(() => {
-    fetchTickets();
-  }, []);
-
-  // Fetch helper so Refresh button and other actions can reuse it
-  const fetchTickets = async () => {
+  // 🧩 Fetch all tickets
+  const fetchData = async () => {
     setLoading(true);
     try {
       const res = await api.get("/support-ticket");
-      const list = (res.data || []).map((t) => ({ ...t, id: t.id ?? t._id }));
-      setTickets(list);
+      const list = (res.data || []).map((t) => ({ ...t, key: t.id ?? t._id }));
+      setData(list);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch tickets error:", err);
       message.error("Không thể tải danh sách ticket");
-      setTickets([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🧩 CREATE + UPDATE
-  const handleSubmit = async (values) => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // 🧩 Create new ticket
+  const handleCreate = async (values) => {
     try {
-      if (editingTicket) {
-        // Update
-        await api.put(`/support-ticket/${editingTicket.id}`, values);
-        message.success("Cập nhật ticket thành công");
-      } else {
-        // Create
-        await api.post("/support-ticket", values);
-        message.success("Tạo ticket mới thành công");
-      }
-
-      // Refresh list
-      const res = await api.get("/support-ticket");
-      setTickets(res.data || []);
-
+      await api.post("/support-ticket", values);
+      message.success("Tạo ticket mới thành công");
       setIsModalVisible(false);
       form.resetFields();
+      fetchData();
     } catch (err) {
-      console.error(err);
-      message.error("Không thể lưu ticket");
+      console.error("Create ticket error:", err);
+      message.error("Không thể tạo ticket");
     }
   };
 
-  // 🧩 DELETE
-  const handleDelete = async (record) => {
+  // 🧩 Update existing ticket
+  const handleUpdate = async (values) => {
+    try {
+      await api.put(`/support-ticket/${editingRecord.id}`, values);
+      message.success("Cập nhật ticket thành công");
+      setIsModalVisible(false);
+      setEditingRecord(null);
+      form.resetFields();
+      fetchData();
+    } catch (err) {
+      console.error("Update ticket error:", err);
+      message.error("Không thể cập nhật ticket");
+    }
+  };
+
+  // 🧩 Delete ticket
+  const handleDelete = (record) => {
     Modal.confirm({
       title: "Xác nhận xóa ticket",
       content: `Bạn có chắc muốn xóa ticket "${record.subject}" không?`,
@@ -93,28 +94,35 @@ const SupportPage = () => {
         try {
           await api.delete(`/support-ticket/${record.id}`);
           message.success("Xóa ticket thành công");
-          setTickets(tickets.filter((t) => t.id !== record.id));
+          setData((prev) => prev.filter((t) => t.id !== record.id));
         } catch (err) {
-          console.error(err);
+          console.error("Delete ticket error:", err);
           message.error("Không thể xóa ticket");
         }
       },
     });
   };
 
-  // 🧩 VIEW
-  const handleView = (ticket) => {
-    setViewingTicket(ticket);
+  // 🧩 Submit form (create or update)
+  const handleSubmit = async (values) => {
+    if (editingRecord) await handleUpdate(values);
+    else await handleCreate(values);
+  };
+
+  // 🧩 View ticket
+  const handleView = (record) => {
+    setViewingRecord(record);
     setIsViewModalVisible(true);
   };
 
-  // 🧩 EDIT
-  const handleEdit = (ticket) => {
-    setEditingTicket(ticket);
+  // 🧩 Edit ticket
+  const handleEdit = (record) => {
+    setEditingRecord(record);
     setIsModalVisible(true);
-    form.setFieldsValue(ticket);
+    form.setFieldsValue(record);
   };
 
+  // 🧩 Table columns
   const columns = [
     {
       title: "Ticket ID",
@@ -126,6 +134,7 @@ const SupportPage = () => {
           <strong>{text}</strong>
         </Space>
       ),
+      width: 120,
     },
     {
       title: "Subject",
@@ -133,9 +142,10 @@ const SupportPage = () => {
       key: "subject",
       ellipsis: true,
       render: (subject) => <strong>{subject}</strong>,
+      width: 200,
     },
     {
-      title: "Customer",
+      title: "Customer Info",
       key: "customer",
       render: (_, record) => (
         <Space direction="vertical" size="small">
@@ -148,6 +158,7 @@ const SupportPage = () => {
           </span>
         </Space>
       ),
+      width: 220,
     },
     {
       title: "Status",
@@ -161,13 +172,15 @@ const SupportPage = () => {
           Closed: "default",
           Pending: "purple",
         };
-        return <Tag color={colorMap[status]}>{status}</Tag>;
+        return <Tag color={colorMap[status] || "default"}>{status}</Tag>;
       },
+      width: 120,
     },
     {
       title: "Assigned To",
       dataIndex: "assignedTo",
       key: "assignedTo",
+      width: 150,
     },
     {
       title: "Rating",
@@ -179,6 +192,7 @@ const SupportPage = () => {
         ) : (
           "-"
         ),
+      width: 120,
     },
     {
       title: "Actions",
@@ -198,7 +212,7 @@ const SupportPage = () => {
             size="small"
             onClick={() => handleEdit(record)}
           >
-            Update
+            Edit
           </Button>
           <Button
             danger
@@ -210,21 +224,19 @@ const SupportPage = () => {
           </Button>
         </Space>
       ),
+      width: 220,
     },
   ];
 
-  const filteredTickets = tickets.filter((t) => {
+  // 🧩 Filter search
+  const filteredData = data.filter((item) => {
     if (!searchText) return true;
     const q = searchText.trim().toLowerCase();
-    const subject = (t.subject || "").toString().toLowerCase();
-    const customerName = (t.customerName || "").toString().toLowerCase();
-    const customerEmail = (t.customerEmail || "").toString().toLowerCase();
-    const customerPhone = (t.customerPhone || "").toString().toLowerCase();
     return (
-      subject.includes(q) ||
-      customerName.includes(q) ||
-      customerEmail.includes(q) ||
-      customerPhone.includes(q)
+      item.subject?.toLowerCase().includes(q) ||
+      item.customerName?.toLowerCase().includes(q) ||
+      item.customerEmail?.toLowerCase().includes(q) ||
+      item.customerPhone?.toLowerCase().includes(q)
     );
   });
 
@@ -245,17 +257,14 @@ const SupportPage = () => {
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => {
-                setEditingTicket(null);
+                setEditingRecord(null);
                 setIsModalVisible(true);
                 form.resetFields();
               }}
             >
               Create Ticket
             </Button>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={fetchTickets}
-            >
+            <Button icon={<ReloadOutlined />} onClick={fetchData}>
               Refresh
             </Button>
           </Space>
@@ -263,7 +272,7 @@ const SupportPage = () => {
       >
         <Table
           columns={columns}
-          dataSource={filteredTickets}
+          dataSource={filteredData}
           rowKey="id"
           loading={loading}
           pagination={{
@@ -272,26 +281,22 @@ const SupportPage = () => {
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} of ${total} tickets`,
           }}
-          scroll={{ x: 1300 }}
+          scroll={{ x: 1200 }}
         />
       </Card>
 
-      {/* View Ticket Modal */}
+      {/* 🧩 View Modal */}
       <Modal
-        title={`Ticket Details - ${viewingTicket?.id}`}
+        title={`Ticket Details - ${viewingRecord?.id}`}
         open={isViewModalVisible}
         onCancel={() => setIsViewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setIsViewModalVisible(false)}>
-            Close
-          </Button>,
-        ]}
+        footer={<Button onClick={() => setIsViewModalVisible(false)}>Close</Button>}
         width={700}
       >
-        {viewingTicket && (
+        {viewingRecord && (
           <div>
             <p>
-              <strong>Subject:</strong> {viewingTicket.subject}
+              <strong>Subject:</strong> {viewingRecord.subject}
             </p>
             <p>
               <strong>Description:</strong>
@@ -302,25 +307,25 @@ const SupportPage = () => {
                   borderRadius: "6px",
                 }}
               >
-                {viewingTicket.description}
+                {viewingRecord.description}
               </div>
             </p>
             <p>
-              <strong>Status:</strong> {viewingTicket.status}
+              <strong>Status:</strong> {viewingRecord.status}
             </p>
             <p>
-              <strong>Assigned To:</strong> {viewingTicket.assignedTo}
+              <strong>Assigned To:</strong> {viewingRecord.assignedTo}
             </p>
             <p>
-              <strong>Created At:</strong> {viewingTicket.createdAt}
+              <strong>Created At:</strong> {viewingRecord.createdAt}
             </p>
           </div>
         )}
       </Modal>
 
-      {/* Create / Edit Modal */}
+      {/* 🧩 Create / Edit Modal */}
       <Modal
-        title={editingTicket ? "Update Ticket" : "Create Ticket"}
+        title={editingRecord ? "Update Ticket" : "Create Ticket"}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
@@ -340,27 +345,29 @@ const SupportPage = () => {
             label="Description"
             rules={[{ required: true, message: "Please enter description" }]}
           >
-            <TextArea rows={4} placeholder="Enter details" />
+            <TextArea rows={4} placeholder="Enter ticket details" />
           </Form.Item>
 
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+          <Form.Item
+            name="status"
+            label="Status"
+            rules={[{ required: true, message: "Please select status" }]}
           >
-            <Form.Item name="status" label="Status" rules={[{ required: true }]}>
-              <Select>
-                <Option value="Open">Open</Option>
-                <Option value="In Progress">In Progress</Option>
-                <Option value="Pending">Pending</Option>
-                <Option value="Resolved">Resolved</Option>
-                <Option value="Closed">Closed</Option>
-              </Select>
-            </Form.Item>
-          </div>
+            <Select placeholder="Select status">
+              <Option value="Open">Open</Option>
+              <Option value="In Progress">In Progress</Option>
+              <Option value="Pending">Pending</Option>
+              <Option value="Resolved">Resolved</Option>
+              <Option value="Closed">Closed</Option>
+            </Select>
+          </Form.Item>
 
-          {/* Category field removed per request */}
-
-          <Form.Item name="assignedTo" label="Assign To" rules={[{ required: true }]}>
-            <Select>
+          <Form.Item
+            name="assignedTo"
+            label="Assign To"
+            rules={[{ required: true, message: "Please select team" }]}
+          >
+            <Select placeholder="Select team">
               <Option value="Support Team">Support Team</Option>
               <Option value="Technical Team">Technical Team</Option>
               <Option value="Billing Team">Billing Team</Option>
@@ -370,8 +377,8 @@ const SupportPage = () => {
           </Form.Item>
 
           <Space>
-            <Button type="primary" htmlType="submit">
-              {editingTicket ? "Update" : "Create"}
+            <Button type="primary" htmlType="submit" loading={loading}>
+              {editingRecord ? "Update" : "Create"}
             </Button>
             <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
           </Space>
@@ -379,6 +386,4 @@ const SupportPage = () => {
       </Modal>
     </div>
   );
-};
-
-export default SupportPage;
+}

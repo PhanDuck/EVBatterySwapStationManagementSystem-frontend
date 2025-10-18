@@ -112,6 +112,9 @@ export default function AccountPage() {
       const updated = { ...res.data, id: res.data.id ?? res.data._id };
       setAccounts((prev) => prev.map((a) => ((a.id ?? a._id) === id ? updated : a)));
       message.success("Cập nhật thành công!");
+      setIsModalVisible(false);
+      
+      
 
       form.resetFields();
       setEditingAccount(null);
@@ -320,9 +323,7 @@ export default function AccountPage() {
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit">
-                Cập nhật
-              </Button>
+              <Button type="primary" htmlType="submit">Cập nhật</Button>
               <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
             </Space>
           </Form.Item>

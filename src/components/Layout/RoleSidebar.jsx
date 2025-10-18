@@ -27,6 +27,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
     ],
     DRIVER: [
       { path: "bookings", label: "Lịch đặt của tôi", icon: <FiCalendar /> },
+      { path: "vehicles", label: "Xe điện", icon: <FiTruck /> },
       { path: "transactions", label: "Giao dịch", icon: <FiCreditCard /> },
     ],
   };
@@ -37,7 +38,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
       className={`${collapsed ? "w-20" : ""} p-4 min-h-screen`}
       style={{ transition: "width 220ms ease", background: roleColor, color: textColor }}
     >
-      <div className={`mb-6 flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
+      <div className={`mb-6 flex items-baseline gap-3 ${collapsed ? "justify-center" : ""}`}>
         <div style={{ paddingBottom: 12 }}>
           <div
             className={`w-10 h-10 rounded flex items-center justify-center font-bold ${
@@ -59,8 +60,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
         >
           {!collapsed && (
             <>
-              <div className="text-sm font-bold">EV Battery</div>
-              <div className="text-xs" style={{ opacity: 0.85 }}>{role}</div>
+              <div className="text-lg font-bold" style={{ opacity: 0.85 }}>{role}</div>
             </>
           )}
         </div>

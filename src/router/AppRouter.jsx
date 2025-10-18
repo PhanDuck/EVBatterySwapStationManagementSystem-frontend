@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
-import Home from "../pages/Shared/Home";
+import Home from "../pages/Shared/home";
 import About from "../pages/Shared/About";
 import Packages from "../pages/Shared/Packages";
 import NotFound from "../pages/Error/NotFound";
@@ -9,7 +9,6 @@ import AdminDashboard from "../pages/Dashboard/AdminDashboard";
 import DriverDashboard from "../pages/Dashboard/DriverDashboard";
 import StaffDashboard from "../pages/Dashboard/StaffDashboard";
 import StationsNearbyPage from "../pages/Shared/StationsNearby";
-import StationPage from "../pages/Management/Stations";
 
 export default function AppRouter() {
   return (

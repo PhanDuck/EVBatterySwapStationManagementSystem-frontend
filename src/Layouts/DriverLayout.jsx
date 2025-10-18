@@ -23,6 +23,7 @@ const DriverLayout = () => {
           <Menu.Item key="history" icon={<HistoryOutlined />}>
             <Link to="/driver/history">Swap History</Link>
           </Menu.Item>
+          
         </Menu>
       </Sider>
 

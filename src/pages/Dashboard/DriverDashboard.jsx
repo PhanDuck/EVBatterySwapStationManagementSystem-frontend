@@ -5,6 +5,7 @@ import RoleSidebar from "../../components/Layout/RoleSidebar";
 
 import Bookings from "../Management/Bookings";
 import Transactions from "../Management/Transactions";
+import Vehicles from "../Management/Vehicles";
 
 export default function DriverDashboard() {
   return (
@@ -14,6 +15,7 @@ export default function DriverDashboard() {
           <Route index element={<Navigate to="bookings" />} />
           <Route path="bookings" element={<Bookings />} />
           <Route path="transactions" element={<Transactions />} />
+          <Route path="vehicles" element={<Vehicles />} />
           <Route path="*" element={<div>Không tìm thấy trang!</div>} />
         </Routes>
       </div>

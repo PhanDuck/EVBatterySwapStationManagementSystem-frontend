@@ -3,7 +3,13 @@ import React from "react";
 import "./Navbar.css";
 import { Button, Dropdown } from "antd";
 import { Link, useNavigate } from "react-router-dom";
-import { clearAuth } from "../../config/auth";
+//import { clearAuth } from "../../config/auth";
+import {
+  DashboardOutlined,
+  UserOutlined,
+  SettingOutlined,
+  LogoutOutlined,
+} from "@ant-design/icons";
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -17,6 +23,10 @@ const Navbar = () => {
         }
         navigate(path);
     };
+    const handleLogout = () => {
+    localStorage.removeItem("token"); // Xóa token lưu trữ
+    navigate("/home"); // Quay về trang đăng nhập
+  };
 
     const swapMenuItems = [
         {
@@ -87,13 +97,21 @@ const Navbar = () => {
                         </Link>
                     </>
                 ) : (
-                    <Button 
-                        onClick={() => { clearAuth(); navigate("/"); }}
-                        type="default"
-                        style={{ backgroundColor: "transparent", color: "#fff", borderColor: "#fff" }}
-                    >
-                        Đăng xuất
-                    </Button>
+                    // <Button 
+                    //     onClick={() => { clearAuth(); navigate("/"); }}
+                    //     type="default"
+                    //     style={{ backgroundColor: "transparent", color: "#fff", borderColor: "#fff" }}
+                    // >
+                    //     Đăng xuất
+                    // </Button>
+                    <Button
+            type="primary"
+            danger
+            icon={<LogoutOutlined />}
+            onClick={handleLogout}
+          >
+            Logout
+          </Button>
                 )}
             </div>
         </nav>

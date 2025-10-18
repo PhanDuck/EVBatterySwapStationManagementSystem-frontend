@@ -1,120 +1,180 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Card,
   Table,
   Button,
-  Space,
   Modal,
   Form,
   Input,
-  DatePicker,
   Select,
+  DatePicker,
+  Space,
   Tag,
   message,
   Spin,
 } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
 
 const { Option } = Select;
 
 export default function BookingsPage() {
-  const [bookings, setBookings] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form] = Form.useForm();
-  const [searchText, setSearchText] = useState("");
-  const [dateRange, setDateRange] = useState(null);
+  const [data, setData] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [stations, setStations] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [form] = Form.useForm();
+  const [search, setSearch] = useState("");
+  const [editingRecord, setEditingRecord] = useState(null);
 
-  // 🔹 Fetch all bookings (READ)
-  useEffect(() => {
-    const fetchBookings = async () => {
-      setLoading(true);
-      try {
-        const res = await api.get("/booking"); 
-        const list = Array.isArray(res.data) ? res.data : [];
-        setBookings(list);
-      } catch (err) {
-        console.error("Fetch bookings error:", err);
-        message.error("Không thể tải danh sách booking");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBookings();
-  }, []);
+  // 🧩 Lấy thông tin user hiện tại
+  let user = {};
+  try {
+    const raw = localStorage.getItem("currentUser");
+    user = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.warn("Failed to parse stored user", e);
+  }
+  const role = user?.role;
+  const userId = user?.id;
 
-  // 🔹 Filter & Search
-  const filtered = useMemo(() => {
-    return bookings.filter((b) => {
-      if (searchText) {
-        const q = searchText.toLowerCase();
-        if (
-          !b.driverID?.toString().toLowerCase().includes(q) &&
-          !b.vehicleID?.toString().toLowerCase().includes(q) &&
-          !b.stationID?.toString().toLowerCase().includes(q)
-        )
-          return false;
-      }
-      if (dateRange && dateRange.length === 2) {
-        const [start, end] = dateRange;
-        if (b.bookingTime < start || b.bookingTime > end) return false;
-      }
-      return true;
-    });
-  }, [bookings, searchText, dateRange]);
+  // 🟢 Fetch dữ liệu
+  const fetchData = useCallback(async () => {
+    setLoading(true);
 
-  // 🔹 CREATE & UPDATE
-  const handleSubmit = async (values) => {
     try {
+      let bookingRes, vehicleRes, stationRes, userRes;
+
+      if (role === "ADMIN" || role === "STAFF") {
+        // 🧑‍💼 ADMIN / STAFF: Lấy dữ liệu toàn hệ thống
+        [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
+          api.get("/booking"),
+          api.get("/vehicle"),
+          api.get("/station"),
+          api.get("/admin/user"),
+        ]);
+      } else {
+        // 🚗 DRIVER: Lấy dữ liệu của chính mình
+        [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
+          api.get("/booking/my-bookings"),
+          api.get("/vehicle/my-vehicles"),
+          api.get("/station"),
+          api.get("/Current"),
+        ]);
+      }
+
+      // ✅ Gán dữ liệu vào state (kiểm tra tránh lỗi undefined)
+      setData(Array.isArray(bookingRes?.data) ? bookingRes.data : []);
+      setVehicles(Array.isArray(vehicleRes?.data) ? vehicleRes.data : []);
+      setStations(Array.isArray(stationRes?.data) ? stationRes.data : []);
+      setUsers(Array.isArray(userRes?.data)? userRes.data: userRes?.data ? [userRes.data]: []);
+    } catch (err) {
+      console.error("❌ Fetch error:", err);
+      message.error("Không thể tải dữ liệu, vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
+  }, [role]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // 📖 Map ID sang tên
+  const driverName = (id) =>
+    users.find((u) => u.id === id)?.fullName || `${id}`;
+  const vehicleName = (id) =>
+    vehicles.find((v) => v.id === id)?.model || `${id}`;
+  const stationName = (id) =>
+    stations.find((s) => s.id === id)?.name || `${id}`;
+
+  // 🔍 Tìm kiếm
+  const filteredData = useMemo(() => {
+    return data.filter(
+      (item) =>
+        driverName(item.driverId)
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        vehicleName(item.vehicleId)
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        stationName(item.stationId).toLowerCase().includes(search.toLowerCase())
+    );
+  }, [data, search, users, vehicles, stations]);
+
+  // ➕ Tạo booking mới (Driver)
+  const handleCreate = async () => {
+    try {
+      const validValues = await form.validateFields();
       const payload = {
-        bookingTime: values.bookingTime,
-        status: values.status,
-        driverID: values.driverID,
-        stationID: values.stationID,
-        vehicleID: values.vehicleID,
+        driverId: userId,
+        vehicleId: validValues.vehicleId,
+        stationId: validValues.stationId,
+        bookingTime: validValues.bookingTime?.format("YYYY-MM-DDTHH:mm:ss"),
+        status: "PENDING", // Mặc định
       };
 
-      if (editing) {
-        // UPDATE
-        const res = await api.put(`/booking/${editing.bookingID}`, payload);
-        setBookings((prev) =>
-          prev.map((b) =>
-            b.bookingID === editing.bookingID ? res.data : b
-          )
-        );
-        message.success("Cập nhật booking thành công");
-      } else {
-        // CREATE
-        const res = await api.post("/booking", payload);
-        setBookings((prev) => [res.data, ...prev]);
-        message.success("Tạo booking mới thành công");
-      }
-    } catch (err) {
-      console.error("Submit booking error:", err);
-      message.error("Không thể lưu booking");
-    } finally {
+      setSubmitting(true);
+      const res = await api.post("/booking", payload);
+      setData((prev) => [res.data, ...prev]);
+      message.success("Tạo booking thành công!");
       setIsModalVisible(false);
       form.resetFields();
+    } catch (err) {
+      console.error("Submit booking error:", err);
+      message.error("Không thể tạo booking!");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // 🔹 DELETE
+  // ✏️ Cập nhật status (Admin/Staff)
+  const handleUpdateStatus = async () => {
+    try {
+      const validValues = await form.validateFields();
+      const bookingId = editingRecord?.id;
+      if (!bookingId) return;
+      setSubmitting(true);
+      await api.patch(
+        `/booking/${bookingId}/status?status=${validValues.status}`
+      );
+      message.success("Cập nhật trạng thái thành công!");
+      setData((prev) =>
+        prev.map((b) =>
+          b.id === bookingId ? { ...b, status: validValues.status } : b
+        )
+      );
+      setIsModalVisible(false);
+      setEditingRecord(null);
+      form.resetFields();
+    } catch (err) {
+      console.error("Update status error:", err);
+      message.error("Không thể cập nhật trạng thái!");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 🗑️ Xóa booking
   const handleDelete = (id) => {
     Modal.confirm({
-      title: "Xóa booking này?",
+      title: "Xác nhận xóa booking này?",
+      okText: "Xóa",
       okType: "danger",
+      cancelText: "Hủy",
       onOk: async () => {
         try {
           setDeletingId(id);
           await api.delete(`/booking/${id}`);
-          setBookings((prev) => prev.filter((b) => b.bookingID !== id));
-          message.success("Xóa booking thành công");
+          setData((prev) => prev.filter((b) => (b.id ?? b._id) !== id));
+          message.success("Đã xóa booking!");
         } catch (err) {
-          console.error("Delete booking error:", err);
-          message.error("Không thể xóa booking");
+          console.error(err);
+          message.error("Không thể xóa booking!");
         } finally {
           setDeletingId(null);
         }
@@ -122,12 +182,39 @@ export default function BookingsPage() {
     });
   };
 
-  // 🔹 Columns
+  // ➕ Mở modal
+  const openNew = () => {
+    form.resetFields();
+    setEditingRecord(null);
+    setIsModalVisible(true);
+  };
+  const openEdit = (record) => {
+    setEditingRecord(record);
+    form.setFieldsValue({ status: record.status });
+    setIsModalVisible(true);
+  };
+
+  // 🧾 Cột hiển thị
   const columns = [
-    { title: "Booking ID", dataIndex: "id", key: "id" },
-    { title: "Driver ID", dataIndex: "driverID", key: "driverID" },
-    { title: "Vehicle ID", dataIndex: "vehicleID", key: "vehicleID" },
-    { title: "Station ID", dataIndex: "stationID", key: "stationID" },
+    { title: "ID", dataIndex: "id", key: "id", width: 80 },
+    {
+      title: "Driver",
+      dataIndex: "driverId",
+      key: "driverId",
+      render: (id) => driverName(id),
+    },
+    {
+      title: "Vehicle",
+      dataIndex: "vehicleId",
+      key: "vehicleId",
+      render: (id) => vehicleName(id),
+    },
+    {
+      title: "Station",
+      dataIndex: "stationId",
+      key: "stationId",
+      render: (id) => stationName(id),
+    },
     { title: "Booking Time", dataIndex: "bookingTime", key: "bookingTime" },
     {
       title: "Status",
@@ -135,49 +222,51 @@ export default function BookingsPage() {
       key: "status",
       render: (s) => {
         const color =
-          s === "Confirmed" ? "green" : s === "Pending" ? "orange" : "red";
+          s === "COMPLETED"
+            ? "green"
+            : s === "CONFIRMED"
+            ? "blue"
+            : s === "PENDING"
+            ? "orange"
+            : "red";
         return <Tag color={color}>{s}</Tag>;
       },
     },
     {
       title: "Actions",
       key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Button
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => openEdit(record)}
-          >
-            Edit
-          </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            size="small"
-            loading={deletingId === record.bookingID}
-            onClick={() => handleDelete(record.bookingID)}
-          >
-            Delete
-          </Button>
-        </Space>
-      ),
+      render: (_, record) => {
+        const canDelete =
+          role === "ADMIN" ||
+          role === "STAFF" ||
+          (role === "DRIVER" && record.driverId === userId);
+        return (
+          <Space>
+            {(role === "ADMIN" || role === "STAFF") && (
+              <Button
+                icon={<EditOutlined />}
+                size="small"
+                onClick={() => openEdit(record)}
+              >
+                Edit
+              </Button>
+            )}
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              size="small"
+              onClick={() => handleDelete(record.id ?? record._id)}
+              loading={deletingId === (record.id ?? record._id)}
+              disabled={!canDelete}
+            >
+              Delete
+            </Button>
+          </Space>
+        );
+      },
     },
   ];
 
-  const openEdit = (record) => {
-    setEditing(record);
-    form.setFieldsValue(record);
-    setIsModalVisible(true);
-  };
-
-  const openNew = () => {
-    setEditing(null);
-    form.resetFields();
-    setIsModalVisible(true);
-  };
-
-  // 🔹 JSX render
   return (
     <div style={{ padding: 24 }}>
       <Card
@@ -185,80 +274,105 @@ export default function BookingsPage() {
         extra={
           <Space>
             <Input
-              placeholder="Tìm Driver, Vehicle, Station"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 240 }}
+              placeholder="Tìm Driver / Vehicle / Station"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: 250 }}
             />
-            <DatePicker.RangePicker
-              onChange={(vals) =>
-                setDateRange(vals && vals.map((d) => d.format("YYYY-MM-DD")))
-              }
-            />
-            <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>
-              New Booking
-            </Button>
+            {role === "DRIVER" && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>
+                New Booking
+              </Button>
+            )}
           </Space>
         }
       >
         <Spin spinning={loading}>
-          <Table columns={columns} dataSource={filtered} rowKey="bookingID" />
+          <Table
+            dataSource={filteredData}
+            columns={columns}
+            rowKey="id"
+            pagination={{ pageSize: 8 }}
+          />
         </Spin>
       </Card>
 
       {/* 🔹 Modal Form */}
       <Modal
-        title={editing ? "Edit Booking" : "New Booking"}
+        title={editingRecord ? "Edit Booking Status" : "New Booking"}
         open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        onCancel={() => {
+          setIsModalVisible(false);
+          setEditingRecord(null);
+        }}
         footer={null}
       >
         <Form
           form={form}
           layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{ status: "Pending" }}
+          onFinish={editingRecord ? handleUpdateStatus : handleCreate}
         >
-          <Form.Item
-            name="driverID"
-            label="Driver ID"
-            rules={[{ required: true, message: "Vui lòng nhập Driver ID" }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="vehicleID"
-            label="Vehicle ID"
-            rules={[{ required: true, message: "Vui lòng nhập Vehicle ID" }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="stationID"
-            label="Station ID"
-            rules={[{ required: true, message: "Vui lòng nhập Station ID" }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="bookingTime"
-            label="Booking Time"
-            rules={[{ required: true, message: "Vui lòng nhập thời gian đặt" }]}
-          >
-            <Input placeholder="YYYY-MM-DD HH:mm:ss" />
-          </Form.Item>
-          <Form.Item name="status" label="Status" rules={[{ required: true }]}>
-            <Select>
-              <Option value="Confirmed">Confirmed</Option>
-              <Option value="Pending">Pending</Option>
-              <Option value="Cancelled">Cancelled</Option>
-            </Select>
-          </Form.Item>
+          {/* FORM DRIVER */}
+          {role === "DRIVER" && !editingRecord && (
+            <>
+              <Form.Item
+                name="vehicleId"
+                label="Vehicle"
+                rules={[{ required: true, message: "Vui lòng chọn Vehicle" }]}
+              >
+                <Select>
+                  {vehicles.map((v) => (
+                    <Option key={v.id} value={v.id}>
+                      {v.model}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                name="stationId"
+                label="Station"
+                rules={[{ required: true, message: "Vui lòng chọn Station" }]}
+              >
+                <Select>
+                  {stations.map((s) => (
+                    <Option key={s.id} value={s.id}>
+                      {s.stationName}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                name="bookingTime"
+                label="Booking Time"
+                rules={[{ required: true, message: "Chọn thời gian đặt" }]}
+              >
+                <DatePicker showTime style={{ width: "100%" }} />
+              </Form.Item>
+            </>
+          )}
+
+          {/* FORM ADMIN/STAFF */}
+          {(role === "ADMIN" || role === "STAFF") && editingRecord && (
+            <Form.Item
+              name="status"
+              label="Status"
+              rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
+            >
+              <Select>
+                <Option value="PENDING">PENDING</Option>
+                <Option value="CONFIRMED">CONFIRMED</Option>
+                <Option value="COMPLETED">COMPLETED</Option>
+                <Option value="CANCELLED">CANCELLED</Option>
+              </Select>
+            </Form.Item>
+          )}
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit">
-                {editing ? "Update" : "Create"}
+              <Button type="primary" htmlType="submit" loading={submitting}>
+                {editingRecord ? "Update" : "Create"}
               </Button>
               <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
             </Space>
