@@ -64,7 +64,7 @@ export default function BookingsPage() {
           api.get("/vehicle/my-vehicles"),
           api.get("/station"),
           api.get("/Current"),
-        ]);
+        ]); 
       }
 
       // ✅ Gán dữ liệu vào state (kiểm tra tránh lỗi undefined)
@@ -82,7 +82,7 @@ export default function BookingsPage() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
 
   // 📖 Map ID sang tên
   const driverName = (id) =>
@@ -169,7 +169,7 @@ export default function BookingsPage() {
       onOk: async () => {
         try {
           setDeletingId(id);
-          await api.delete(`/booking/${id}`);
+          await api.patch(`/booking/my-bookings/${id}/cancel`);
           setData((prev) => prev.filter((b) => (b.id ?? b._id) !== id));
           message.success("Đã xóa booking!");
         } catch (err) {

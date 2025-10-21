@@ -5,7 +5,6 @@ import { Select, Card, Spin, Button } from "antd";
 import api from "../../config/axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import Navbar from "../../components/navbar/navBar";
 
 const { Option } = Select;
 
@@ -16,10 +15,14 @@ const ROUTING_PROFILE = "driving";
 // Custom Marker icon (Không đổi)
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/854/854866.png",
-  iconSize: [32, 32],
-  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+
+   iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+
 });
 
 // Component để focus map tới vị trí mới (Không đổi)
@@ -193,7 +196,7 @@ const StationsNearby = () => {
 
   return (
     <Fragment>
-      <Navbar />
+      
       <div style={{ display: "flex", height: "90vh", gap: "1rem" }}>
         {/* Sidebar bộ lọc (Giữ nguyên) */}
         <Card title={<div style={{ fontSize: '24px', fontWeight: "bold", color: '#1890ff', textAlign: 'center', marginTop: '16px' }}> <h1>Hệ thống trạm</h1>

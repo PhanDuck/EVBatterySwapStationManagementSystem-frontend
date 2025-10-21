@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { message } from "antd";
-import api from "../../config/axios";
+import { message } from "antd"; // Import thư viện thông báo
+import api from "../../config/axios"; // 👈 API Client của bạn đã được cấu hình
 import {
   FaUser,
   FaEnvelope,
@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 
 const RegisterPage = () => {
+  // ... (Phần state và validation không thay đổi)
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -66,34 +67,50 @@ const RegisterPage = () => {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
-
+// -------------------------------------------------------------
+// PHẦN GẮN API TẬP TRUNG TẠI HÀM NÀY
+// -------------------------------------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-    setIsLoading(true);
+    if (!validateForm()) return; // Dừng nếu form không hợp lệ
+    
+    setIsLoading(true); // Bắt đầu loading
 
     try {
+      // 1. Chuẩn bị Payload (Dữ liệu gửi lên API)
       const payload = {
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
         phoneNumber: formData.phone.trim(),
-        passwordHash: formData.password,
-        role: "DRIVER", // 👈 Mặc định role cho user tự đăng ký
+        passwordHash: formData.password, // Tên trường có thể là 'password' tùy vào backend
+        role: "DRIVER", // Đảm bảo role này khớp với yêu cầu của API backend
       };
 
-      const res = await api.post("/auth/register", payload);
+      // 2. Gọi API POST đến endpoint đăng ký
+      // Giả sử API endpoint là /auth/register
+      const res = await api.post("/register", payload);
+
+      // 3. Xử lý khi đăng ký thành công (HTTP 200/201)
       message.success("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
-      setTimeout(() => navigate("/login"), 2000);
+      
+      // Chuyển hướng người dùng sau 2 giây
+      setTimeout(() => navigate("/login"), 2000); 
+
     } catch (error) {
+      // 4. Xử lý lỗi (Ví dụ: 400 Bad Request, 500 Internal Server Error)
+      console.error("Registration Error:", error);
       const msg =
-        error?.response?.data?.message ||
+        error?.response?.data?.message || // Lấy thông báo lỗi từ body response
         "Đăng ký thất bại. Vui lòng thử lại.";
-      message.error(msg);
-      setErrors({ submit: msg });
+      
+      message.error(msg); // Hiển thị thông báo lỗi bằng Antd
+      setErrors({ submit: msg }); // Hiển thị lỗi chung bên dưới form (nếu cần)
+
     } finally {
+      // 5. Kết thúc loading, bất kể thành công hay thất bại
       setIsLoading(false);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">

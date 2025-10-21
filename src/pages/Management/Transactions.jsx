@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Card, Table, Button, Space, Tag, DatePicker, Select, Statistic, Row, Col, Input, Modal, Form, message,} from "antd";
 import { DollarOutlined, SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined,} from "@ant-design/icons";
 import api from "../../config/axios"; 
+import MomoLogo from '../../assets/img/MoMoLogo.svg'
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -21,8 +22,10 @@ const TransactionsPage = () => {
   // 🔹 Fetch dữ liệu từ API
   const fetchTransactions = async () => {
     setLoading(true);
+    const Role =  JSON.parse(localStorage.getItem('currentUser')).role;
+   let apiPath = Role === "DRIVER" ? "/payment/my-payments" : "/payment";
     try {
-      const res = await api.get("/transaction"); // 🟢 chỉnh endpoint đúng với backend của bạn
+      const res = await api.get(apiPath); // 🟢 chỉnh endpoint đúng với backend của bạn
       const list = res.data || [];
       setTransactions(list);
       setFilteredTransactions(list);
@@ -141,7 +144,7 @@ const TransactionsPage = () => {
       dataIndex: "amount",
       render: (amount) => (
         <span style={{ color: amount >= 0 ? "green" : "red" }}>
-          ${Math.abs(amount).toFixed(2)}
+          {Math.abs(amount).toLocaleString("vi-VN")} ₫
         </span>
       ),
     },
@@ -155,7 +158,15 @@ const TransactionsPage = () => {
         </>
       ),
     },
-    { title: "Phương thức thanh toán", dataIndex: "paymentMethod" },
+    { title: "Phương thức thanh toán", dataIndex: "paymentMethod", 
+      render: (paymentMethod) => (
+        <div className=" flex items-center justifiy-center gap-2">
+          {paymentMethod}
+          <div className="w-8 h-8"><img src ={MomoLogo} alt="MomoLogo" /></div>
+          
+        </div>
+      )
+     },
     {
       title: "Trạng thái",
       dataIndex: "status",
@@ -172,28 +183,7 @@ const TransactionsPage = () => {
     },
     {
       title: "Thời gian",
-      dataIndex: "timestamp",
-    },
-    {
-      title: "Hành động",
-      key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Button
-            icon={<EditOutlined />}
-            onClick={() => {
-              setEditing(record);
-              form.setFieldsValue(record);
-              setModalVisible(true);
-            }}
-          />
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
-          />
-        </Space>
-      ),
+      dataIndex: "paymentDate",
     },
   ];
 
@@ -201,17 +191,6 @@ const TransactionsPage = () => {
     <div style={{ padding: 24 }}>
       <Row justify="space-between" style={{ marginBottom: 16 }}>
         <h2>Quản lý giao dịch</h2>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditing(null);
-            form.resetFields();
-            setModalVisible(true);
-          }}
-        >
-          Thêm giao dịch
-        </Button>
       </Row>
 
       <Space style={{ marginBottom: 16, flexWrap: "wrap" }}>
@@ -221,18 +200,7 @@ const TransactionsPage = () => {
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
-        <Select
-          value={statusFilter}
-          onChange={setStatusFilter}
-          style={{ width: 150 }}
-        >
-          <Option value="all">Tất cả trạng thái</Option>
-          <Option value="Completed">Completed</Option>
-          <Option value="Pending">Pending</Option>
-          <Option value="Failed">Failed</Option>
-          <Option value="Processed">Processed</Option>
-          <Option value="Cancelled">Cancelled</Option>
-        </Select>
+        
         <Select
           value={typeFilter}
           onChange={setTypeFilter}

@@ -13,16 +13,9 @@ import {
 } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { IoMenu } from "react-icons/io5";
-import {
-  BellOutlined,
-  DownOutlined,
-  LogoutOutlined,
-  SearchOutlined,
-  SettingOutlined,
-  SmileOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+
 import "./Dashboard.css";
+import BottomSideBar from "../BottomSideBar/BottomSideBar";
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -35,71 +28,10 @@ export default function MainLayout({ children, sidebar, title }) {
       return false;
     }
   });
-  const navigate = useNavigate();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    sessionStorage.clear();
-    navigate("/login");
-  };
-
-  function getDisplayName() {
-    try {
-      const sessionName =
-        sessionStorage.getItem("currentUser") ||
-        localStorage.getItem("currentUser");
-      const userObject = JSON.parse(sessionName);
-      console.log(userObject.fullName);
-      return userObject.fullName;
-    } catch {
-      // ignore
-      console.log("Can't get UserInfo");
-    }
-  }
-
-  const menu = (
-    <Menu>
-      <Menu.Item key="1">Item 1</Menu.Item>
-      <Menu.Divider />
-      <Menu.Item key="2">
-        <Button
-          type="primary"
-          danger
-          icon={<LogoutOutlined />}
-          onClick={handleLogout}
-        >
-          Logout
-        </Button>
-      </Menu.Item>
-    </Menu>
-  );
-  const items = [
-    {
-      key: "1",
-      label: (
-        <a>
-          Setting
-        </a>
-      ),
-    },
-    {
-      // Logout button
-      key: "2",
-      label: (
-        <Button
-          type="primary"
-          danger
-          icon={<LogoutOutlined />}
-          onClick={handleLogout}
-        >
-          Logout
-        </Button>
-      ),
-    },
-  ];
   useEffect(() => {
     try {
       localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed));
@@ -156,46 +88,9 @@ export default function MainLayout({ children, sidebar, title }) {
         {React.isValidElement(sidebar)
           ? React.cloneElement(sidebar, { collapsed })
           : sidebar}
+        <BottomSideBar />
       </Sider>
-
-      {/* Main content */}
       <Layout>
-        <Header
-          style={{
-            padding: "0 24px",
-            background: colorBgContainer,
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            borderBottom: "1px solid #f0f0f0",
-            height: "72px",
-            boxShadow: "2px 2px 13px -1px rgba(0,0,0,0.75)",
-          }}
-        >
-          {/* Ô tìm kiếm */}
-
-          {/* Nút thông báo + Avatar + Logout */}
-          <Space size="middle">
-            {/* <Badge count={3} size="small">
-              <Button type="text" icon={<BellOutlined />} />
-            </Badge> */}
-            <Avatar
-              size="small"
-              style={{ backgroundColor: "#1890ff" }}
-              icon={<UserOutlined />}
-            />
-            <Dropdown menu={{ items }} placement="bottom">
-              <a onClick={(e) => e.preventDefault()}>
-                <Space>
-                  <span style={{ fontWeight: "500", fontSize: "16px" }}>
-                    {getDisplayName()}
-                  </span>
-                </Space>
-              </a>
-            </Dropdown>
-          </Space>
-        </Header>
-
         <Content style={{ marginTop: "6px" }}>
           <div
             style={{

@@ -1,396 +1,191 @@
-import React, { useState, useEffect } from "react";
-import { Card, Table, Button, Space, Tag, Modal, Form, Select, DatePicker, Statistic, Row, Col, message, } from "antd";
-import  {PlusOutlined, EditOutlined, StopOutlined, PlayCircleOutlined, GiftOutlined, DeleteOutlined, } from "@ant-design/icons";
-import dayjs from "dayjs";
-import api from "../config/axios";  
+import React, { useState, useMemo } from "react";
+import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Select, Tag, message, DatePicker } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import dayjs from 'dayjs';
+import api from "../../config/axios";
+
+// Local helper that wraps axios and returns normalized result
+async function callApi({
+  method = "get",
+  url,
+  data = null,
+  params = null,
+  config = {},
+}) {
+  try {
+    const res = await api.request({ method, url, data, params, ...config });
+    return { ok: true, data: res.data };
+  } catch (err) {
+    let status = null;
+    let messageText = "Network error";
+    let payload = null;
+    if (err && err.response) {
+      status = err.response.status;
+      payload = err.response.data;
+      messageText =
+        (err.response.data &&
+          (err.response.data.message || err.response.data.error)) ||
+        err.response.statusText ||
+        messageText;
+      // if unauthorized, clear stored tokens
+      if (status === 401) {
+        try { localStorage.removeItem('authToken'); sessionStorage.removeItem('authToken'); } catch { /* ignore storage errors */ }
+      }
+    } else if (err && err.request) {
+      messageText = "No response from server";
+    } else if (err && err.message) {
+      messageText = err.message;
+    }
+    return { ok: false, status, message: messageText, payload };
+  }
+}
 
 const { Option } = Select;
 
-const SubscriptionsPage = () => {
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingSubscription, setEditingSubscription] = useState(null);
-  const [form] = Form.useForm();
+// start with empty list; we'll fetch from API
+const samplePackages = [];
 
-  // 🟢 Fetch all subscriptions
-  useEffect(() => {
-    const fetchSubscriptions = async () => {
+export default function SubscriptionsPage() {
+  const [packages, setPackages] = useState(samplePackages);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form] = Form.useForm();
+  const [searchText, setSearchText] = useState('');
+  const [popularityFilter, setPopularityFilter] = useState('all');
+  const [dateRange, setDateRange] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const fetchPackages = async () => {
       setLoading(true);
-      try {
-        const res = await api.get("/subscription");
-        const list = (res.data || []).map((item) => ({
-          ...item,
-          id: item.id ?? item._id,
-        }));
-        setSubscriptions(list);
-      } catch (err) {
-        console.error(err);
-        message.error("Không thể tải danh sách subscription!");
-      } finally {
-        setLoading(false);
-      }
+      const res = await callApi({ method: 'get', url: '/service-packages' });
+      if (!mounted) return;
+      if (res.ok && Array.isArray(res.data)) setPackages(res.data);
+      else setPackages([]);
+      setLoading(false);
     };
-    fetchSubscriptions();
+    fetchPackages();
+    return () => { mounted = false; };
   }, []);
 
-  // 🟡 Create or Update
-  const handleSubmit = async (values) => {
-    const processed = {
-      ...values,
-      startDate: values.startDate.format("YYYY-MM-DD"),
-      endDate: values.endDate.format("YYYY-MM-DD"),
-      nextBilling: values.nextBilling
-        ? values.nextBilling.format("YYYY-MM-DD")
-        : null,
-    };
-
-    try {
-      if (editingSubscription) {
-        await api.put(`/admin/subscription/${editingSubscription.id}`, processed);
-        setSubscriptions((prev) =>
-          prev.map((s) =>
-            s.id === editingSubscription.id ? { ...s, ...processed } : s
-          )
-        );
-        message.success("Cập nhật subscription thành công!");
-      } else {
-        const res = await api.post("/admin/subscription", processed);
-        const newSub = res.data || processed;
-        setSubscriptions((prev) => [...prev, newSub]);
-        message.success("Tạo subscription mới thành công!");
-      }
-      setIsModalVisible(false);
-      form.resetFields();
-    } catch (err) {
-      console.error(err);
-      message.error("Lưu subscription thất bại!");
-    }
-  };
-
-  // 🔴 Delete
-  const handleDelete = (id) => {
-    Modal.confirm({
-      title: "Xác nhận xóa",
-      content: "Bạn có chắc muốn xóa subscription này?",
-      okType: "danger",
-      onOk: async () => {
-        try {
-          await api.delete(`/admin/subscription/${id}`);
-          setSubscriptions((prev) => prev.filter((s) => s.id !== id));
-          message.success("Đã xóa subscription!");
-        } catch (err) {
-          console.error(err);
-          message.error("Không thể xóa subscription!");
-        }
-      },
-    });
-  };
-
-  // 🟠 Suspend & Reactivate
-  const handleSuspend = async (id) => {
-    try {
-      await api.put(`/admin/subscription/${id}`, { status: "Suspended" });
-      setSubscriptions((prev) =>
-        prev.map((s) =>
-          s.id === id ? { ...s, status: "Suspended", nextBilling: null } : s
-        )
-      );
-      message.success("Đã tạm ngưng subscription!");
-    } catch (err) {
-      message.error("Không thể tạm ngưng!");
-    }
-  };
-
-  const handleReactivate = async (id) => {
-    try {
-      await api.put(`/admin/subscription/${id}`, { status: "Active" });
-      setSubscriptions((prev) =>
-        prev.map((s) =>
-          s.id === id
-            ? {
-                ...s,
-                status: "Active",
-                nextBilling: dayjs().add(1, "month").format("YYYY-MM-DD"),
-              }
-            : s
-        )
-      );
-      message.success("Đã kích hoạt lại subscription!");
-    } catch (err) {
-      message.error("Không thể kích hoạt lại!");
-    }
-  };
-
-  const handleEdit = (record) => {
-    setEditingSubscription(record);
-    setIsModalVisible(true);
-    form.setFieldsValue({
-      ...record,
-      startDate: dayjs(record.startDate),
-      endDate: dayjs(record.endDate),
-      nextBilling: record.nextBilling ? dayjs(record.nextBilling) : null,
-    });
-  };
-
-  // 🧮 Statistics
-  const totalSubscriptions = subscriptions.length;
-  const activeSubscriptions = subscriptions.filter(
-    (s) => s.status === "Active"
-  ).length;
-  const monthlyRevenue = subscriptions
-    .filter((s) => s.status === "Active")
-    .reduce((sum, s) => sum + (s.monthlyPrice || 0), 0);
-  const averageUsage =
-    subscriptions
-      .filter((s) => s.status === "Active" && s.swapsLimit > 0)
-      .reduce(
-        (sum, s, _, arr) =>
-          sum + (s.swapsUsed / s.swapsLimit) / arr.length || 0,
-        0
-      ) * 100;
-
   const columns = [
+    { title: 'ID', dataIndex: 'id', key: 'id' },
+    { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: 'Price ($)', dataIndex: 'price', key: 'price', render: (p) => `$${p}` },
+    { title: 'Duration (days)', dataIndex: 'duration', key: 'duration' },
+    { title: 'Max Swaps', dataIndex: 'maxSwaps', key: 'maxSwaps' },
+    { title: 'Popularity', dataIndex: 'popularity', key: 'popularity', render: (v) => <Tag color={v > 30 ? 'green' : 'blue'}>{v}</Tag> },
     {
-      title: "Subscription ID",
-      dataIndex: "id",
-      key: "id",
-      render: (text) => (
+      title: 'Actions', key: 'actions', render: (_, record) => (
         <Space>
-          <GiftOutlined />
-          <strong>{text}</strong>
+          <Button icon={<EditOutlined />} size="small" onClick={() => openEdit(record)}>Edit</Button>
+          <Button danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record.id)}>Remove</Button>
         </Space>
-      ),
-    },
-    {
-      title: "Customer",
-      key: "customer",
-      render: (_, record) => (
-        <Space direction="vertical" size="small">
-          <strong>{record.customerName}</strong>
-          <span style={{ color: "#666", fontSize: "12px" }}>
-            {record.customerEmail}
-          </span>
-        </Space>
-      ),
-    },
-    {
-      title: "Package",
-      key: "package",
-      render: (_, r) => (
-        <Space direction="vertical" size="small">
-          <strong>{r.packageName}</strong>
-          <span style={{ color: "#666", fontSize: "12px" }}>
-            ${r.monthlyPrice}/month
-          </span>
-        </Space>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => {
-        const colorMap = {
-          Active: "green",
-          Suspended: "orange",
-          Expired: "red",
-          Cancelled: "default",
-          Pending: "blue",
-        };
-        return <Tag color={colorMap[status]}>{status}</Tag>;
-      },
-    },
-    {
-      title: "Period",
-      key: "period",
-      render: (_, r) => (
-        <>
-          <div style={{ fontSize: 12 }}>
-            {r.startDate} → {r.endDate}
-          </div>
-          {r.nextBilling && (
-            <div style={{ color: "#1890ff", fontSize: 12 }}>
-              Next: {r.nextBilling}
-            </div>
-          )}
-        </>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
-          {record.status === "Active" ? (
-            <Button
-              icon={<StopOutlined />}
-              size="small"
-              onClick={() => handleSuspend(record.id)}
-            >
-              Suspend
-            </Button>
-          ) : (
-            <Button
-              icon={<PlayCircleOutlined />}
-              type="default"
-              size="small"
-              onClick={() => handleReactivate(record.id)}
-            >
-              Reactivate
-            </Button>
-          )}
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            size="small"
-            onClick={() => handleDelete(record.id)}
-          >
-            Delete
-          </Button>
-        </Space>
-      ),
-    },
+      )
+    }
   ];
+
+  function openEdit(record) {
+    setEditing(record);
+    form.setFieldsValue(record);
+    setIsModalVisible(true);
+  }
+
+  function openNew() {
+    setEditing(null);
+    form.resetFields();
+    setIsModalVisible(true);
+  }
+
+  function handleDelete(id) {
+    Modal.confirm({
+      title: 'Delete package',
+      content: 'Are you sure you want to remove this package?',
+      okType: 'danger',
+      onOk() {
+        setPackages(prev => prev.filter(p => p.id !== id));
+        message.success('Package removed');
+      }
+    });
+  }
+
+  function handleSubmit(values) {
+    if (editing) {
+      setPackages(prev => prev.map(p => p.id === editing.id ? { ...p, ...values } : p));
+      message.success('Package updated');
+    } else {
+      const newPkg = { ...values, id: `PKG-${String(Math.floor(Math.random() * 900) + 100)}` };
+      setPackages(prev => [newPkg, ...prev]);
+      message.success('Package created');
+    }
+    setIsModalVisible(false);
+    form.resetFields();
+  }
+
+  const filteredPackages = useMemo(() => {
+    return packages.filter(p => {
+      const q = searchText.trim().toLowerCase();
+      if (q) {
+        const matches = (p.name || '').toLowerCase().includes(q) || (p.id || '').toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+
+      if (popularityFilter === 'high' && !(p.popularity > 30)) return false;
+      if (popularityFilter === 'low' && !(p.popularity <= 30)) return false;
+
+      if (dateRange && dateRange.length === 2) {
+        const start = dayjs(dateRange[0]);
+        const end = dayjs(dateRange[1]).endOf('day');
+        const created = dayjs(p.createdAt);
+        if (!created.isBetween(start, end, null, '[]')) return false;
+      }
+
+      return true;
+    });
+  }, [packages, searchText, popularityFilter, dateRange]);
 
   return (
     <div style={{ padding: 24 }}>
-      {/* Statistics */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic title="Total Subscriptions" value={totalSubscriptions} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Active Subscriptions"
-              value={activeSubscriptions}
-              valueStyle={{ color: "#3f8600" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Monthly Revenue"
-              value={monthlyRevenue}
-              precision={2}
-              prefix="$"
-              valueStyle={{ color: "#3f8600" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Avg Usage"
-              value={averageUsage || 0}
-              precision={1}
-              suffix="%"
-              valueStyle={{
-                color: averageUsage > 70 ? "#3f8600" : "#cf1322",
-              }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Table */}
       <Card
-        title="Subscription Management"
+        title="Service Packages"
         extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingSubscription(null);
-              setIsModalVisible(true);
-              form.resetFields();
-            }}
-          >
-            Create
-          </Button>
+          <Space>
+            <Input.Search placeholder="Search by id or name" onSearch={v => setSearchText(v)} onChange={e => setSearchText(e.target.value)} style={{ width: 220 }} allowClear />
+            <Select value={popularityFilter} onChange={setPopularityFilter} style={{ width: 140 }}>
+              <Select.Option value="all">All popularity</Select.Option>
+              <Select.Option value="high">High (&gt;30)</Select.Option>
+              <Select.Option value="low">Low (≤30)</Select.Option>
+            </Select>
+            <DatePicker.RangePicker onChange={(vals) => setDateRange(vals)} />
+            <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>Add Package</Button>
+          </Space>
         }
       >
-        <Table
-          columns={columns}
-          dataSource={subscriptions}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-        />
+    <Table columns={columns} dataSource={filteredPackages} rowKey={r => r.id} loading={loading} />
       </Card>
 
-      {/* Modal */}
-      <Modal
-        title={
-          editingSubscription ? "Edit Subscription" : "Create Subscription"
-        }
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-      >
+      <Modal title={editing ? 'Edit Package' : 'New Package'} open={isModalVisible} onCancel={() => setIsModalVisible(false)} footer={null}>
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item
-            name="status"
-            label="Status"
-            rules={[{ required: true, message: "Please select status" }]}
-          >
-            <Select>
-              <Option value="Active">Active</Option>
-              <Option value="Suspended">Suspended</Option>
-              <Option value="Expired">Expired</Option>
-              <Option value="Cancelled">Cancelled</Option>
-              <Option value="Pending">Pending</Option>
-            </Select>
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+            <Input />
           </Form.Item>
-
-          <Form.Item
-            name="autoRenewal"
-            label="Auto Renewal"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value={true}>Yes</Option>
-              <Option value={false}>No</Option>
-            </Select>
+          <Form.Item name="price" label="Price ($)" rules={[{ required: true }]}>
+            <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
-
-          <Form.Item
-            name="startDate"
-            label="Start Date"
-            rules={[{ required: true }]}
-          >
-            <DatePicker style={{ width: "100%" }} />
+          <Form.Item name="duration" label="Duration (days)" rules={[{ required: true }]}>
+            <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
-
-          <Form.Item
-            name="endDate"
-            label="End Date"
-            rules={[{ required: true }]}
-          >
-            <DatePicker style={{ width: "100%" }} />
+          <Form.Item name="maxSwaps" label="Max Swaps" rules={[{ required: true }]}>
+            <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
-
-          <Form.Item name="nextBilling" label="Next Billing">
-            <DatePicker style={{ width: "100%" }} />
+          <Form.Item name="popularity" label="Popularity score">
+            <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit">
-                {editingSubscription ? "Update" : "Create"}
-              </Button>
+              <Button type="primary" htmlType="submit">{editing ? 'Update' : 'Add'}</Button>
               <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
             </Space>
           </Form.Item>
@@ -398,6 +193,4 @@ const SubscriptionsPage = () => {
       </Modal>
     </div>
   );
-};
-
-export default SubscriptionsPage;
+}

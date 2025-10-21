@@ -37,8 +37,10 @@ export default function SupportPage() {
   // 🧩 Fetch all tickets
   const fetchData = async () => {
     setLoading(true);
+    const Role =  JSON.parse(localStorage.getItem('currentUser')).role;
+    const apiPath = Role === "DRIVER" ? "/support-ticket/my-tickets" : "/support-ticket";
     try {
-      const res = await api.get("/support-ticket");
+      const res = await api.get(apiPath);
       const list = (res.data || []).map((t) => ({ ...t, key: t.id ?? t._id }));
       setData(list);
     } catch (err) {
@@ -82,27 +84,6 @@ export default function SupportPage() {
     }
   };
 
-  // 🧩 Delete ticket
-  const handleDelete = (record) => {
-    Modal.confirm({
-      title: "Xác nhận xóa ticket",
-      content: `Bạn có chắc muốn xóa ticket "${record.subject}" không?`,
-      okText: "Xóa",
-      okType: "danger",
-      cancelText: "Hủy",
-      async onOk() {
-        try {
-          await api.delete(`/support-ticket/${record.id}`);
-          message.success("Xóa ticket thành công");
-          setData((prev) => prev.filter((t) => t.id !== record.id));
-        } catch (err) {
-          console.error("Delete ticket error:", err);
-          message.error("Không thể xóa ticket");
-        }
-      },
-    });
-  };
-
   // 🧩 Submit form (create or update)
   const handleSubmit = async (values) => {
     if (editingRecord) await handleUpdate(values);
@@ -116,7 +97,7 @@ export default function SupportPage() {
   };
 
   // 🧩 Edit ticket
-  const handleEdit = (record) => {
+  const handleReply = (record) => {
     setEditingRecord(record);
     setIsModalVisible(true);
     form.setFieldsValue(record);
@@ -210,21 +191,13 @@ export default function SupportPage() {
           <Button
             icon={<MessageOutlined />}
             size="small"
-            onClick={() => handleEdit(record)}
+            onClick={() => handleReply(record)}
           >
-            Edit
-          </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            size="small"
-            onClick={() => handleDelete(record)}
-          >
-            Delete
+            Reply
           </Button>
         </Space>
       ),
-      width: 220,
+      width: 160,
     },
   ];
 
@@ -336,6 +309,7 @@ export default function SupportPage() {
             name="subject"
             label="Subject"
             rules={[{ required: true, message: "Please enter subject" }]}
+            disabled={!!editingRecord}
           >
             <Input placeholder="Enter ticket subject" />
           </Form.Item>
@@ -348,33 +322,7 @@ export default function SupportPage() {
             <TextArea rows={4} placeholder="Enter ticket details" />
           </Form.Item>
 
-          <Form.Item
-            name="status"
-            label="Status"
-            rules={[{ required: true, message: "Please select status" }]}
-          >
-            <Select placeholder="Select status">
-              <Option value="Open">Open</Option>
-              <Option value="In Progress">In Progress</Option>
-              <Option value="Pending">Pending</Option>
-              <Option value="Resolved">Resolved</Option>
-              <Option value="Closed">Closed</Option>
-            </Select>
-          </Form.Item>
 
-          <Form.Item
-            name="assignedTo"
-            label="Assign To"
-            rules={[{ required: true, message: "Please select team" }]}
-          >
-            <Select placeholder="Select team">
-              <Option value="Support Team">Support Team</Option>
-              <Option value="Technical Team">Technical Team</Option>
-              <Option value="Billing Team">Billing Team</Option>
-              <Option value="Mobile Team">Mobile Team</Option>
-              <Option value="Product Team">Product Team</Option>
-            </Select>
-          </Form.Item>
 
           <Space>
             <Button type="primary" htmlType="submit" loading={loading}>

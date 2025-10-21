@@ -1,10 +1,9 @@
-import React from "react";
-import NavBar from "../../components/navbar/navBar";
+
 
 function AboutPage() {
   return (
     <div>
-      <NavBar />
+      
       <main style={{ maxWidth: 1100, margin: '24px auto', padding: '0 20px' }}>
         <section style={{ textAlign: 'center', marginBottom: 24 }}>
           <h1 style={{ fontSize: 34, fontWeight: 800, marginBottom: 6, color: '#0f172a' }}>Về chúng tôi</h1>

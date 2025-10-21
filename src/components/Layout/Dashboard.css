@@ -12,7 +12,39 @@
   transition: all .5s;
 }
 .ant-menu-item:hover{
-  background-color: rgb(22, 119, 255,0.5) !important;
+  /* brighter, more saturated blue on hover */
+  background-color: rgba(59,130,246,0.65) !important; /* #3b82f6 at 65% */
+}
+
+/* Hover for custom RoleSidebar nav links */
+.ev-dashboard aside a, .ev-dashboard aside .ant-menu-item a, .ev-dashboard aside .nav-link {
+  transition: background-color 180ms ease, color 180ms ease, transform 120ms ease;
+}
+
+.ev-dashboard aside a:hover,
+.ev-dashboard aside .ant-menu-item a:hover,
+.ev-dashboard aside .nav-link:hover {
+  /* brighter, clearer blue hover */
+  background-color: rgba(59,130,246,0.18) !important; /* #3b82f6 light tint */
+  color: #fff !important;
+  transform: translateX(4px);
+}
+
+/* keep selected/active menu items highlighted (same blue) */
+.ev-dashboard aside a.active,
+.ev-dashboard aside .ant-menu-item-selected,
+.ev-dashboard aside .ant-menu-item-active,
+.ev-dashboard aside .nav-link.active {
+  /* stronger blue for active state so it persists visually */
+  background-color: rgba(59,130,246,0.28) !important; /* slightly darker than hover tint */
+  color: #fff !important;
+}
+
+/* tooltip for collapsed icons */
+.ev-dashboard aside .ant-tooltip-inner {
+  /* brighter tooltip blue */
+  background: #3b82f6; /* #3b82f6 */
+  color: #fff;
 }
 
 /* Sidebar-only white text */

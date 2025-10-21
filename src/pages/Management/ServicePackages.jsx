@@ -1,192 +1,286 @@
-import React, { useState, useMemo } from "react";
-import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Select, Tag, message, DatePicker } from "antd";
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  Table,
+  Button,
+  Space,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  message,
+} from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
-import dayjs from 'dayjs';
 import api from "../../config/axios";
 
-// Local helper that wraps axios and returns normalized result
-async function callApi({
-  method = "get",
-  url,
-  data = null,
-  params = null,
-  config = {},
-}) {
-  try {
-    const res = await api.request({ method, url, data, params, ...config });
-    return { ok: true, data: res.data };
-  } catch (err) {
-    let status = null;
-    let messageText = "Network error";
-    let payload = null;
-    if (err && err.response) {
-      status = err.response.status;
-      payload = err.response.data;
-      messageText =
-        (err.response.data &&
-          (err.response.data.message || err.response.data.error)) ||
-        err.response.statusText ||
-        messageText;
-      // if unauthorized, clear stored tokens
-      if (status === 401) {
-        try { localStorage.removeItem('authToken'); sessionStorage.removeItem('authToken'); } catch { /* ignore storage errors */ }
-      }
-    } else if (err && err.request) {
-      messageText = "No response from server";
-    } else if (err && err.message) {
-      messageText = err.message;
-    }
-    return { ok: false, status, message: messageText, payload };
-  }
-}
 
-const { Option } = Select;
-
-// start with empty list; we'll fetch from API
-const samplePackages = [];
-
-export default function ServicePackagesPage() {
-  const [packages, setPackages] = useState(samplePackages);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form] = Form.useForm();
-  const [searchText, setSearchText] = useState('');
-  const [popularityFilter, setPopularityFilter] = useState('all');
-  const [dateRange, setDateRange] = useState(null);
+  export default function ServicePackagesPage() {
+  const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingPackage, setEditingPackage] = useState(null);
+  const [form] = Form.useForm();
 
-  React.useEffect(() => {
-    let mounted = true;
-    const fetchPackages = async () => {
-      setLoading(true);
-      const res = await callApi({ method: 'get', url: '/service-packages' });
-      if (!mounted) return;
-      if (res.ok && Array.isArray(res.data)) setPackages(res.data);
-      else setPackages([]);
+  // 🟢 Lấy danh sách gói dịch vụ
+  const fetchPackages = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/service-package");
+      setPackages(res.data || []);
+    } catch (err) {
+      console.error("❌ Lỗi khi tải service packages:", err);
+      message.error("Không thể tải danh sách gói dịch vụ!");
+    } finally {
       setLoading(false);
-    };
+    }
+  };
+
+  useEffect(() => {
     fetchPackages();
-    return () => { mounted = false; };
   }, []);
 
-  const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id' },
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Price ($)', dataIndex: 'price', key: 'price', render: (p) => `$${p}` },
-    { title: 'Duration (days)', dataIndex: 'duration', key: 'duration' },
-    { title: 'Max Swaps', dataIndex: 'maxSwaps', key: 'maxSwaps' },
-    { title: 'Popularity', dataIndex: 'popularity', key: 'popularity', render: (v) => <Tag color={v > 30 ? 'green' : 'blue'}>{v}</Tag> },
-    {
-      title: 'Actions', key: 'actions', render: (_, record) => (
-        <Space>
-          <Button icon={<EditOutlined />} size="small" onClick={() => openEdit(record)}>Edit</Button>
-          <Button danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record.id)}>Remove</Button>
-        </Space>
-      )
-    }
-  ];
+  // 🟡 Thêm / sửa
+  const handleSubmit = async (values) => {
+  try {
+    setLoading(true);
 
-  function openEdit(record) {
-    setEditing(record);
-    form.setFieldsValue(record);
-    setIsModalVisible(true);
-  }
-
-  function openNew() {
-    setEditing(null);
-    form.resetFields();
-    setIsModalVisible(true);
-  }
-
-  function handleDelete(id) {
-    Modal.confirm({
-      title: 'Delete package',
-      content: 'Are you sure you want to remove this package?',
-      okType: 'danger',
-      onOk() {
-        setPackages(prev => prev.filter(p => p.id !== id));
-        message.success('Package removed');
-      }
-    });
-  }
-
-  function handleSubmit(values) {
-    if (editing) {
-      setPackages(prev => prev.map(p => p.id === editing.id ? { ...p, ...values } : p));
-      message.success('Package updated');
+    if (editingPackage) {
+      // 🟡 Cập nhật
+      await api.put(`/service-package/${editingPackage.id}`, values);
+      message.success("Cập nhật gói dịch vụ thành công!");
     } else {
-      const newPkg = { ...values, id: `PKG-${String(Math.floor(Math.random() * 900) + 100)}` };
-      setPackages(prev => [newPkg, ...prev]);
-      message.success('Package created');
+      // 🟢 Tạo mới
+      await api.post("/service-package", values);
+      message.success("Tạo gói dịch vụ thành công!");
     }
+
     setIsModalVisible(false);
     form.resetFields();
+
+    // 🔄 Tải lại danh sách
+    const res = await api.get("/service-package");
+    setPackages(res.data || []);
+  } catch (err) {
+    console.error("❌ Lỗi khi lưu gói dịch vụ:", err);
+    message.error("Không thể lưu gói dịch vụ. Vui lòng thử lại!");
+  } finally {
+    setLoading(false);
   }
+};
 
-  const filteredPackages = useMemo(() => {
-    return packages.filter(p => {
-      const q = searchText.trim().toLowerCase();
-      if (q) {
-        const matches = (p.name || '').toLowerCase().includes(q) || (p.id || '').toLowerCase().includes(q);
-        if (!matches) return false;
+// 🟡 Khi bấm nút "Sửa"
+const handleEdit = (record) => {
+  setEditingPackage(record);
+  form.setFieldsValue({
+    name: record.name,
+    description: record.description,
+    price: record.price,
+    duration: record.duration,
+    maxSwaps: record.maxSwaps,
+  });
+  setIsModalVisible(true);
+};
+
+// 🔴 Khi bấm nút "Xóa"
+const handleDelete = async (id) => {
+  Modal.confirm({
+    title: "Xác nhận xóa",
+    content: "Bạn có chắc chắn muốn xóa gói dịch vụ này không?",
+    okText: "Xóa",
+    okType: "danger",
+    cancelText: "Hủy",
+    async onOk() {
+      try {
+        setLoading(true);
+        await api.delete(`/service-package/${id}`);
+        message.success("Đã xóa gói dịch vụ thành công!");
+        const res = await api.get("/service-package");
+        setPackages(res.data || []);
+      } catch (err) {
+        console.error("❌ Lỗi khi xóa:", err);
+        message.error("Không thể xóa gói dịch vụ!");
+      } finally {
+        setLoading(false);
       }
+    },
+  });
+};
 
-      if (popularityFilter === 'high' && !(p.popularity > 30)) return false;
-      if (popularityFilter === 'low' && !(p.popularity <= 30)) return false;
-
-      if (dateRange && dateRange.length === 2) {
-        const start = dayjs(dateRange[0]);
-        const end = dayjs(dateRange[1]).endOf('day');
-        const created = dayjs(p.createdAt);
-        if (!created.isBetween(start, end, null, '[]')) return false;
-      }
-
-      return true;
-    });
-  }, [packages, searchText, popularityFilter, dateRange]);
+  // 📊 Cột hiển thị
+  const columns = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      width: 80,
+    },
+    {
+      title: "Tên gói dịch vụ",
+      dataIndex: "name",
+      width: 200,
+    },
+    {
+      title: "Giá (VND)",
+      dataIndex: "price",
+      width: 150,
+      render: (value) => value?.toLocaleString("vi-VN") || "—",
+    },
+    {
+      title: "Thời hạn",
+      dataIndex: "duration",
+      width: 150,
+      render: (_, record) => (
+        <span>
+          {record.maxSwaps} lần / {record.duration} ngày
+        </span>
+      ),
+    },
+    {
+      title: "Mô tả",
+      dataIndex: "description",
+      width: 500,
+      ellipsis: false,
+      render: (text) => (
+        <div style={{ whiteSpace: "normal", wordWrap: "break-word" }}>
+          {text}
+        </div>
+      ),
+    },
+    {
+      title: "Hành động",
+      key: "actions",
+      render: (_, record) => (
+        <Space>
+          <Button
+            icon={<EditOutlined />}
+            size="small"
+            onClick={() => handleEdit(record)}
+          >
+            Sửa
+          </Button>
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            size="small"
+            onClick={() => handleDelete(record.id)}
+          >
+            Xóa
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <div style={{ padding: 24 }}>
       <Card
-        title="Service Packages"
+        title="Quản lý Gói Dịch Vụ"
         extra={
-          <Space>
-            <Input.Search placeholder="Search by id or name" onSearch={v => setSearchText(v)} onChange={e => setSearchText(e.target.value)} style={{ width: 220 }} allowClear />
-            <Select value={popularityFilter} onChange={setPopularityFilter} style={{ width: 140 }}>
-              <Select.Option value="all">All popularity</Select.Option>
-              <Select.Option value="high">High (&gt;30)</Select.Option>
-              <Select.Option value="low">Low (≤30)</Select.Option>
-            </Select>
-            <DatePicker.RangePicker onChange={(vals) => setDateRange(vals)} />
-            <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>Add Package</Button>
-          </Space>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingPackage(null);
+              form.resetFields();
+              setIsModalVisible(true);
+            }}
+          >
+            Thêm mới
+          </Button>
         }
       >
-    <Table columns={columns} dataSource={filteredPackages} rowKey={r => r.id} loading={loading} />
+        <Table
+          columns={columns}
+          dataSource={packages}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 8 }}
+        />
       </Card>
 
-      <Modal title={editing ? 'Edit Package' : 'New Package'} open={isModalVisible} onCancel={() => setIsModalVisible(false)} footer={null}>
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="price" label="Price ($)" rules={[{ required: true }]}>
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="duration" label="Duration (days)" rules={[{ required: true }]}>
-            <InputNumber min={1} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="maxSwaps" label="Max Swaps" rules={[{ required: true }]}>
-            <InputNumber min={1} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="popularity" label="Popularity score">
-            <InputNumber min={0} style={{ width: '100%' }} />
+      {/* Modal thêm/sửa */}
+      <Modal
+        title={editingPackage ? "Chỉnh sửa gói dịch vụ" : "Tạo mới gói dịch vụ"}
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={null}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          initialValues={{
+            name: "",
+            description: "",
+            price: "",
+            duration: "",
+            maxSwaps: "",
+          }}
+        >
+          <Form.Item
+            name="name"
+            label="Tên gói"
+            rules={[{ required: true, message: "Vui lòng nhập tên gói" }]}
+          >
+            <Input placeholder="Nhập tên gói dịch vụ" />
           </Form.Item>
 
-          <Form.Item>
+          <Form.Item
+            name="price"
+            label="Giá (VNĐ)"
+            rules={[{ required: true, message: "Vui lòng nhập giá" }]}
+          >
+            <InputNumber
+              style={{ width: "100%" }}
+              min={1000}
+              step={1000}
+              placeholder="Nhập giá gói (vd: 200000)"
+            />
+          </Form.Item>
+
+          <Form.Item label="Thời hạn gói (x lần / x ngày)">
+            <Input.Group compact>
+              <Form.Item
+                name="maxSwaps"
+                noStyle
+                rules={[{ required: true, message: "Nhập số lần đổi" }]}
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="Số lần đổi"
+                  style={{ width: "50%" }}
+                />
+              </Form.Item>
+              <Form.Item
+                name="duration"
+                noStyle
+                rules={[{ required: true, message: "Nhập số ngày hiệu lực" }]}
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="Số ngày hiệu lực"
+                  style={{ width: "50%" }}
+                />
+              </Form.Item>
+            </Input.Group>
+            <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
+              Ví dụ: 15 lần / 30 ngày
+            </div>
+          </Form.Item>
+
+          <Form.Item name="description" label="Mô tả">
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập mô tả gói dịch vụ"
+              autoSize={{ minRows: 2, maxRows: 4 }}
+            />
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: "right" }}>
             <Space>
-              <Button type="primary" htmlType="submit">{editing ? 'Update' : 'Add'}</Button>
-              <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
+              <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
+              <Button type="primary" htmlType="submit">
+                {editingPackage ? "Cập nhật" : "Tạo mới"}
+              </Button>
             </Space>
           </Form.Item>
         </Form>

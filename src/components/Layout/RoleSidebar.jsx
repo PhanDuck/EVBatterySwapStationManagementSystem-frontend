@@ -1,6 +1,8 @@
 import { NavLink } from "react-router-dom";
-import { FiUsers, FiMap, FiTruck, FiCalendar, FiCreditCard, FiHelpCircle } from "react-icons/fi";
+import { FiUsers, FiMap, FiTruck, FiCalendar, FiCreditCard, FiHelpCircle, FiBatteryCharging } from "react-icons/fi";
 import { Tooltip } from "antd";
+import { MdOutlinePayments } from "react-icons/md";
+
 
 export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
   const base = role ? role.toLowerCase() : "";
@@ -8,15 +10,16 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
   // static sidebar color (revert customization)
   const roleColor = '#001529';
   const textColor = '#fff';
-  const headerDivider = 'rgba(255,255,255,0.06)';
 
   const menu = {
     ADMIN: [
       { path: "users", label: "Quản lý người dùng", icon: <FiUsers /> },
       { path: "stations", label: "Trạm đổi pin", icon: <FiMap /> },
+      { path: "batteries", label: "Quản lý pin", icon: <FiBatteryCharging /> },
       { path: "vehicles", label: "Xe điện", icon: <FiTruck /> },
       { path: "bookings", label: "Đặt lịch", icon: <FiCalendar /> },
-      { path: "transactions", label: "Giao dịch", icon: <FiCreditCard /> },
+      { path: "service-packages", label: "Gói cước", icon: <FiCreditCard /> },
+      { path: "transactions", label: "Giao dịch", icon: <MdOutlinePayments /> },
       { path: "tickets", label: "Hỗ trợ", icon: <FiHelpCircle /> },
     ],
     STAFF: [
@@ -28,7 +31,9 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
     DRIVER: [
       { path: "bookings", label: "Lịch đặt của tôi", icon: <FiCalendar /> },
       { path: "vehicles", label: "Xe điện", icon: <FiTruck /> },
-      { path: "transactions", label: "Giao dịch", icon: <FiCreditCard /> },
+      { path: "transactions", label: "Giao dịch", icon: <MdOutlinePayments /> },
+      { path: "driver-subscription", label: "Quản lý đăng ký", icon: <FiHelpCircle /> },
+      { path: "tickets", label: "Hỗ trợ", icon: <FiHelpCircle /> },
     ],
   };
 
@@ -73,7 +78,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
             to={`/${base}/${item.path}`}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                isActive ? "bg-yellow-600 text-white font-semibold" : "text-gray-200 hover:bg-gray-800 hover:text-white"
+                isActive ? "active text-white font-semibold" : "text-gray-200 hover:bg-gray-800 hover:text-white"
               }`
             }
           >

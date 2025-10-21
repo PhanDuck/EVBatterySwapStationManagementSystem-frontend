@@ -1,6 +1,24 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, message, Spin, Empty,} from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, CarOutlined, } from "@ant-design/icons";
+import {
+  Card,
+  Table,
+  Button,
+  Space,
+  Tag,
+  Modal,
+  Form,
+  Input,
+  Select,
+  message,
+  Spin,
+  Empty,
+} from "antd";
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CarOutlined,
+} from "@ant-design/icons";
 import api from "../../config/axios";
 
 const { Option } = Select;
@@ -13,6 +31,7 @@ const VehiclePage = () => {
   const [form] = Form.useForm();
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [batteryTypes, setBatteryTypes] = useState([]);
 
   // 📦 Lấy thông tin người dùng (từ localStorage)
   const user = (() => {
@@ -24,7 +43,9 @@ const VehiclePage = () => {
   })();
 
   // normalize role to uppercase string to avoid case mismatch
-  const role = String(user?.role || "USER").trim().toUpperCase(); // e.g. "DRIVER", "ADMIN"
+  const role = String(user?.role || "USER")
+    .trim()
+    .toUpperCase(); // e.g. "DRIVER", "ADMIN"
   const userId = user?.userID || user?.id || null;
 
   // 📦 Load vehicles theo role (ADMIN/STAFF => all, DRIVER => /vehicle/my-vehicles, USER => filter own)
@@ -39,11 +60,15 @@ const VehiclePage = () => {
           res = await api.get("/vehicle");
         } else {
           // USER hoặc fallback: lấy tất cả rồi filter theo userId nếu có
-          res = await api.get("/vehicle/my-vehicles");         
+          res = await api.get("/vehicle/my-vehicles");
         }
 
         // Normalize response shape
-        const list = Array.isArray(res.data) ? res.data : (res.data?.data && Array.isArray(res.data.data) ? res.data.data : []);
+        const list = Array.isArray(res.data)
+          ? res.data
+          : res.data?.data && Array.isArray(res.data.data)
+          ? res.data.data
+          : [];
         setVehicles(list);
       } catch (err) {
         console.error("Fetch vehicles error:", err);
@@ -62,13 +87,30 @@ const VehiclePage = () => {
 
     fetchVehicles();
   }, [role, userId]);
+  useEffect(() => {
+    const fetchBatteryTypes = async () => {
+      try {
+        const res = await api.get("/battery-type");
+        setBatteryTypes(res.data);
+      } catch (error) {
+        console.error("Không thể tải danh sách loại pin:", error);
+      }
+    };
+    fetchBatteryTypes();
+  }, []);
+
+  // --- Thêm hàm tra cứu nhanh ---
+  const getBatteryTypeName = (id) => {
+    const type = batteryTypes.find((t) => t.id === id);
+    return type ? type.name : "Không xác định";
+  };
 
   // 🧾 Cột bảng
   const columns = [
     {
       title: "Vehicle ID",
-      dataIndex: "vehicleID",
-      key: "vehicleID",
+      dataIndex: "id",
+      key: "id",
       render: (text) => (
         <Space>
           <CarOutlined />
@@ -85,16 +127,13 @@ const VehiclePage = () => {
     {
       title: "Make / Model",
       key: "makeModel",
-      render: (_, record) => (
-        <span>
-          <strong>{record.make}</strong> {record.model}
-        </span>
-      ),
+      render: (_, record) => <span>{record.model}</span>,
     },
     {
       title: "Battery Type",
-      dataIndex: "batteryType",
-      key: "batteryType",
+      dataIndex: "batteryTypeId", // Giữ ID từ data
+      key: "batteryTypeId",
+      render: (id) => getBatteryTypeName(id),
     },
     {
       title: "Owner ID",
@@ -111,7 +150,11 @@ const VehiclePage = () => {
       render: (_, record) => {
         // DRIVER: view-only (no edit/delete)
         const isDriver = role === "DRIVER";
-        const canEditOrDelete = !isDriver && (role === "ADMIN" || role === "STAFF" || (role === "USER" && record.userID === userId));
+        // const canEditOrDelete =
+        //   !isDriver &&
+        //   (role === "ADMIN" ||
+        //     role === "STAFF" ||
+        //     (role === "USER" && record.userID === userId));
         return isDriver ? (
           <Tag color="blue">View only</Tag>
         ) : (
@@ -121,7 +164,6 @@ const VehiclePage = () => {
               icon={<EditOutlined />}
               size="small"
               onClick={() => handleEdit(record)}
-              disabled={!canEditOrDelete}
             >
               Edit
             </Button>
@@ -131,7 +173,6 @@ const VehiclePage = () => {
               icon={<DeleteOutlined />}
               size="small"
               onClick={() => handleDelete(record.vehicleID)}
-              disabled={!canEditOrDelete}
             >
               Delete
             </Button>
@@ -144,35 +185,42 @@ const VehiclePage = () => {
   // 🟢 CREATE / UPDATE
   const handleSubmit = async (values) => {
     const payload = {
-      plateNumber: values.plateNumber ?? values.licensePlate,
-      make: values.make,
+      vin: values.vin,
+      plateNumber: values.plateNumber,
       model: values.model,
-      batteryType: values.batteryType,
-      status: values.status,
-      userID: userId,
+      batteryTypeId: values.batteryTypeId,
     };
 
     try {
       if (editingVehicle) {
-        await api.put(`/vehicle/${editingVehicle.vehicleID}`, payload);
+        // 🟡 Cập nhật phương tiện
+        await api.put(`/vehicle/${editingVehicle.id}`, payload);
+
         setVehicles((prev) =>
           prev.map((v) =>
-            v.vehicleID === editingVehicle.vehicleID ? { ...v, ...payload } : v
+            v.id === editingVehicle.id ? { ...v, ...payload } : v
           )
         );
+
         message.success("Cập nhật phương tiện thành công!");
       } else {
+        // 🟢 Tạo mới phương tiện
         const res = await api.post("/vehicle", payload);
-        // nếu backend trả về object mới thì push, nếu không có thì fallback dùng payload
-        setVehicles((prev) => [res.data ?? { ...payload, vehicleID: res.data?.vehicleID ?? `VH-${Date.now()}` }, ...prev]);
-        message.success("Thêm phương tiện thành công!");
+        const newVehicle = res?.data || { ...payload, id: Date.now() };
+
+        setVehicles((prev) => [newVehicle, ...prev]);
+        message.success("Đăng ký phương tiện thành công!");
       }
+
       setIsModalVisible(false);
       form.resetFields();
     } catch (err) {
-      console.error("Vehicle submit error:", err);
+      console.error("❌ Vehicle submit error:", err);
+
       if (err?.response?.status === 403) {
-        message.error("Bạn không có quyền thực hiện hành động này.");
+        message.error("Bạn không có quyền thực hiện hành động này!");
+      } else if (err?.response?.status === 400) {
+        message.error("Dữ liệu không hợp lệ, vui lòng kiểm tra lại!");
       } else {
         message.error("Không thể lưu thông tin phương tiện!");
       }
@@ -239,8 +287,6 @@ const VehiclePage = () => {
     });
   }, [vehicles, searchText, statusFilter]);
 
-  const showRegisterBtn = role !== "DRIVER"; // driver cannot register
-
   return (
     <div style={{ padding: 24 }}>
       <Card
@@ -265,11 +311,9 @@ const VehiclePage = () => {
               <Option value="Suspended">Suspended</Option>
             </Select>
 
-            {showRegisterBtn && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                Register Vehicle
-              </Button>
-            )}
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              Register Vehicle
+            </Button>
           </Space>
         }
       >
@@ -279,8 +323,8 @@ const VehiclePage = () => {
           ) : (
             <Table
               columns={columns}
-              dataSource={filteredData}
-              rowKey="vehicleID"
+              dataSource={vehicles}
+              rowKey={(record) => record.vehicleID || record.id || record.vin}
               pagination={{
                 pageSize: 10,
                 showQuickJumper: true,
@@ -300,62 +344,62 @@ const VehiclePage = () => {
         width={600}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          {/* Mã VIN */}
+          <Form.Item
+            name="vin"
+            label="Mã VIN (Vehicle Identification Number)"
+            rules={[
+              { required: true, message: "Vui lòng nhập mã VIN!" },
+              { min: 5, message: "Mã VIN phải có ít nhất 5 ký tự!" },
+            ]}
+          >
+            <Input placeholder="Nhập mã VIN (số khung xe)" />
+          </Form.Item>
+
+          {/* Biển số xe */}
           <Form.Item
             name="plateNumber"
-            label="License Plate"
-            rules={[{ required: true, message: "Please input license plate!" }]}
+            label="Biển số xe"
+            rules={[{ required: true, message: "Vui lòng nhập biển số xe!" }]}
           >
-            <Input placeholder="Enter license plate" />
+            <Input placeholder="VD: 83A-12345" />
           </Form.Item>
 
-          <Form.Item
-            name="make"
-            label="Make"
-            rules={[{ required: true, message: "Please input make!" }]}
-          >
-            <Input placeholder="Tesla, BYD, NIO" />
-          </Form.Item>
-
+          {/* Dòng xe */}
           <Form.Item
             name="model"
-            label="Model"
-            rules={[{ required: true, message: "Please input model!" }]}
+            label="Dòng xe"
+            rules={[{ required: true, message: "Vui lòng nhập dòng xe!" }]}
           >
-            <Input placeholder="Model 3, Tang EV" />
+            <Input placeholder="VD: Model 3, VinFast Feliz..." />
           </Form.Item>
 
+          {/* Loại pin */}
           <Form.Item
-            name="batteryType"
-            label="Battery Type"
-            rules={[{ required: true, message: "Please select battery type!" }]}
+            name="batteryTypeId"
+            label="Loại pin"
+            rules={[{ required: true, message: "Vui lòng chọn loại pin!" }]}
           >
-            <Select placeholder="Select battery type">
-              <Option value="Tesla Battery">Tesla Battery</Option>
-              <Option value="BYD Blade">BYD Blade</Option>
-              <Option value="CATL NCM">CATL NCM</Option>
-              <Option value="LFP Battery">LFP Battery</Option>
+            <Select placeholder="Chọn loại pin">
+              {batteryTypes && batteryTypes.length > 0 ? (
+                batteryTypes.map((type) => (
+                  <Option key={type.id} value={type.id}>
+                    {type.name}
+                  </Option>
+                ))
+              ) : (
+                <Option disabled>Không có dữ liệu loại pin</Option>
+              )}
             </Select>
           </Form.Item>
 
-          <Form.Item
-            name="status"
-            label="Status"
-            rules={[{ required: true, message: "Please select status!" }]}
-          >
-            <Select placeholder="Select status">
-              <Option value="Active">Active</Option>
-              <Option value="Maintenance">Maintenance</Option>
-              <Option value="Inactive">Inactive</Option>
-              <Option value="Suspended">Suspended</Option>
-            </Select>
-          </Form.Item>
-
+          {/* Nút thao tác */}
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
-                {editingVehicle ? "Update" : "Register"}
+                {editingVehicle ? "Cập nhật" : "Đăng ký"}
               </Button>
-              <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
+              <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
             </Space>
           </Form.Item>
         </Form>

@@ -9,6 +9,9 @@ import Vehicles from "../Management/Vehicles";
 import Bookings from "../Management/Bookings";
 import Transactions from "../Management/Transactions";
 import SupportTickets from "../Management/SupportTickets";
+import Subscriptions from "../Management/ServicePackages";
+import BatteryManagement from "../Management/BatteryManagement";
+import ServicePackagesPage from "../Management/ServicePackages";
 
 export default function AdminDashboard() {
   return (
@@ -17,10 +20,12 @@ export default function AdminDashboard() {
         <Route index element={<Navigate to="users" />} />
         <Route path="users" element={<Users />} />
         <Route path="stations" element={<Stations />} />
+        <Route path="batteries" element={<BatteryManagement />} />
         <Route path="vehicles" element={<Vehicles />} />
         <Route path="bookings" element={<Bookings />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="tickets" element={<SupportTickets />} />
+        <Route path="service-packages" element={<ServicePackagesPage />} />
         <Route path="*" element={<div>Không tìm thấy trang!</div>} />
       </Routes>
     </MainLayout>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axios";
 import { setToken, getCurrentRole } from "../../config/auth";
@@ -25,6 +25,21 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role") || getCurrentRole();
+
+    if (token && role) {
+      // ✅ Nếu đã đăng nhập thì chuyển hướng về đúng dashboard
+      if (role === "Admin" || role === "ADMIN")
+        navigate("/admin", { replace: true });
+      else if (role === "Staff" || role === "STAFF")
+        navigate("/staff", { replace: true });
+      else if (role === "Driver" || role === "DRIVER")
+        navigate("/driver", { replace: true });
+      else navigate("/", { replace: true });
+    }
+  }, [navigate]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -46,12 +61,18 @@ const LoginPage = () => {
     e.preventDefault();
     if (validateForm()) {
       setIsLoading(true);
+      
       try {
-        // Call login API
+        //Call login API
         const res = await api.post("/login", {
           phone: formData.phoneNumber,
           password: formData.password,
         });
+      //  const res = await fetch(`http://103.200.20.190:8080/api/login/auth/login`, {
+      //     method: "POST",
+      //     body: JSON.stringify(data),
+      //     headers: { "Content-Type": "application/json" },
+      //   })
 
         const token =
           res?.data?.token ||
@@ -63,6 +84,7 @@ const LoginPage = () => {
 
         // Store token per rememberMe
         setToken(token, formData.rememberMe);
+
         let user = res?.data?.user || res?.data?.currentUser;
         if (!user) {
           try {
