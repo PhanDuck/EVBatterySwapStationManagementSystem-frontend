@@ -1,15 +1,7 @@
-import React, { useEffect } from "react";
+import React from "react";
 import NavBar from "../../components/navbar/navBar";
-import { useNavigate } from "react-router-dom";
 
 function StationBookingPage() {
-  const navigate = useNavigate();
-  const isAuthenticated = !!localStorage.getItem("authToken");
-
-  useEffect(() => {
-    if (!isAuthenticated) navigate('/login');
-  }, [isAuthenticated, navigate]);
-
   return (
     <div>
       <NavBar />
@@ -22,5 +14,3 @@ function StationBookingPage() {
 }
 
 export default StationBookingPage;
-
-

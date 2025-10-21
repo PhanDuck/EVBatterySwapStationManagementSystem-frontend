@@ -13,9 +13,9 @@ const PrivateRoute = ({ roles }) => {
   if (roles && !roles.includes(role)) {
     return <Navigate to="/" replace />;
   }
-  if (role === "admin" || role === "staff") {
-    return <Outlet />;
-  }
+
+  // Allow any authenticated user to proceed if they pass the role check (if any)
+  return <Outlet />;
 };
 
 export default PrivateRoute;

@@ -24,8 +24,11 @@ const Navbar = () => {
         navigate(path);
     };
     const handleLogout = () => {
-    localStorage.removeItem("token"); // Xóa token lưu trữ
-    navigate("/home"); // Quay về trang đăng nhập
+      // Sửa lỗi: Xóa đúng key "authToken" và xóa cả thông tin người dùng
+      localStorage.removeItem("authToken");
+      sessionStorage.removeItem("authToken"); // Xóa ở cả session storage để chắc chắn
+      localStorage.removeItem("currentUser");
+      navigate("/"); // Chuyển hướng về trang chủ
   };
 
     const swapMenuItems = [
@@ -97,21 +100,14 @@ const Navbar = () => {
                         </Link>
                     </>
                 ) : (
-                    // <Button 
-                    //     onClick={() => { clearAuth(); navigate("/"); }}
-                    //     type="default"
-                    //     style={{ backgroundColor: "transparent", color: "#fff", borderColor: "#fff" }}
-                    // >
-                    //     Đăng xuất
-                    // </Button>
                     <Button
-            type="primary"
-            danger
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-          >
-            Logout
-          </Button>
+                        type="primary"
+                        danger
+                        icon={<LogoutOutlined />}
+                        onClick={handleLogout}
+                    >
+                        Logout
+                    </Button>
                 )}
             </div>
         </nav>
