@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback, use } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Card,
   Table,
@@ -12,16 +12,20 @@ import {
   Tag,
   message,
   Spin,
+  notification,
 } from "antd";
 import { PlusOutlined, CheckOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
 
 const { Option } = Select;
+const GET_COMPATIBLE_STATIONS_API_URL = "/booking/compatible-stations";
 
 export default function BookingsPage() {
   const [data, setData] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [stations, setStations] = useState([]);
+  const [compatibleStations, setCompatibleStations] = useState([]);
+  const [isStationLoading, setIsStationLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -41,30 +45,20 @@ export default function BookingsPage() {
   const role = user?.role;
   const userId = user?.id;
 
-  // 🟢 Fetch dữ liệu
+  // 🟢 Fetch dữ liệu ban đầu
   const fetchData = useCallback(async () => {
     setLoading(true);
-
     try {
       let bookingRes, vehicleRes, stationRes, userRes;
 
-      if (role === "ADMIN") {
-        // 🧑‍💼 ADMIN / STAFF: Lấy dữ liệu toàn hệ thống
+      if (role === "ADMIN" || role === "STAFF") {
         [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
-          api.get("/booking"),
-          api.get("/vehicle"),
-          api.get("/station"),
-          api.get("/admin/user"),
-        ]);
-      } else if (role === "STAFF") {
-        [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
-          api.get("/booking/my-stations"),
+          role === "ADMIN" ? api.get("/booking") : api.get("/booking/my-stations"),
           api.get("/vehicle"),
           api.get("/station"),
           api.get("/admin/user"),
         ]);
       } else {
-        // 🚗 DRIVER: Lấy dữ liệu của chính mình
         [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
           api.get("/booking/my-bookings"),
           api.get("/vehicle/my-vehicles"),
@@ -73,7 +67,6 @@ export default function BookingsPage() {
         ]);
       }
 
-      // ✅ Gán dữ liệu vào state (kiểm tra tránh lỗi undefined)
       setData(Array.isArray(bookingRes?.data) ? bookingRes.data : []);
       setVehicles(Array.isArray(vehicleRes?.data) ? vehicleRes.data : []);
       setStations(Array.isArray(stationRes?.data) ? stationRes.data : []);
@@ -95,6 +88,37 @@ export default function BookingsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // 🚀 Hàm mới: Tải danh sách trạm tương thích dựa vào vehicleId
+  const fetchCompatibleStations = useCallback(async (vehicleId) => {
+    if (!vehicleId) {
+      setCompatibleStations([]);
+      return;
+    }
+    setIsStationLoading(true);
+    try {
+      const res = await api.get(`${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`);
+      setCompatibleStations(res.data || []);
+    } catch (error) {
+      console.error("Lỗi khi tải trạm tương thích:", error);
+      setCompatibleStations([]);
+      notification.error({
+        message: "Lỗi Tải Danh Sách Trạm",
+        description: "Không thể tải danh sách trạm tương thích cho xe đã chọn.",
+      });
+    } finally {
+      setIsStationLoading(false);
+    }
+  }, []);
+
+  // 🚀 Xử lý khi người dùng thay đổi xe
+  const handleVehicleChange = (vehicleId) => {
+    form.setFieldsValue({ stationId: null });
+    setCompatibleStations([]);
+    if (vehicleId) {
+      fetchCompatibleStations(vehicleId);
+    }
+  };
 
   // 📖 Map ID sang tên
   const driverName = (id) =>
@@ -126,8 +150,8 @@ export default function BookingsPage() {
         driverId: userId,
         vehicleId: validValues.vehicleId,
         stationId: validValues.stationId,
-        bookingTime: validValues.bookingTime?.format("YYYY-MM-DDTHH:mm:ss"),
-        status: "PENDING", // Mặc định
+        bookingTime: validValues.bookingTime?.toISOString(),
+        status: "PENDING",
       };
 
       setSubmitting(true);
@@ -175,6 +199,7 @@ export default function BookingsPage() {
   const openNew = () => {
     form.resetFields();
     setEditingRecord(null);
+    setCompatibleStations([]);
     setIsModalVisible(true);
   };
   const handleConfirm = async (record) => {
@@ -185,7 +210,7 @@ export default function BookingsPage() {
       setData((prev) =>
         prev.map((item) =>
           item.id === record.id
-            ? { ...item, status: res.data?.status || "CONFIRMED" } // lấy status mới
+            ? { ...item, status: res.data?.status || "CONFIRMED" }
             : item
         )
       );
@@ -309,10 +334,10 @@ export default function BookingsPage() {
                 label="Vehicle"
                 rules={[{ required: true, message: "Vui lòng chọn Vehicle" }]}
               >
-                <Select>
+                <Select onChange={handleVehicleChange} placeholder="Chọn xe của bạn">
                   {vehicles.map((v) => (
                     <Option key={v.id} value={v.id}>
-                      {v.model}
+                      {v.model} ({v.plateNumber})
                     </Option>
                   ))}
                 </Select>
@@ -323,8 +348,13 @@ export default function BookingsPage() {
                 label="Station"
                 rules={[{ required: true, message: "Vui lòng chọn Station" }]}
               >
-                <Select>
-                  {stations.map((s) => (
+                <Select
+                  placeholder="Chọn trạm tương thích"
+                  disabled={!form.getFieldValue('vehicleId') || isStationLoading}
+                  loading={isStationLoading}
+                  notFoundContent={isStationLoading ? <Spin size="small" /> : "Vui lòng chọn xe để xem các trạm tương thích"}
+                >
+                  {compatibleStations.map((s) => (
                     <Option key={s.id} value={s.id}>
                       {s.name}
                     </Option>

@@ -1,4 +1,3 @@
-
 import React from "react";
 import "./NavBar.css";
 import { Button, Dropdown } from "antd";
@@ -37,11 +36,8 @@ const Navbar = () => {
     },
     {
       key: "booking",
-      label: (
-        <span onClick={() => handleGuardedNav("/stations/booking")}>
-          Đặt lịch
-        </span>
-      ),
+      label: "Đặt lịch",
+      onClick: () => handleGuardedNav("/stations/booking"),
     },
   ];
 

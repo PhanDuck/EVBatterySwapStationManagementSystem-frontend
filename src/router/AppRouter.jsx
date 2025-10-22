@@ -14,6 +14,7 @@ import AdminDashboard from "../pages/Dashboard/AdminDashboard";
 import DriverDashboard from "../pages/Dashboard/DriverDashboard";
 import StaffDashboard from "../pages/Dashboard/StaffDashboard";
 import StationsNearbyPage from "../pages/Shared/StationsNearby";
+import StationBookingPage from "../pages/Shared/StationBooking";
 
 
 import PrivateRoute from "./PrivateRoute";
@@ -42,13 +43,19 @@ export default function AppRouter() {
   return (
     <Router>
       <Routes>
-        {/* 🌐 Public routes */}
+        {/* 🌐 Public and Authenticated routes with HomeLayout */}
         <Route element={<HomeLayout />}>
+          {/* Public */}
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/packages" element={<Packages />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/stations/nearby" element={<StationsNearbyPage />} />
+          
+          {/* Protected */}
+          <Route element={<PrivateRoute roles={["Driver"]} />}>
+            <Route path="/stations/booking" element={<StationBookingPage />} />
+          </Route>
         </Route>
 
         <Route
@@ -61,7 +68,7 @@ export default function AppRouter() {
 
 
 
-        {/* 🔒 Protected routes */}
+        {/* 🔒 Protected routes without HomeLayout (Dashboards, etc.) */}
         <Route element={<PrivateRoute roles={["Admin"]} />}>
           <Route path="/admin/*" element={<AdminDashboard />} />
         </Route>
