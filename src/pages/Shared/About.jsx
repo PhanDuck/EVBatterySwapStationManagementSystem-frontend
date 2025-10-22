@@ -78,7 +78,7 @@ function AboutPage() {
               <Card bordered={false} style={{ textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                 <Statistic
                   title="Tỉnh Thành"
-                  value={34}
+                  value={36}
                   valueStyle={{ color: '#1e3a8a', fontSize: '2.5rem' }}
                   prefix={<RocketOutlined />}
                 />
