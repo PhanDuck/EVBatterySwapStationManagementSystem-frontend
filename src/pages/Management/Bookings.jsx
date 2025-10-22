@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, use } from "react";
 import {
   Card,
   Table,
@@ -13,7 +13,7 @@ import {
   message,
   Spin,
 } from "antd";
-import { PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { PlusOutlined, CheckOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
 
 const { Option } = Select;
@@ -26,7 +26,6 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
   const [form] = Form.useForm();
   const [search, setSearch] = useState("");
   const [editingRecord, setEditingRecord] = useState(null);
@@ -49,10 +48,17 @@ export default function BookingsPage() {
     try {
       let bookingRes, vehicleRes, stationRes, userRes;
 
-      if (role === "ADMIN" || role === "STAFF") {
+      if (role === "ADMIN") {
         // 🧑‍💼 ADMIN / STAFF: Lấy dữ liệu toàn hệ thống
         [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
           api.get("/booking"),
+          api.get("/vehicle"),
+          api.get("/station"),
+          api.get("/admin/user"),
+        ]);
+      } else if (role === "STAFF") {
+        [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
+          api.get("/booking/my-stations"),
           api.get("/vehicle"),
           api.get("/station"),
           api.get("/admin/user"),
@@ -64,14 +70,20 @@ export default function BookingsPage() {
           api.get("/vehicle/my-vehicles"),
           api.get("/station"),
           api.get("/Current"),
-        ]); 
+        ]);
       }
 
       // ✅ Gán dữ liệu vào state (kiểm tra tránh lỗi undefined)
       setData(Array.isArray(bookingRes?.data) ? bookingRes.data : []);
       setVehicles(Array.isArray(vehicleRes?.data) ? vehicleRes.data : []);
       setStations(Array.isArray(stationRes?.data) ? stationRes.data : []);
-      setUsers(Array.isArray(userRes?.data)? userRes.data: userRes?.data ? [userRes.data]: []);
+      setUsers(
+        Array.isArray(userRes?.data)
+          ? userRes.data
+          : userRes?.data
+          ? [userRes.data]
+          : []
+      );
     } catch (err) {
       console.error("❌ Fetch error:", err);
       message.error("Không thể tải dữ liệu, vui lòng thử lại!");
@@ -82,7 +94,7 @@ export default function BookingsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   // 📖 Map ID sang tên
   const driverName = (id) =>
@@ -159,39 +171,30 @@ export default function BookingsPage() {
     }
   };
 
-  // 🗑️ Xóa booking
-  const handleDelete = (id) => {
-    Modal.confirm({
-      title: "Xác nhận xóa booking này?",
-      okText: "Xóa",
-      okType: "danger",
-      cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          setDeletingId(id);
-          await api.patch(`/booking/my-bookings/${id}/cancel`);
-          setData((prev) => prev.filter((b) => (b.id ?? b._id) !== id));
-          message.success("Đã xóa booking!");
-        } catch (err) {
-          console.error(err);
-          message.error("Không thể xóa booking!");
-        } finally {
-          setDeletingId(null);
-        }
-      },
-    });
-  };
-
   // ➕ Mở modal
   const openNew = () => {
     form.resetFields();
     setEditingRecord(null);
     setIsModalVisible(true);
   };
-  const openEdit = (record) => {
-    setEditingRecord(record);
-    form.setFieldsValue({ status: record.status });
-    setIsModalVisible(true);
+  const handleConfirm = async (record) => {
+    try {
+      const res = await api.patch(`/booking/${record.id}/confirm`);
+
+      // ✅ Cập nhật lại state ngay
+      setData((prev) =>
+        prev.map((item) =>
+          item.id === record.id
+            ? { ...item, status: res.data?.status || "CONFIRMED" } // lấy status mới
+            : item
+        )
+      );
+
+      message.success("Xác nhận booking thành công!");
+    } catch (err) {
+      console.error("Confirm booking error:", err);
+      message.error("Không thể xác nhận booking!");
+    }
   };
 
   // 🧾 Cột hiển thị
@@ -236,31 +239,17 @@ export default function BookingsPage() {
       title: "Actions",
       key: "actions",
       render: (_, record) => {
-        const canDelete =
-          role === "ADMIN" ||
-          role === "STAFF" ||
-          (role === "DRIVER" && record.driverId === userId);
         return (
           <Space>
-            {(role === "ADMIN" || role === "STAFF") && (
+            {(role === "ADMIN" || role === "STAFF") &&  record.status === "PENDING" && (
               <Button
-                icon={<EditOutlined />}
-                size="small"
-                onClick={() => openEdit(record)}
+                type="primary"
+                icon={<CheckOutlined />}
+                onClick={() => handleConfirm(record)}
               >
-                Edit
+                Confirm
               </Button>
             )}
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              size="small"
-              onClick={() => handleDelete(record.id ?? record._id)}
-              loading={deletingId === (record.id ?? record._id)}
-              disabled={!canDelete}
-            >
-              Delete
-            </Button>
           </Space>
         );
       },
@@ -337,7 +326,7 @@ export default function BookingsPage() {
                 <Select>
                   {stations.map((s) => (
                     <Option key={s.id} value={s.id}>
-                      {s.stationName}
+                      {s.name}
                     </Option>
                   ))}
                 </Select>

@@ -43,10 +43,11 @@ const StationPage = () => {
   useEffect(() => {
     fetchStations();
   }, []);
-
+const Role =  JSON.parse(localStorage.getItem('currentUser')).role;
   const fetchStations = async () => {
+    let apiPath = Role === "ADMIN" ? "/station" : "/staff-station-assignment/my-stations";
     try {
-      const res = await api.get("/station");
+      const res = await api.get(apiPath);
       setStations(res.data);
     } catch (err) {
       message.error("Failed to fetch stations");

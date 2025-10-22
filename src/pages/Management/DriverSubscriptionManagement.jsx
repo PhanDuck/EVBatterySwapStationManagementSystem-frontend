@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo,  } from "react";
 import {
   Card,
   Table,
@@ -15,7 +15,6 @@ import {
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
-import moment from "moment";
 
 const { Option } = Select;
 
@@ -27,7 +26,7 @@ export default function DriverSubscriptionManagement() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingRecord, setEditingRecord] = useState(null);
+  // Removed editingRecord state (edit function removed)
   const [search, setSearch] = useState("");
 
   const [form] = Form.useForm();
@@ -88,23 +87,10 @@ export default function DriverSubscriptionManagement() {
   // ➕ Mở modal thêm
   const openNew = () => {
     form.resetFields();
-    setEditingRecord(null);
     setIsModalVisible(true);
   };
 
-  // ✏️ Mở modal sửa
-  const openEdit = (record) => {
-    setEditingRecord(record);
-    form.setFieldsValue({
-      driverId: record.driverId,
-      packageId: record.packageId,
-      startDate: moment(record.startDate),
-      endDate: moment(record.endDate),
-      status: record.status,
-      remainingSwaps: record.remainingSwaps,
-    });
-    setIsModalVisible(true);
-  };
+  // Removed openEdit (edit function removed)
 
   // 🗑️ Xóa subscription
   const handleDelete = (id) => {
@@ -129,7 +115,7 @@ export default function DriverSubscriptionManagement() {
     });
   };
 
-  // ➕ Thêm / Cập nhật subscription
+  // ➕ Chỉ tạo mới subscription
   const handleSubmit = async (values) => {
     const payload = {
       driverId: values.driverId,
@@ -142,20 +128,10 @@ export default function DriverSubscriptionManagement() {
 
     try {
       setSubmitting(true);
-      if (editingRecord) {
-        await api.put(`/driver-subscription/${editingRecord.id}`, payload);
-        setData((prev) =>
-          prev.map((s) =>
-            s.id === editingRecord.id ? { ...s, ...payload } : s
-          )
-        );
-        message.success("Cập nhật subscription thành công!");
-      } else {
-        const res = await api.post("/driver-subscription", payload);
-        const newSub = res.data ?? { ...payload, id: `DS-${Date.now()}` };
-        setData((prev) => [newSub, ...prev]);
-        message.success("Tạo subscription thành công!");
-      }
+      const res = await api.post("/driver-subscription", payload);
+      const newSub = res.data ?? { ...payload, id: `DS-${Date.now()}` };
+      setData((prev) => [newSub, ...prev]);
+      message.success("Tạo subscription thành công!");
       setIsModalVisible(false);
       form.resetFields();
     } catch (err) {
@@ -197,34 +173,7 @@ export default function DriverSubscriptionManagement() {
       title: "Remaining Swaps",
       dataIndex: "remainingSwaps",
       key: "remainingSwaps",
-    },
-    // Actions column chỉ cho DRIVER
-    ...(role === "DRIVER"
-      ? [
-          {
-            title: "Actions",
-            key: "actions",
-            render: (_, record) => (
-              <Space>
-                <Button
-                  icon={<EditOutlined />}
-                  size="small"
-                  onClick={() => openEdit(record)}
-                />
-                <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  size="small"
-                  onClick={() => handleDelete(record.id)}
-                  loading={deletingId === record.id}
-                >
-                  Delete
-                </Button>
-              </Space>
-            ),
-          },
-        ]
-      : []),
+    },   
   ];
 
   return (
@@ -238,12 +187,7 @@ export default function DriverSubscriptionManagement() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ width: 250 }}
-            />
-            {role === "DRIVER" && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>
-                New Subscription
-              </Button>
-            )}
+            />            
           </Space>
         }
       >
@@ -257,98 +201,7 @@ export default function DriverSubscriptionManagement() {
         </Spin>
       </Card>
 
-      {/* Modal Form */}
-      <Modal
-        title={editingRecord ? "Edit Subscription" : "New Subscription"}
-        open={isModalVisible}
-        onCancel={() => {
-          setIsModalVisible(false);
-          setEditingRecord(null);
-        }}
-        footer={null}
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item
-            name="driverId"
-            label="Driver"
-            rules={[{ required: true, message: "Vui lòng chọn Driver" }]}
-          >
-            <Select disabled={role !== "DRIVER"}>
-              {drivers.map((d) => (
-                <Option key={d.id} value={d.id}>
-                  {d.fullName}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="packageId"
-            label="Package"
-            rules={[{ required: true, message: "Vui lòng chọn Package" }]}
-          >
-            <Select>
-              {packages.map((p) => (
-                <Option key={p.id} value={p.id}>
-                  {p.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="startDate"
-            label="Start Date"
-            rules={[{ required: true, message: "Chọn ngày bắt đầu" }]}
-          >
-            <DatePicker style={{ width: "100%" }} />
-          </Form.Item>
-
-          <Form.Item
-            name="endDate"
-            label="End Date"
-            rules={[{ required: true, message: "Chọn ngày kết thúc" }]}
-          >
-            <DatePicker style={{ width: "100%" }} />
-          </Form.Item>
-
-          <Form.Item
-            name="status"
-            label="Status"
-            rules={[{ required: true, message: "Chọn trạng thái" }]}
-          >
-            <Select>
-              <Option value="ACTIVE">ACTIVE</Option>
-              <Option value="INACTIVE">INACTIVE</Option>
-              <Option value="EXPIRED">EXPIRED</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="remainingSwaps"
-            label="Remaining Swaps"
-            rules={[{ required: true, message: "Nhập số lần còn lại" }]}
-          >
-            <Input type="number" />
-          </Form.Item>
-
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" loading={submitting}>
-                {editingRecord ? "Update" : "Create"}
-              </Button>
-              <Button
-                onClick={() => {
-                  setIsModalVisible(false);
-                  setEditingRecord(null);
-                }}
-              >
-                Cancel
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+      
     </div>
   );
 }

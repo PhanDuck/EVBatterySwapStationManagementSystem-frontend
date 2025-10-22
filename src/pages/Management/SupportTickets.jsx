@@ -10,7 +10,6 @@ import {
   Input,
   Select,
   message,
-  Rate,
 } from "antd";
 import {
   PlusOutlined,
@@ -163,18 +162,7 @@ export default function SupportPage() {
       key: "assignedTo",
       width: 150,
     },
-    {
-      title: "Rating",
-      dataIndex: "rating",
-      key: "rating",
-      render: (rating) =>
-        rating ? (
-          <Rate disabled defaultValue={rating} style={{ fontSize: "14px" }} />
-        ) : (
-          "-"
-        ),
-      width: 120,
-    },
+    
     {
       title: "Actions",
       key: "actions",

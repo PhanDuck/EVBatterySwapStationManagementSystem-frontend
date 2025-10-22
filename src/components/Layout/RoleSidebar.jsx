@@ -25,7 +25,6 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
     STAFF: [
       { path: "bookings", label: "Đặt lịch", icon: <FiCalendar /> },
       { path: "stations", label: "Trạm đổi pin", icon: <FiMap /> },
-      { path: "vehicles", label: "Xe điện", icon: <FiTruck /> },
       { path: "tickets", label: "Hỗ trợ", icon: <FiHelpCircle /> },
     ],
     DRIVER: [

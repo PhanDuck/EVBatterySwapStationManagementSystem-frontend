@@ -64,58 +64,7 @@ const Navbar = () => {
         </Link>
       </div>
 
-<<<<<<< HEAD
-            {/* Menu chính: Dùng class gap-8 thay vì gap-6 để thoáng hơn */}
-            <div className="menu_left flex items-center gap-8 text-white">
-                <Link to="/" className="hover:text-yellow-400 transition-colors">Trang chủ</Link>
-                <Link to="/about" className="hover:text-yellow-400 transition-colors">Về chúng tôi</Link>
-                <Dropdown
-                    menu={{ items: swapMenuItems }}
-                    placement="bottom" // Đặt xuống dưới (bottom) trông tự nhiên hơn
-                    trigger={["hover"]}
-                >
-                    {/* Bọc trong span hoặc div để dễ styling hover */}
-                    <span onClick={(e) => e.preventDefault()} className="cursor-pointer hover:text-yellow-400 transition-colors">
-                        Trạm đổi pin
-                    </span>
-                </Dropdown>
-                <Link to="/packages" className="hover:text-yellow-400 transition-colors">Gói dịch vụ</Link>
-                <Link to="/support" className="hover:text-yellow-400 transition-colors">Hỗ trợ</Link>
-            </div>
 
-            {/* Nút bấm */}
-            <div className="menu_right flex gap-3"> {/* Tăng gap lên 3 */}
-                {!isAuthenticated ? (
-                    <>
-                        <Link to="/login">
-                            <Button 
-                                type="default" 
-                                style={{ backgroundColor: "#FFC107", color: "#1F2937", borderColor: "#FFC107", fontWeight: 'bold' }}> {/* Nút Đăng nhập nổi bật */}
-                                Đăng nhập
-                            </Button>
-                        </Link>
-                        <Link to="/register">
-                            <Button 
-                                type="default" 
-                                style={{ backgroundColor: "transparent", color: "#fff", borderColor: "#fff" }}> {/* Nút Đăng ký làm nút phụ */}
-                                Đăng ký
-                            </Button>
-                        </Link>
-                    </>
-                ) : (
-                    <Button
-                        type="primary"
-                        danger
-                        icon={<LogoutOutlined />}
-                        onClick={handleLogout}
-                    >
-                        Logout
-                    </Button>
-                )}
-            </div>
-        </nav>
-    );
-=======
       {/* Menu chính: Dùng class gap-8 thay vì gap-6 để thoáng hơn */}
       <div className="menu_left flex items-center gap-8 text-white">
         <Link to="/about" className="hover:text-yellow-400 transition-colors">
@@ -184,7 +133,6 @@ const Navbar = () => {
       </div>
     </nav>
   );
->>>>>>> f5ea1d0 (Cap nhat giao dien + them thanh toan)
 };
 
 export default Navbar;

@@ -108,183 +108,212 @@ const handleDelete = async (id) => {
 
   // 📊 Cột hiển thị
   const columns = [
-    {
-      title: "ID",
-      dataIndex: "id",
-      width: 80,
-    },
-    {
-      title: "Tên gói dịch vụ",
-      dataIndex: "name",
-      width: 200,
-    },
-    {
-      title: "Giá (VND)",
-      dataIndex: "price",
-      width: 150,
-      render: (value) => value?.toLocaleString("vi-VN") || "—",
-    },
-    {
-      title: "Thời hạn",
-      dataIndex: "duration",
-      width: 150,
-      render: (_, record) => (
-        <span>
-          {record.maxSwaps} lần / {record.duration} ngày
-        </span>
-      ),
-    },
-    {
-      title: "Mô tả",
-      dataIndex: "description",
-      width: 500,
-      ellipsis: false,
-      render: (text) => (
-        <div style={{ whiteSpace: "normal", wordWrap: "break-word" }}>
-          {text}
-        </div>
-      ),
-    },
-    {
-      title: "Hành động",
-      key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Button
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => handleEdit(record)}
-          >
-            Sửa
-          </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            size="small"
-            onClick={() => handleDelete(record.id)}
-          >
-            Xóa
-          </Button>
-        </Space>
-      ),
-    },
-  ];
+  {
+    title: "ID",
+    dataIndex: "id",
+    width: 60,
+    align: "center",
+    render: (id) => <b>{id}</b>,
+  },
+  {
+    title: "Tên gói dịch vụ",
+    dataIndex: "name",
+    width: 180,
+    render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>,
+  },
+  {
+    title: "Giá (VND)",
+    dataIndex: "price",
+    width: 120,
+    align: "right",
+    render: (value) => (
+      <span style={{ color: "#1677ff", fontWeight: 500 }}>
+        {value?.toLocaleString("vi-VN") || "—"}
+      </span>
+    ),
+  },
+  {
+    title: "Thời hạn",
+    dataIndex: "duration",
+    width: 140,
+    render: (_, record) => (
+      <span>
+        {record.maxSwaps} lần / {record.duration} ngày
+      </span>
+    ),
+  },
+  {
+    title: "Mô tả",
+    dataIndex: "description",
+    ellipsis: { showTitle: false },
+    render: (text) => (
+      <div
+        style={{
+          whiteSpace: "normal",
+          wordBreak: "break-word",
+          maxWidth: 400,
+          color: "#555",
+        }}
+      >
+        {text}
+      </div>
+    ),
+  },
+  {
+    title: "Hành động",
+    key: "actions",
+    align: "center",
+    render: (_, record) => (
+      <Space>
+        <Button
+          icon={<EditOutlined />}
+          size="small"
+          type="default"
+          onClick={() => handleEdit(record)}
+        >
+          Sửa
+        </Button>
+        <Button
+          danger
+          icon={<DeleteOutlined />}
+          size="small"
+          onClick={() => handleDelete(record.id)}
+        >
+          Xóa
+        </Button>
+      </Space>
+    ),
+  },
+];
+
 
   return (
-    <div style={{ padding: 24 }}>
-      <Card
-        title="Quản lý Gói Dịch Vụ"
-        extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingPackage(null);
-              form.resetFields();
-              setIsModalVisible(true);
-            }}
-          >
-            Thêm mới
-          </Button>
-        }
-      >
-        <Table
-          columns={columns}
-          dataSource={packages}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 8 }}
-        />
-      </Card>
-
-      {/* Modal thêm/sửa */}
-      <Modal
-        title={editingPackage ? "Chỉnh sửa gói dịch vụ" : "Tạo mới gói dịch vụ"}
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{
-            name: "",
-            description: "",
-            price: "",
-            duration: "",
-            maxSwaps: "",
+  <div style={{ padding: 24, background: "#f5f6fa", minHeight: "100vh" }}>
+    <Card
+      title={<h2 style={{ marginBottom: 0 }}>📦 Quản lý Gói Dịch Vụ</h2>}
+      extra={
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setEditingPackage(null);
+            form.resetFields();
+            setIsModalVisible(true);
           }}
         >
-          <Form.Item
-            name="name"
-            label="Tên gói"
-            rules={[{ required: true, message: "Vui lòng nhập tên gói" }]}
-          >
-            <Input placeholder="Nhập tên gói dịch vụ" />
-          </Form.Item>
+          Thêm mới
+        </Button>
+      }
+      style={{
+        borderRadius: 12,
+        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+        overflow: "hidden",
+      }}
+    >
+      <Table
+        bordered
+        size="middle"
+        columns={columns}
+        dataSource={packages}
+        rowKey="id"
+        loading={loading}
+        pagination={{ pageSize: 8 }}
+        style={{
+          borderRadius: "8px",
+          overflow: "hidden",
+        }}
+      />
+    </Card>
 
-          <Form.Item
-            name="price"
-            label="Giá (VNĐ)"
-            rules={[{ required: true, message: "Vui lòng nhập giá" }]}
-          >
-            <InputNumber
-              style={{ width: "100%" }}
-              min={1000}
-              step={1000}
-              placeholder="Nhập giá gói (vd: 200000)"
-            />
-          </Form.Item>
+    {/* Modal thêm/sửa */}
+    <Modal
+      title={editingPackage ? "✏️ Chỉnh sửa gói dịch vụ" : "➕ Tạo mới gói dịch vụ"}
+      open={isModalVisible}
+      onCancel={() => setIsModalVisible(false)}
+      footer={null}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        initialValues={{
+          name: "",
+          description: "",
+          price: "",
+          duration: "",
+          maxSwaps: "",
+        }}
+      >
+        <Form.Item
+          name="name"
+          label="Tên gói"
+          rules={[{ required: true, message: "Vui lòng nhập tên gói" }]}
+        >
+          <Input placeholder="Nhập tên gói dịch vụ" />
+        </Form.Item>
 
-          <Form.Item label="Thời hạn gói (x lần / x ngày)">
-            <Input.Group compact>
-              <Form.Item
-                name="maxSwaps"
-                noStyle
-                rules={[{ required: true, message: "Nhập số lần đổi" }]}
-              >
-                <InputNumber
-                  min={1}
-                  placeholder="Số lần đổi"
-                  style={{ width: "50%" }}
-                />
-              </Form.Item>
-              <Form.Item
-                name="duration"
-                noStyle
-                rules={[{ required: true, message: "Nhập số ngày hiệu lực" }]}
-              >
-                <InputNumber
-                  min={1}
-                  placeholder="Số ngày hiệu lực"
-                  style={{ width: "50%" }}
-                />
-              </Form.Item>
-            </Input.Group>
-            <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
-              Ví dụ: 15 lần / 30 ngày
-            </div>
-          </Form.Item>
+        <Form.Item
+          name="price"
+          label="Giá (VNĐ)"
+          rules={[{ required: true, message: "Vui lòng nhập giá" }]}
+        >
+          <InputNumber
+            style={{ width: "100%" }}
+            min={1000}
+            step={1000}
+            placeholder="Nhập giá gói (vd: 200000)"
+          />
+        </Form.Item>
 
-          <Form.Item name="description" label="Mô tả">
-            <Input.TextArea
-              rows={3}
-              placeholder="Nhập mô tả gói dịch vụ"
-              autoSize={{ minRows: 2, maxRows: 4 }}
-            />
-          </Form.Item>
+        <Form.Item label="Thời hạn gói (x lần / x ngày)">
+          <Input.Group compact>
+            <Form.Item
+              name="maxSwaps"
+              noStyle
+              rules={[{ required: true, message: "Nhập số lần đổi" }]}
+            >
+              <InputNumber
+                min={1}
+                placeholder="Số lần đổi"
+                style={{ width: "50%" }}
+              />
+            </Form.Item>
+            <Form.Item
+              name="duration"
+              noStyle
+              rules={[{ required: true, message: "Nhập số ngày hiệu lực" }]}
+            >
+              <InputNumber
+                min={1}
+                placeholder="Số ngày hiệu lực"
+                style={{ width: "50%" }}
+              />
+            </Form.Item>
+          </Input.Group>
+          <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
+            Ví dụ: 15 lần / 30 ngày
+          </div>
+        </Form.Item>
 
-          <Form.Item style={{ textAlign: "right" }}>
-            <Space>
-              <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
-              <Button type="primary" htmlType="submit">
-                {editingPackage ? "Cập nhật" : "Tạo mới"}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
-  );
+        <Form.Item name="description" label="Mô tả">
+          <Input.TextArea
+            rows={3}
+            placeholder="Nhập mô tả gói dịch vụ"
+            autoSize={{ minRows: 2, maxRows: 4 }}
+          />
+        </Form.Item>
+
+        <Form.Item style={{ textAlign: "right" }}>
+          <Space>
+            <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
+            <Button type="primary" htmlType="submit">
+              {editingPackage ? "Cập nhật" : "Tạo mới"}
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </Modal>
+  </div>
+);
+
 }

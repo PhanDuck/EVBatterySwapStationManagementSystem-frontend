@@ -11,3 +11,7 @@ body,
 p{
       margin-bottom: 0;
 }
+.ev-dashboard {
+  height: 100vh !important; /* 👈 đảm bảo layout luôn full màn hình */
+  overflow: hidden; /* tránh scroll ngoài */
+}
