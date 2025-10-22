@@ -8,20 +8,16 @@ import {
   TeamOutlined,
   RocketOutlined,
 } from '@ant-design/icons';
-import backgroundAboutUs from '../../assets/img/backgroundaboutus.png';
 
 const { Title, Paragraph, Text } = Typography;
 
 function AboutPage() {
   return (
     <div style={{ background: '#f0f2f5' }}>
-      {/* Hero Section với Background Image */}
+      {/* Hero Section với Gradient Background thay vì ảnh */}
       <section
         style={{
-          backgroundImage: `linear-gradient(rgba(30, 58, 138, 0.85), rgba(30, 58, 138, 0.85)), url(${backgroundAboutUs})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%)',
           padding: '120px 20px',
           textAlign: 'center',
           color: 'white',
@@ -45,7 +41,7 @@ function AboutPage() {
               <Card bordered={false} style={{ textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                 <Statistic
                   title="Trạm Đổi Pin"
-                  value={15}
+                  value={150}
                   suffix="+"
                   valueStyle={{ color: '#1e3a8a', fontSize: '2.5rem' }}
                   prefix={<EnvironmentOutlined />}
@@ -67,7 +63,7 @@ function AboutPage() {
               <Card bordered={false} style={{ textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                 <Statistic
                   title="Người Dùng"
-                  value={1000}
+                  value={10000}
                   suffix="+"
                   valueStyle={{ color: '#1e3a8a', fontSize: '2.5rem' }}
                   prefix={<TeamOutlined />}
@@ -78,7 +74,7 @@ function AboutPage() {
               <Card bordered={false} style={{ textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                 <Statistic
                   title="Tỉnh Thành"
-                  value={36}
+                  value={34}
                   valueStyle={{ color: '#1e3a8a', fontSize: '2.5rem' }}
                   prefix={<RocketOutlined />}
                 />
@@ -190,7 +186,7 @@ function AboutPage() {
                 <EnvironmentOutlined style={{ fontSize: '3rem', color: '#1e3a8a', marginBottom: 16 }} />
                 <Title level={4}>Mạng Lưới Rộng</Title>
                 <Paragraph style={{ color: '#475569' }}>
-                  Hơn 15 trạm đổi pin phủ khắp Sài Gòn, luôn sẵn sàng phục vụ mọi lúc mọi nơi
+                  Hơn 150 trạm đổi pin phủ khắp 34 tỉnh thành, luôn sẵn sàng phục vụ mọi lúc mọi nơi
                 </Paragraph>
               </Card>
             </Col>
