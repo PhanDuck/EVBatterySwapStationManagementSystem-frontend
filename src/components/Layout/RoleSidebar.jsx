@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { FiUsers, FiMap, FiTruck, FiCalendar, FiCreditCard, FiHelpCircle, FiBatteryCharging } from "react-icons/fi";
 import { Tooltip } from "antd";
 import { MdOutlinePayments } from "react-icons/md";
+import { TbMessageCircleQuestion } from "react-icons/tb";
 
 
 export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
@@ -20,19 +21,19 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
       { path: "bookings", label: "Đặt lịch", icon: <FiCalendar /> },
       { path: "service-packages", label: "Gói cước", icon: <FiCreditCard /> },
       { path: "transactions", label: "Giao dịch", icon: <MdOutlinePayments /> },
-      { path: "tickets", label: "Hỗ trợ", icon: <FiHelpCircle /> },
+      { path: "tickets", label: "Hỗ trợ", icon: <TbMessageCircleQuestion /> },
     ],
     STAFF: [
       { path: "bookings", label: "Đặt lịch", icon: <FiCalendar /> },
       { path: "stations", label: "Trạm đổi pin", icon: <FiMap /> },
-      { path: "tickets", label: "Hỗ trợ", icon: <FiHelpCircle /> },
+      { path: "tickets", label: "Hỗ trợ", icon: <TbMessageCircleQuestion /> },
     ],
     DRIVER: [
       { path: "bookings", label: "Lịch đặt của tôi", icon: <FiCalendar /> },
       { path: "vehicles", label: "Xe điện", icon: <FiTruck /> },
       { path: "transactions", label: "Giao dịch", icon: <MdOutlinePayments /> },
       { path: "driver-subscription", label: "Quản lý đăng ký", icon: <FiHelpCircle /> },
-      { path: "tickets", label: "Hỗ trợ", icon: <FiHelpCircle /> },
+      { path: "tickets", label: "Hỗ trợ", icon: <TbMessageCircleQuestion /> },
     ],
   };
 
