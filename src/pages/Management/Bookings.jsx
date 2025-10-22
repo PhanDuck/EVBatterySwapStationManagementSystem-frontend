@@ -12,10 +12,10 @@ import {
   Tag,
   message,
   Spin,
-  notification,
 } from "antd";
 import { PlusOutlined, CheckOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
+import BookingForm from "../../components/BookingForm/BookingForm";
 
 const { Option } = Select;
 const GET_COMPATIBLE_STATIONS_API_URL = "/booking/compatible-stations";
@@ -24,8 +24,6 @@ export default function BookingsPage() {
   const [data, setData] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [stations, setStations] = useState([]);
-  const [compatibleStations, setCompatibleStations] = useState([]);
-  const [isStationLoading, setIsStationLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -89,37 +87,6 @@ export default function BookingsPage() {
     fetchData();
   }, [fetchData]);
 
-  // 🚀 Hàm mới: Tải danh sách trạm tương thích dựa vào vehicleId
-  const fetchCompatibleStations = useCallback(async (vehicleId) => {
-    if (!vehicleId) {
-      setCompatibleStations([]);
-      return;
-    }
-    setIsStationLoading(true);
-    try {
-      const res = await api.get(`${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`);
-      setCompatibleStations(res.data || []);
-    } catch (error) {
-      console.error("Lỗi khi tải trạm tương thích:", error);
-      setCompatibleStations([]);
-      notification.error({
-        message: "Lỗi Tải Danh Sách Trạm",
-        description: "Không thể tải danh sách trạm tương thích cho xe đã chọn.",
-      });
-    } finally {
-      setIsStationLoading(false);
-    }
-  }, []);
-
-  // 🚀 Xử lý khi người dùng thay đổi xe
-  const handleVehicleChange = (vehicleId) => {
-    form.setFieldsValue({ stationId: null });
-    setCompatibleStations([]);
-    if (vehicleId) {
-      fetchCompatibleStations(vehicleId);
-    }
-  };
-
   // 📖 Map ID sang tên
   const driverName = (id) =>
     users.find((u) => u.id === id)?.fullName || `${id}`;
@@ -143,14 +110,13 @@ export default function BookingsPage() {
   }, [data, search, users, vehicles, stations]);
 
   // ➕ Tạo booking mới (Driver)
-  const handleCreate = async () => {
+  const handleCreate = async (values) => {
     try {
-      const validValues = await form.validateFields();
       const payload = {
         driverId: userId,
-        vehicleId: validValues.vehicleId,
-        stationId: validValues.stationId,
-        bookingTime: validValues.bookingTime?.toISOString(),
+        vehicleId: values.vehicleId,
+        stationId: values.stationId,
+        bookingTime: values.bookingTime,
         status: "PENDING",
       };
 
@@ -199,7 +165,6 @@ export default function BookingsPage() {
   const openNew = () => {
     form.resetFields();
     setEditingRecord(null);
-    setCompatibleStations([]);
     setIsModalVisible(true);
   };
   const handleConfirm = async (record) => {
@@ -321,59 +286,28 @@ export default function BookingsPage() {
         }}
         footer={null}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={editingRecord ? handleUpdateStatus : handleCreate}
-        >
-          {/* FORM DRIVER */}
-          {role === "DRIVER" && !editingRecord && (
-            <>
-              <Form.Item
-                name="vehicleId"
-                label="Vehicle"
-                rules={[{ required: true, message: "Vui lòng chọn Vehicle" }]}
-              >
-                <Select onChange={handleVehicleChange} placeholder="Chọn xe của bạn">
-                  {vehicles.map((v) => (
-                    <Option key={v.id} value={v.id}>
-                      {v.model} ({v.plateNumber})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
+        {role === 'DRIVER' && !editingRecord && (
+          <BookingForm 
+            form={form} 
+            onFinish={handleCreate}
+            submitButton={
+              <Space>
+                <Button type="primary" htmlType="submit" loading={submitting}>
+                  Create
+                </Button>
+                <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
+              </Space>
+            }
+          />
+        )}
 
-              <Form.Item
-                name="stationId"
-                label="Station"
-                rules={[{ required: true, message: "Vui lòng chọn Station" }]}
-              >
-                <Select
-                  placeholder="Chọn trạm tương thích"
-                  disabled={!form.getFieldValue('vehicleId') || isStationLoading}
-                  loading={isStationLoading}
-                  notFoundContent={isStationLoading ? <Spin size="small" /> : "Vui lòng chọn xe để xem các trạm tương thích"}
-                >
-                  {compatibleStations.map((s) => (
-                    <Option key={s.id} value={s.id}>
-                      {s.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                name="bookingTime"
-                label="Booking Time"
-                rules={[{ required: true, message: "Chọn thời gian đặt" }]}
-              >
-                <DatePicker showTime style={{ width: "100%" }} />
-              </Form.Item>
-            </>
-          )}
-
-          {/* FORM ADMIN/STAFF */}
-          {(role === "ADMIN" || role === "STAFF") && editingRecord && (
+        {(role === "ADMIN" || role === "STAFF") && editingRecord && (
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleUpdateStatus}
+            initialValues={{ status: editingRecord.status }}
+          >
             <Form.Item
               name="status"
               label="Status"
@@ -386,17 +320,16 @@ export default function BookingsPage() {
                 <Option value="CANCELLED">CANCELLED</Option>
               </Select>
             </Form.Item>
-          )}
-
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" loading={submitting}>
-                {editingRecord ? "Update" : "Create"}
-              </Button>
-              <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
-            </Space>
-          </Form.Item>
-        </Form>
+            <Form.Item>
+              <Space>
+                <Button type="primary" htmlType="submit" loading={submitting}>
+                  Update
+                </Button>
+                <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        )}
       </Modal>
     </div>
   );
