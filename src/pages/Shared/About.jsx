@@ -8,22 +8,39 @@ import {
   TeamOutlined,
   RocketOutlined,
 } from '@ant-design/icons';
+import BackgroundImage from '../../assets/img/backgroundaboutus.png';
 
 const { Title, Paragraph, Text } = Typography;
 
 function AboutPage() {
   return (
     <div style={{ background: '#f0f2f5' }}>
-      {/* Hero Section với Gradient Background thay vì ảnh */}
+      {/* Hero Section với ảnh nền */}
       <section
         style={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%)',
+          backgroundImage: `url(${BackgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
           padding: '120px 20px',
           textAlign: 'center',
           color: 'white',
+          position: 'relative', // Cần thiết để lớp phủ hoạt động
         }}
       >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        {/* Lớp phủ màu tối */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)', // Điều chỉnh độ trong suốt ở đây
+          zIndex: 1,
+        }}></div>
+        
+        {/* Nội dung section */}
+        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 2 }}>
           <Title level={1} style={{ color: 'white', fontSize: '3rem', marginBottom: 24 }}>
             Hệ Thống Đặt Lịch Đổi Pin Xe Máy Điện
           </Title>
