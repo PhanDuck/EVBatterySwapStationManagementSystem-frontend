@@ -93,7 +93,7 @@ export default function SupportPage() {
     } catch (error) {
       message.error("❌ Failed to send reply");
     } finally {
-      setLoadingReply(false);
+      setLoadingReply(false); 
     }
   };
   const fetchResponses = async (ticketId) => {

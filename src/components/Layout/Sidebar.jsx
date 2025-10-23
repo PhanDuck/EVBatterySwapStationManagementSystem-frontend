@@ -94,6 +94,12 @@ export default function RoleSidebar({ role = "ADMIN" }) {
         icon: <CustomerServiceOutlined />,
         path: "/staff/support",
       },
+      {
+        key: "inventories",
+        label: "Inventories",
+        icon: <SettingOutlined />,
+        path: "/staff/inventories",
+      },
     ],
 
     CUSTOMER: [

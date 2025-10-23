@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { FiUsers, FiMap, FiTruck, FiCalendar, FiCreditCard, FiHelpCircle, FiBatteryCharging } from "react-icons/fi";
+import { FiUsers, FiMap, FiTruck, FiCalendar, FiCreditCard, FiHelpCircle, FiBatteryCharging, FiSettings } from "react-icons/fi";
 import { Tooltip } from "antd";
 import { MdOutlinePayments } from "react-icons/md";
 import { TbMessageCircleQuestion } from "react-icons/tb";
@@ -27,6 +27,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
       { path: "bookings", label: "Đặt lịch", icon: <FiCalendar /> },
       { path: "stations", label: "Trạm đổi pin", icon: <FiMap /> },
       { path: "tickets", label: "Hỗ trợ", icon: <TbMessageCircleQuestion /> },
+      { path: "inventories", label: "Quản lý tồn kho", icon: <FiSettings /> },
     ],
     DRIVER: [
       { path: "bookings", label: "Lịch đặt của tôi", icon: <FiCalendar /> },
