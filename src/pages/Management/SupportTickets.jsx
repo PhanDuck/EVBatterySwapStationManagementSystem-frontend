@@ -9,6 +9,7 @@ import {
   Form,
   Input,
   message,
+  Select,
 } from "antd";
 import {
   PlusOutlined,
@@ -19,6 +20,7 @@ import {
 import api from "../../config/axios";
 
 const { TextArea } = Input;
+const { Option } = Select;
 
 export default function SupportPage() {
   const [data, setData] = useState([]);
@@ -31,8 +33,7 @@ export default function SupportPage() {
   const [form] = Form.useForm();
   const [responses, setResponses] = useState([]);
   const [loadingReply, setLoadingReply] = useState(false);
-  const userRole = JSON.parse(localStorage.getItem("currentUser"))?.role;
-
+  
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
   const role = currentUser?.role;
 
@@ -73,14 +74,43 @@ export default function SupportPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [role]);
 
+  // ✨ Hàm mới để xử lý thay đổi status
+  const handleStatusChange = async (ticketId, newStatus) => {
+    try {
+      // Gọi API để cập nhật status
+      await api.patch(`/support-ticket/${ticketId}/status`, null, {
+        params: { status: newStatus },
+      });
+
+      // Cập nhật lại state của data để UI thay đổi ngay lập tức
+      setData((prevData) =>
+        prevData.map((ticket) =>
+          ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
+        )
+      );
+
+      message.success(`Ticket #${ticketId} status updated to ${newStatus}`);
+    } catch (error) {
+      console.error("Failed to update ticket status:", error);
+      message.error("Failed to update status. Please try again.");
+    }
+  };
+  
   const handleView = (record) => {
     setViewingRecord(record);
     setIsViewModalVisible(true);
     fetchResponses(record.id);
   };
-
+  const fetchResponses = async (ticketId) => {
+    try {
+      const res = await api.get(`/ticket-response/ticket/${ticketId}`);
+      setResponses(res.data || []);
+    } catch (error) {
+      console.error("Error loading reply history:", error);
+    }
+  };
   const handleReply = async (values) => {
     setLoadingReply(true);
     try {
@@ -94,14 +124,6 @@ export default function SupportPage() {
       message.error("❌ Failed to send reply");
     } finally {
       setLoadingReply(false); 
-    }
-  };
-  const fetchResponses = async (ticketId) => {
-    try {
-      const res = await api.get(`/ticket-response/ticket/${ticketId}`);
-      setResponses(res.data || []);
-    } catch (error) {
-      console.error("Error loading reply history:", error);
     }
   };
 
@@ -147,18 +169,39 @@ export default function SupportPage() {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (s) => {
-        const color =
-          s === "RESOLVED"
-            ? "green"
-            : s === "IN_PROGRESS"
-            ? "blue"
-            : s === "OPEN"
-            ? "orange"
-            : "red";
-        return <Tag color={color}>{s}</Tag>;
+      render: (status, record) => {
+        // Nếu là DRIVER, chỉ hiển thị Tag
+        if (role === "DRIVER") {
+          const color =
+            status === "RESOLVED"
+              ? "green"
+              : status === "IN_PROGRESS"
+              ? "blue"
+              : "orange";
+          return <Tag color={color}>{status}</Tag>;
+        }
+        
+        // Nếu là ADMIN/STAFF, hiển thị Select
+        return (
+          <Select
+            defaultValue={status}
+            style={{ width: 120 }}
+            onChange={(newStatus) => handleStatusChange(record.id, newStatus)}
+            bordered={false}
+          >
+            <Option value="OPEN">
+              <Tag color="orange">OPEN</Tag>
+            </Option>
+            <Option value="IN_PROGRESS">
+              <Tag color="blue">IN_PROGRESS</Tag>
+            </Option>
+            <Option value="RESOLVED">
+              <Tag color="green">RESOLVED</Tag>
+            </Option>
+          </Select>
+        );
       },
-      width: 120,
+      width: 150,
     },
     {
       title: "Assigned To",
@@ -313,7 +356,7 @@ export default function SupportPage() {
             </div>
 
             {/* Reply Box (Only Admin / Staff) */}
-            {(userRole === "ADMIN" || userRole === "STAFF") && (
+            {(role === "ADMIN" || role === "STAFF") && (
               <div style={{ marginTop: "20px" }}>
                 <Form onFinish={handleReply}>
                   <Form.Item
