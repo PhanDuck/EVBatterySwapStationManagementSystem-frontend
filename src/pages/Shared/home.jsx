@@ -239,7 +239,7 @@ function Home() {
                 }}
               />
               <Title level={2} style={{ color: "white", margin: 0 }}>
-                150+
+                10+
               </Title>
               <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.8)" }}>
                 Trạm đổi pin
@@ -256,7 +256,7 @@ function Home() {
                 }}
               />
               <Title level={2} style={{ color: "white", margin: 0 }}>
-                50.000+
+                50+
               </Title>
               <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.8)" }}>
                 Người dùng
@@ -273,7 +273,7 @@ function Home() {
                 }}
               />
               <Title level={2} style={{ color: "white", margin: 0 }}>
-                100.000+
+                100+
               </Title>
               <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.8)" }}>
                 Lượt đổi thành công
@@ -287,7 +287,7 @@ function Home() {
                 style={{ fontSize: "32px", marginBottom: "8px" }}
               />
               <Title level={2} style={{ color: "white", margin: 0 }}>
-                250 tấn
+                1 tấn
               </Title>
               <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.8)" }}>
                 CO2 tiết kiệm
@@ -297,26 +297,31 @@ function Home() {
         </div>
       </section>
 
-      {/* Call to action */}
-      <section style={{ padding: "56px 0", background: "#f8f9fa" }}>
+      {/* Call to action - Replaced with YouTube Video */}
+      <section style={{ padding: "56px 0", background: "#fff" }}>
         <div
           style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 20px" }}
         >
-          <Row gutter={[24, 24]} align="middle">
-            <Col xs={24} md={16}>
-              <Title level={2} style={{ marginBottom: 8 }}>
-                Sẵn sàng đổi pin?
-              </Title>
-              <Paragraph style={{ margin: 0, color: "#64748b" }}>
-                Đăng ký tài khoản để trải nghiệm đầy đủ dịch vụ.
-              </Paragraph>
+          <Row gutter={[48, 24]} align="middle">
+            <Col xs={24} md={12}>
+              <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px' }}>
+                <iframe
+                  src="https://www.youtube.com/embed/4iAhpCPaHlc"
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                ></iframe>
+              </div>
             </Col>
-            <Col xs={24} md={8} style={{ textAlign: "center" }}>
-              <Link to="/register">
-                <Button type="primary" size="large">
-                  Đăng ký ngay
-                </Button>
-              </Link>
+            <Col xs={24} md={12}>
+              <Title level={2} style={{ marginBottom: 16 }}>
+                Sạc pin không phải là giải pháp duy nhất!
+              </Title>
+              <Paragraph style={{ color: "#64748b", fontSize: '16px', lineHeight: '1.6' }}>
+                Đối với người dùng xe máy điện, việc chờ đợi sạc pin có thể gây ra nhiều bất tiện. Dịch vụ đổi pin của chúng tôi mang đến một giải pháp nhanh chóng, tiện lợi và an toàn, giúp bạn tiếp tục hành trình chỉ trong vài phút.
+              </Paragraph>
             </Col>
           </Row>
         </div>

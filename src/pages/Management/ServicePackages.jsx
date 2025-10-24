@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Card,
   Table,
@@ -9,311 +9,319 @@ import {
   Input,
   InputNumber,
   message,
+  Tag,
 } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from "@ant-design/icons";
 import api from "../../config/axios";
 
-
-  export default function ServicePackagesPage() {
+const ServicePackagesPage = () => {
   const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [driverSubscriptions, setDriverSubscriptions] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingPackage, setEditingPackage] = useState(null);
   const [form] = Form.useForm();
-
-  // 🟢 Lấy danh sách gói dịch vụ
-  const fetchPackages = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/service-package");
-      setPackages(res.data || []);
-    } catch (err) {
-      console.error("❌ Lỗi khi tải service packages:", err);
-      message.error("Không thể tải danh sách gói dịch vụ!");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     fetchPackages();
+    fetchDriverSubscriptions();
+    fetchAllUsers();
   }, []);
 
-  // 🟡 Thêm / sửa
-  const handleSubmit = async (values) => {
-  try {
-    setLoading(true);
-
-    if (editingPackage) {
-      // 🟡 Cập nhật
-      await api.put(`/service-package/${editingPackage.id}`, values);
-      message.success("Cập nhật gói dịch vụ thành công!");
-    } else {
-      // 🟢 Tạo mới
-      await api.post("/service-package", values);
-      message.success("Tạo gói dịch vụ thành công!");
+  const fetchPackages = async () => {
+    try {
+      const res = await api.get("/service-package");
+      setPackages(res.data);
+    } catch (err) {
+      message.error("Failed to fetch service packages");
+      console.error(err);
     }
+  };
+  
+  const fetchAllUsers = async () => {
+    try {
+      const res = await api.get("/admin/user");
+      setUsers(res.data);
+    } catch (err) {
+      message.error("Failed to fetch users");
+      console.error(err);
+    }
+  };
 
-    setIsModalVisible(false);
-    form.resetFields();
+  const fetchDriverSubscriptions = async () => {
+    try {
+      const res = await api.get("/driver-subscription");
+      setDriverSubscriptions(res.data);
+    } catch (err) {
+      message.error("Failed to fetch driver subscriptions");
+      console.error(err);
+    }
+  };
 
-    // 🔄 Tải lại danh sách
-    const res = await api.get("/service-package");
-    setPackages(res.data || []);
-  } catch (err) {
-    console.error("❌ Lỗi khi lưu gói dịch vụ:", err);
-    message.error("Không thể lưu gói dịch vụ. Vui lòng thử lại!");
-  } finally {
-    setLoading(false);
-  }
-};
-
-// 🟡 Khi bấm nút "Sửa"
-const handleEdit = (record) => {
-  setEditingPackage(record);
-  form.setFieldsValue({
-    name: record.name,
-    description: record.description,
-    price: record.price,
-    duration: record.duration,
-    maxSwaps: record.maxSwaps,
-  });
-  setIsModalVisible(true);
-};
-
-// 🔴 Khi bấm nút "Xóa"
-const handleDelete = async (id) => {
-  Modal.confirm({
-    title: "Xác nhận xóa",
-    content: "Bạn có chắc chắn muốn xóa gói dịch vụ này không?",
-    okText: "Xóa",
-    okType: "danger",
-    cancelText: "Hủy",
-    async onOk() {
-      try {
-        setLoading(true);
-        await api.delete(`/service-package/${id}`);
-        message.success("Đã xóa gói dịch vụ thành công!");
-        const res = await api.get("/service-package");
-        setPackages(res.data || []);
-      } catch (err) {
-        console.error("❌ Lỗi khi xóa:", err);
-        message.error("Không thể xóa gói dịch vụ!");
-      } finally {
-        setLoading(false);
+  const handleSubmit = async (values) => {
+    try {
+      if (editingPackage) {
+        await api.put(`/service-package/${editingPackage.id}`, values);
+        message.success("Package updated successfully");
+      } else {
+        await api.post("/service-package", values);
+        message.success("Package created successfully");
       }
-    },
-  });
-};
+      setIsModalVisible(false);
+      form.resetFields();
+      fetchPackages();
+    } catch (err) {
+      message.error("Failed to save package");
+      console.error(err);
+    }
+  };
 
-  // 📊 Cột hiển thị
-  const columns = [
-  {
-    title: "ID",
-    dataIndex: "id",
-    width: 60,
-    align: "center",
-    render: (id) => <b>{id}</b>,
-  },
-  {
-    title: "Tên gói dịch vụ",
-    dataIndex: "name",
-    width: 180,
-    render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>,
-  },
-  {
-    title: "Giá (VND)",
-    dataIndex: "price",
-    width: 120,
-    align: "right",
-    render: (value) => (
-      <span style={{ color: "#1677ff", fontWeight: 500 }}>
-        {value?.toLocaleString("vi-VN") || "—"}
-      </span>
-    ),
-  },
-  {
-    title: "Thời hạn",
-    dataIndex: "duration",
-    width: 140,
-    render: (_, record) => (
-      <span>
-        {record.maxSwaps} lần / {record.duration} ngày
-      </span>
-    ),
-  },
-  {
-    title: "Mô tả",
-    dataIndex: "description",
-    ellipsis: { showTitle: false },
-    render: (text) => (
-      <div
-        style={{
-          whiteSpace: "normal",
-          wordBreak: "break-word",
-          maxWidth: 400,
-          color: "#555",
-        }}
-      >
-        {text}
-      </div>
-    ),
-  },
-  {
-    title: "Hành động",
-    key: "actions",
-    align: "center",
-    render: (_, record) => (
-      <Space>
+  const handleDeletePackage = (id) => {
+    Modal.confirm({
+      title: "Are you sure you want to delete this package?",
+      okText: "Yes",
+      okType: "danger",
+      cancelText: "No",
+      onOk: async () => {
+        try {
+          await api.delete(`/service-package/${id}`);
+          message.success("Package deleted successfully");
+          fetchPackages();
+        } catch (err) {
+          message.error("Failed to delete package");
+          console.error(err);
+        }
+      },
+    });
+  };
+  
+  const handleDeleteDriverSubscription = (id) => {
+    Modal.confirm({
+      title: "Are you sure you want to delete this subscription?",
+      content: "This will permanently remove the driver's subscription.",
+      okText: "Yes, Delete",
+      okType: "danger",
+      cancelText: "No",
+      onOk: async () => {
+        try {
+          await api.delete(`/driver-subscription/${id}`);
+          message.success("Driver subscription deleted successfully");
+          fetchDriverSubscriptions();
+        } catch (err) {
+          message.error("Failed to delete driver subscription");
+          console.error(err);
+        }
+      },
+    });
+  };
+
+  const handleAdd = () => {
+    setEditingPackage(null);
+    setIsModalVisible(true);
+    form.resetFields();
+  };
+
+  const handleEdit = (pkg) => {
+    setEditingPackage(pkg);
+    setIsModalVisible(true);
+    form.setFieldsValue(pkg);
+  };
+
+  const packageColumns = [
+    { title: "ID", dataIndex: "id", key: "id" },
+    { title: "Tên gói dịch vụ", dataIndex: "name", key: "name" },
+    {
+      title: "Giá (VNĐ)",
+      dataIndex: "price",
+      key: "price",
+      render: (price) =>
+        price.toLocaleString("vi-VN", { style: "currency", currency: "VND" }),
+    },
+    {
+      title: "Thời hạn",
+      dataIndex: "durationDays",
+      key: "durationDays",
+      render: (days) => `${days} ngày`,
+    },
+    { title: "Mô tả", dataIndex: "description", key: "description" },
+    {
+      title: "Hành động",
+      key: "actions",
+      render: (_, record) => (
+        <Space size="middle">
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={() => handleEdit(record)}
+          >
+            Sửa
+          </Button>
+          <Button
+            type="primary"
+            danger
+            icon={<DeleteOutlined />}
+            size="small"
+            onClick={() => handleDeletePackage(record.id)}
+          >
+            Xóa
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  // Create maps for quick lookups
+  const userMap = useMemo(() => new Map(users.map(user => [user.id, user.fullName])), [users]);
+  const packageMap = useMemo(() => new Map(packages.map(pkg => [pkg.id, pkg.name])), [packages]);
+
+  const subscriptionColumns = [
+    { title: "Subscription ID", dataIndex: "id", key: "id" },
+    {
+      title: "Driver Name",
+      dataIndex: "driverId",
+      key: "driverName",
+      render: (driverId) => userMap.get(driverId) || "Unknown User",
+    },
+    {
+      title: "Package Name",
+      dataIndex: "packageId",
+      key: "packageName",
+      render: (packageId) => packageMap.get(packageId) || "Unknown Package",
+    },
+    {
+      title: "Start Date",
+      dataIndex: "startDate",
+      key: "startDate",
+      render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+    },
+    {
+      title: "End Date",
+      dataIndex: "endDate",
+      key: "endDate",
+      render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => {
+        const color = status === "ACTIVE" ? "green" : "red";
+        return <Tag color={color}>{status}</Tag>;
+      },
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => (
         <Button
-          icon={<EditOutlined />}
-          size="small"
-          type="default"
-          onClick={() => handleEdit(record)}
-        >
-          Sửa
-        </Button>
-        <Button
+          type="primary"
           danger
           icon={<DeleteOutlined />}
           size="small"
-          onClick={() => handleDelete(record.id)}
+          onClick={() => handleDeleteDriverSubscription(record.id)}
         >
-          Xóa
+          Delete
         </Button>
-      </Space>
-    ),
-  },
-];
+      ),
+    },
+  ];
 
+  const filteredPackages = useMemo(() => {
+    const q = searchText?.trim().toLowerCase();
+    if (!q) return packages;
+    return packages.filter((p) => (p.name || "").toLowerCase().includes(q));
+  }, [packages, searchText]);
 
   return (
-  <div style={{ padding: 24, background: "#f5f6fa", minHeight: "100vh" }}>
-    <Card
-      title={<h2 style={{ marginBottom: 0 }}>📦 Quản lý Gói Dịch Vụ</h2>}
-      extra={
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditingPackage(null);
-            form.resetFields();
-            setIsModalVisible(true);
-          }}
-        >
-          Thêm mới
-        </Button>
-      }
-      style={{
-        borderRadius: 12,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-        overflow: "hidden",
-      }}
-    >
-      <Table
-        bordered
-        size="middle"
-        columns={columns}
-        dataSource={packages}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 8 }}
-        style={{
-          borderRadius: "8px",
-          overflow: "hidden",
-        }}
-      />
-    </Card>
-
-    {/* Modal thêm/sửa */}
-    <Modal
-      title={editingPackage ? "✏️ Chỉnh sửa gói dịch vụ" : "➕ Tạo mới gói dịch vụ"}
-      open={isModalVisible}
-      onCancel={() => setIsModalVisible(false)}
-      footer={null}
-    >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSubmit}
-        initialValues={{
-          name: "",
-          description: "",
-          price: "",
-          duration: "",
-          maxSwaps: "",
-        }}
-      >
-        <Form.Item
-          name="name"
-          label="Tên gói"
-          rules={[{ required: true, message: "Vui lòng nhập tên gói" }]}
-        >
-          <Input placeholder="Nhập tên gói dịch vụ" />
-        </Form.Item>
-
-        <Form.Item
-          name="price"
-          label="Giá (VNĐ)"
-          rules={[{ required: true, message: "Vui lòng nhập giá" }]}
-        >
-          <InputNumber
-            style={{ width: "100%" }}
-            min={1000}
-            step={1000}
-            placeholder="Nhập giá gói (vd: 200000)"
-          />
-        </Form.Item>
-
-        <Form.Item label="Thời hạn gói (x lần / x ngày)">
-          <Input.Group compact>
-            <Form.Item
-              name="maxSwaps"
-              noStyle
-              rules={[{ required: true, message: "Nhập số lần đổi" }]}
-            >
-              <InputNumber
-                min={1}
-                placeholder="Số lần đổi"
-                style={{ width: "50%" }}
-              />
-            </Form.Item>
-            <Form.Item
-              name="duration"
-              noStyle
-              rules={[{ required: true, message: "Nhập số ngày hiệu lực" }]}
-            >
-              <InputNumber
-                min={1}
-                placeholder="Số ngày hiệu lực"
-                style={{ width: "50%" }}
-              />
-            </Form.Item>
-          </Input.Group>
-          <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
-            Ví dụ: 15 lần / 30 ngày
-          </div>
-        </Form.Item>
-
-        <Form.Item name="description" label="Mô tả">
-          <Input.TextArea
-            rows={3}
-            placeholder="Nhập mô tả gói dịch vụ"
-            autoSize={{ minRows: 2, maxRows: 4 }}
-          />
-        </Form.Item>
-
-        <Form.Item style={{ textAlign: "right" }}>
+    <div style={{ padding: "24px" }}>
+      <Card
+        title="Quản lý Gói Dịch Vụ"
+        extra={
           <Space>
-            <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
-            <Button type="primary" htmlType="submit">
-              {editingPackage ? "Cập nhật" : "Tạo mới"}
+            <Input
+              placeholder="Tìm kiếm gói..."
+              allowClear
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 250 }}
+            />
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              Thêm mới
             </Button>
           </Space>
-        </Form.Item>
-      </Form>
-    </Modal>
-  </div>
-);
+        }
+      >
+        <Table
+          columns={packageColumns}
+          dataSource={filteredPackages}
+          rowKey="id"
+        />
+      </Card>
+      
+      <Card
+        title="Driver Subscriptions"
+        style={{ marginTop: '24px' }}
+      >
+        <Table
+          columns={subscriptionColumns}
+          dataSource={driverSubscriptions}
+          rowKey="id"
+          scroll={{ x: 1000 }}
+        />
+      </Card>
 
-}
+      <Modal
+        title={editingPackage ? "Chỉnh sửa gói" : "Thêm gói mới"}
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={null}
+      >
+        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <Form.Item
+            name="name"
+            label="Tên gói dịch vụ"
+            rules={[{ required: true, message: "Vui lòng nhập tên gói!" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="price"
+            label="Giá"
+            rules={[{ required: true, message: "Vui lòng nhập giá!" }]}
+          >
+            <InputNumber style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item
+            name="durationDays"
+            label="Thời hạn (ngày)"
+            rules={[{ required: true, message: "Vui lòng nhập thời hạn!" }]}
+          >
+            <InputNumber style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="Mô tả"
+            rules={[{ required: true, message: "Vui lòng nhập mô tả!" }]}
+          >
+            <Input.TextArea rows={3} />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit">
+                {editingPackage ? "Cập nhật" : "Tạo mới"}
+              </Button>
+              <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+};
+
+export default ServicePackagesPage;

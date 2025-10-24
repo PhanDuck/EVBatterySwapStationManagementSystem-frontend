@@ -21,7 +21,7 @@ console.log(role);
         path = "/staff";
         break;
       case "DRIVER":
-        path = "/drivers";
+        path = "/driver";
         break;
       default:
         path = "/"; // fallback

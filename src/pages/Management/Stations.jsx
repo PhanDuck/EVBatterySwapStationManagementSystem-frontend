@@ -35,15 +35,17 @@ const StationPage = () => {
   const [form] = Form.useForm();
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const role = getCurrentRole(); // ✅ Lấy vai trò hiện tại
+  const [batteryTypes, setBatteryTypes] = useState([]);
+  const Role = JSON.parse(localStorage.getItem('currentUser'))?.role; // Get role directly
 
   // ---------------------------
-  // 🚀 1. FETCH ALL STATIONS
+  // 🚀 1. FETCH ALL STATIONS & BATTERY TYPES
   // ---------------------------
   useEffect(() => {
     fetchStations();
+    fetchBatteryTypes();
   }, []);
-const Role =  JSON.parse(localStorage.getItem('currentUser')).role;
+
   const fetchStations = async () => {
     let apiPath = Role === "ADMIN" ? "/station" : "/staff-station-assignment/my-stations";
     try {
@@ -51,6 +53,16 @@ const Role =  JSON.parse(localStorage.getItem('currentUser')).role;
       setStations(res.data);
     } catch (err) {
       message.error("Failed to fetch stations");
+      console.error(err);
+    }
+  };
+
+  const fetchBatteryTypes = async () => {
+    try {
+      const res = await api.get("/battery-type");
+      setBatteryTypes(res.data);
+    } catch (err) {
+      message.error("Failed to fetch battery types");
       console.error(err);
     }
   };
@@ -77,21 +89,24 @@ const Role =  JSON.parse(localStorage.getItem('currentUser')).role;
   };
 
   // ---------------------------
-  // 🚀 3. DELETE STATION
+  // 🚀 3. DELETE STATION (Hard Delete)
   // ---------------------------
   const handleDelete = (id) => {
     Modal.confirm({
-      title: "Are you sure you want to delete this station?",
-      okText: "Yes",
+      title: "Bạn có chắc là xóa trạm này?",
+      content: "Hành động này sẽ xóa vỉnh viễn trạm.",
+      okText: "Có, Xóa",
       okType: "danger",
-      cancelText: "No",
+      cancelText: "Không",
       onOk: async () => {
         try {
+          // Calling the correct DELETE API endpoint
           await api.delete(`/station/${id}`);
-          message.success("Station deleted successfully");
+          message.success("Trạm được xóa thành công");
+          // Refresh the station list after deletion
           fetchStations();
         } catch (err) {
-          message.error("Failed to delete station");
+          message.error("Thất bại khi xóa trạm");
           console.error(err);
         }
       },
@@ -207,7 +222,7 @@ const Role =  JSON.parse(localStorage.getItem('currentUser')).role;
       title: "Actions",
       key: "actions",
       render: (_, record) =>
-        role === "Admin" ? (
+        Role === "ADMIN" ? ( // Corrected role check from "Admin" to "ADMIN"
           <Space size="middle">
             <Button
               type="primary"
@@ -309,7 +324,7 @@ const Role =  JSON.parse(localStorage.getItem('currentUser')).role;
               <Option value="INACTIVE">Inactive</Option>
               <Option value="UNDER CONSTRUCTION">Under Construction</Option>
             </Select>
-            {role === "Admin" && ( // ✅ Chỉ Admin được thêm
+            {Role === "ADMIN" && ( // Corrected role check from "Admin" to "ADMIN"
               <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                 Add Station
               </Button>
@@ -341,50 +356,123 @@ const Role =  JSON.parse(localStorage.getItem('currentUser')).role;
         width={700}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item
-            name="name"
-            label="Station Name"
-            rules={[{ required: true, message: "Please input station name!" }]}
-          >
-            <Input placeholder="Enter station name" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="name"
+                label="Station Name"
+                rules={[{ required: true, message: "Please input station name!" }]}
+              >
+                <Input placeholder="Enter station name" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="location"
+                label="Address"
+                rules={[{ required: true, message: "Please input address!" }]}
+              >
+                <Input placeholder="Enter station address" />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="location"
-            label="Address"
-            rules={[{ required: true, message: "Please input address!" }]}
-          >
-            <Input.TextArea placeholder="Enter station address" rows={3} />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="city"
+                label="City"
+                rules={[{ required: true, message: "Please input city!" }]}
+              >
+                <Input placeholder="e.g. TP.HCM" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="district"
+                label="District"
+                rules={[{ required: true, message: "Please input district!" }]}
+              >
+                <Input placeholder="e.g. Quận 7" />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="capacity"
-            label="Capacity (slots)"
-            rules={[{ required: true, message: "Please input capacity!" }]}
-          >
-            <InputNumber min={1} style={{ width: "100%" }} />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="latitude"
+                label="Latitude"
+                rules={[{ required: true, message: "Please input latitude!" }]}
+              >
+                <InputNumber style={{ width: "100%" }} placeholder="e.g. 10.7300" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="longitude"
+                label="Longitude"
+                rules={[{ required: true, message: "Please input longitude!" }]}
+              >
+                <InputNumber style={{ width: "100%" }} placeholder="e.g. 106.7000" />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="contactInfo"
-            label="Contact Phone"
-            rules={[{ required: true, message: "Please input phone number!" }]}
-          >
-            <Input placeholder="Enter contact phone" />
-          </Form.Item>
-
-          <Form.Item
-            name="status"
-            label="Status"
-            rules={[{ required: true, message: "Please select status!" }]}
-          >
-            <Select placeholder="Select status">
-              <Option value="ACTIVE">Active</Option>
-              <Option value="MAINTENANCE">Maintenance</Option>
-              <Option value="INACTIVE">Inactive</Option>
-              <Option value="UNDER CONSTRUCTION">Under Construction</Option>
-            </Select>
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="capacity"
+                label="Capacity (slots)"
+                rules={[{ required: true, message: "Please input capacity!" }]}
+              >
+                <InputNumber min={1} style={{ width: "100%" }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="contactInfo"
+                label="Contact Phone"
+                rules={[{ required: true, message: "Please input phone number!" }]}
+              >
+                <Input placeholder="Enter contact phone" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="batteryTypeId"
+                label="Battery Type"
+                rules={[{ required: true, message: "Please select a battery type!" }]}
+              >
+                <Select placeholder="Select a battery type">
+                  {batteryTypes.map((type) => (
+                    <Option key={type.id} value={type.id}>
+                      {type.name} (Voltage: {type.voltage}, Capacity: {type.capacityAh}Ah)
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            {editingStation && (
+              <Col span={12}>
+                <Form.Item
+                  name="status"
+                  label="Status"
+                  rules={[{ required: true, message: "Please select status!" }]}
+                >
+                  <Select placeholder="Select status">
+                    <Option value="ACTIVE">Active</Option>
+                    <Option value="MAINTENANCE">Maintenance</Option>
+                    <Option value="INACTIVE">Inactive</Option>
+                    <Option value="UNDER CONSTRUCTION">Under Construction</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            )}
+          </Row>
 
           <Form.Item>
             <Space>
