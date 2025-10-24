@@ -322,30 +322,45 @@ export default function InventoryPage() {
 
   // --- 3. ĐỊNH NGHĨA CỘT CHO BẢNG ---
 
+  // Độ rộng cố định cho các cột (giúp căn thẳng hàng giữa 2 bảng)
+  const FIXED_COL_WIDTH = {
+    PIN_ID: 100,
+    CAPACITY: 120,
+    BATTERY_TYPE: 200,
+    SOH: 120,
+    CHARGE: 120,
+    STATUS: 120,
+    DATE: 150,
+    ACTIONS: 150,
+  };
+
   // Cột cho Bảng Pin Cần Bảo Dưỡng tại Trạm
   const stationColumns = [
-    { title: "Pin ID", dataIndex: "id", key: "id" },
+    { title: "Pin ID", dataIndex: "id", key: "id", width: FIXED_COL_WIDTH.PIN_ID },
     {
       title: "Dung tích pin",
       dataIndex: "capacity",
       key: "capacity",
+      width: FIXED_COL_WIDTH.CAPACITY,
       render: (capacity) => capacity || "N/A",
     },
     {
       title: "Loại Pin",
       dataIndex: "batteryTypeId",
       key: "batteryTypeId",
+      width: FIXED_COL_WIDTH.BATTERY_TYPE,
       render: (typeId) => batteryTypesMap[typeId] || "N/A",
     },
     {
-      title: "SOH (%)",
+      title: "Tình trạng pin (%)",
       dataIndex: "stateOfHealth",
       key: "stateOfHealth",
+      width: FIXED_COL_WIDTH.SOH,
       // ĐIỀU CHỈNH: Format SOH (Làm tròn 2 chữ số thập phân)
       render: (soh) => {
         const sohValue = soh ? parseFloat(soh).toFixed(2) : "N/A";
         return sohValue !== "N/A" ? (
-          <Tag color={parseFloat(sohValue) > 75 ? "orange" : "red"}>
+          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "gold"}>
             {sohValue}
           </Tag>
         ) : (
@@ -357,33 +372,53 @@ export default function InventoryPage() {
       title: "Mức sạc (%)",
       dataIndex: "chargeLevel",
       key: "chargeLevel",
-      render: (chargeLevel) => chargeLevel || "N/A",
+      width: FIXED_COL_WIDTH.CHARGE,
+      render: (chargeLevel) => {
+      const chargeValue = chargeLevel ? parseFloat(chargeLevel).toFixed(0) : "N/A";
+
+      if (chargeValue === "N/A") return "N/A";
+
+      let color;
+      const numericCharge = parseFloat(chargeValue);
+
+      if (numericCharge >= 70) {
+        color = "green"; 
+      } else {
+        color = "gold"; 
+      }
+
+      return <Tag color={color}>{chargeValue}</Tag>;
+    },
     },
 
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
+      width: FIXED_COL_WIDTH.STATUS,
       render: (status) => (
-        <Tag color={status === "AVAILABLE" ? "green" : "volcano"}>{status}</Tag>
+        <Tag color={status === "AVAILABLE" ? "green" : "gold"}>{status}</Tag>
       ),
     },
     {
-      title: "Ngày bảo dưỡng",
+      title: "Bảo trì lần cuối",
       dataIndex: "lastMaintenanceDate",
       key: "lastMaintenanceDate",
+      width: FIXED_COL_WIDTH.DATE,
       render: (date) => (date ? new Date(date).toLocaleDateString() : "N/A"), // Định dạng ngày cho an toàn
     },
     {
       title: "Actions",
       key: "actions",
+      width: FIXED_COL_WIDTH.ACTIONS,
       render: (_, record) => (
         <Space>
           <Tooltip title="Chuyển pin lỗi này về kho bảo trì">
             <Button
+              type="primary"
               icon={<RollbackOutlined />}
               onClick={() => handleMoveToWarehouse(record)} // Move To Warehouse
-              danger
+              //danger
               size="small"
             >
               Về Kho
@@ -396,28 +431,31 @@ export default function InventoryPage() {
 
   // Cột cho Bảng Tồn Kho Pin trong Kho
   const warehouseColumns = [
-    { title: "Pin ID", dataIndex: "id", key: "id" },
+    { title: "Pin ID", dataIndex: "id", key: "id", width: FIXED_COL_WIDTH.PIN_ID },
     {
       title: "Dung tích pin",
       dataIndex: "capacity",
       key: "capacity",
+      width: FIXED_COL_WIDTH.CAPACITY,
       render: (capacity) => capacity || "N/A",
     },
     {
       title: "Loại Pin",
       dataIndex: "batteryTypeId",
       key: "batteryTypeId",
+      width: FIXED_COL_WIDTH.BATTERY_TYPE,
       render: (typeId) => batteryTypesMap[typeId] || "N/A",
     },
     {
-      title: "SOH (%)",
+      title: "Tình trạng pin (%)",
       dataIndex: "stateOfHealth",
       key: "stateOfHealth",
+      width: FIXED_COL_WIDTH.SOH,
       // ĐIỀU CHỈNH: Format SOH (Làm tròn 2 chữ số thập phân)
       render: (soh) => {
         const sohValue = soh ? parseFloat(soh).toFixed(2) : "N/A";
         return sohValue !== "N/A" ? (
-          <Tag color={parseFloat(sohValue) > 85 ? "green" : "blue"}>
+          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "gold"}>
             {sohValue}
           </Tag>
         ) : (
@@ -429,21 +467,45 @@ export default function InventoryPage() {
       title: "Mức sạc (%)",
       dataIndex: "chargeLevel",
       key: "chargeLevel",
-      render: (chargeLevel) => chargeLevel || "N/A",
+      width: FIXED_COL_WIDTH.CHARGE,
+      render: (chargeLevel) => {
+        const chargeValue = chargeLevel ? parseFloat(chargeLevel).toFixed(0) : "N/A";
+
+        if (chargeValue === "N/A") return "N/A";
+
+        let color;
+        const numericCharge = parseFloat(chargeValue);
+
+        if (numericCharge >= 70) {
+          color = "green"; 
+        } else {
+          color = "gold"; 
+        }
+
+        return <Tag color={color}>{chargeValue}</Tag>;
+      },
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
+      width: FIXED_COL_WIDTH.STATUS,
       render: (status) => (
-        <Tag color={status === "AVAILABLE" ? "green" : "volcano"}>{status}</Tag>
+        <Tag color={status === "AVAILABLE" ? "green" : "gold"}>{status}</Tag>
       ),
-      //width: 360,
+    },
+    {
+      title: "", // Để trống tiêu đề
+      dataIndex: "placeholder",
+      key: "placeholder",
+      width: FIXED_COL_WIDTH.DATE, // Sử dụng cùng độ rộng
+      render: () => null, // Luôn trả về rỗng
     },
     {
       title: "Actions",
       key: "actions",
-      render: (_, record) => (
+      width: FIXED_COL_WIDTH.ACTIONS,
+      render: (_, record) => (  
         <Space>
           {/* Nút "Sửa SOH" (Chỉ hiện cho ADMIN và pin MAINTENANCE) */}
           {userRole === "ADMIN" && record.status === "MAINTENANCE" && (
