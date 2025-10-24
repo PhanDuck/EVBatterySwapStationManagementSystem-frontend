@@ -12,6 +12,7 @@ import SupportTickets from "../Management/SupportTickets";
 import Subscriptions from "../Management/ServicePackages";
 import BatteryManagement from "../Management/BatteryManagement";
 import ServicePackagesPage from "../Management/ServicePackages";
+import Inventories from "../Management/Inventory";
 
 export default function AdminDashboard() {
   return (
@@ -22,6 +23,7 @@ export default function AdminDashboard() {
         <Route path="stations" element={<Stations />} />
         <Route path="batteries" element={<BatteryManagement />} />
         <Route path="vehicles" element={<Vehicles />} />
+        <Route path="inventories" element={<Inventories />} />
         <Route path="bookings" element={<Bookings />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="tickets" element={<SupportTickets />} />

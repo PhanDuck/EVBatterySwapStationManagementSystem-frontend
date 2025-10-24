@@ -18,6 +18,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
       { path: "stations", label: "Trạm đổi pin", icon: <FiMap /> },
       { path: "batteries", label: "Quản lý pin", icon: <FiBatteryCharging /> },
       { path: "vehicles", label: "Xe điện", icon: <FiTruck /> },
+      { path: "inventories", label: "Quản lý tồn kho", icon: <FiSettings /> },
       { path: "bookings", label: "Đặt lịch", icon: <FiCalendar /> },
       { path: "service-packages", label: "Gói cước", icon: <FiCreditCard /> },
       { path: "transactions", label: "Giao dịch", icon: <MdOutlinePayments /> },

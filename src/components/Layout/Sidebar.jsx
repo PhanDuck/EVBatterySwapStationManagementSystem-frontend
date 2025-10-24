@@ -50,6 +50,12 @@ export default function RoleSidebar({ role = "ADMIN" }) {
         path: "/admin/vehicles",
       },
       {
+        key: "inventories",
+        label: "Inventories",
+        icon: <SettingOutlined />,
+        path: "/staff/inventories",
+      },
+      {
         key: "transactions",
         label: "Transactions",
         icon: <DollarOutlined />,
@@ -89,16 +95,16 @@ export default function RoleSidebar({ role = "ADMIN" }) {
         path: "/staff/vehicles",
       },
       {
-        key: "support",
-        label: "Support",
-        icon: <CustomerServiceOutlined />,
-        path: "/staff/support",
-      },
-      {
         key: "inventories",
         label: "Inventories",
         icon: <SettingOutlined />,
         path: "/staff/inventories",
+      },
+      {
+        key: "support",
+        label: "Support",
+        icon: <CustomerServiceOutlined />,
+        path: "/staff/support",
       },
     ],
 

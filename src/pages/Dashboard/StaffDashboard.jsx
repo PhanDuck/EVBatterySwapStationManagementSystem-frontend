@@ -19,8 +19,8 @@ export default function StaffDashboard() {
           <Route path="bookings" element={<Bookings />} />
           <Route path="stations" element={<Stations />} />
           <Route path="vehicles" element={<Vehicles />} />
-          <Route path="tickets" element={<SupportTickets />} />
           <Route path="inventories" element={<Inventories />} />
+          <Route path="tickets" element={<SupportTickets />} />
           <Route path="*" element={<div>Không tìm thấy trang!</div>} />
         </Routes>
       </div>
