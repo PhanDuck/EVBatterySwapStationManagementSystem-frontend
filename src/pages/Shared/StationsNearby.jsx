@@ -9,7 +9,7 @@ import "leaflet/dist/leaflet.css";
 const { Option } = Select;
 
 // 🔴 Cấu hình OSRM
-const OSRM_BASE_URL = "http://router.project-osrm.org/route/v1"; 
+const OSRM_BASE_URL = "https://router.project-osrm.org/route/v1"; 
 const ROUTING_PROFILE = "driving"; 
 
 // Custom Marker icon (Không đổi)
