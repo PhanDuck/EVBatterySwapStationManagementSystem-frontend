@@ -5,9 +5,7 @@ import {
   Button,
   Space,
   Tag,
-  Modal,
-  Form,
-  Input,
+
   message,
   Select,
   Tooltip,
@@ -16,7 +14,7 @@ import {
   ReloadOutlined,
   SendOutlined,
   RollbackOutlined,
-  SwapOutlined,
+
   SearchOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios"; // Giả định path này
@@ -35,13 +33,7 @@ export default function InventoryPage() {
   // === STATE QUẢN LÝ THAO TÁC (MODAL) ===
   const [selectedStationId, setSelectedStationId] = useState(null);
   const [filterBatteryTypeId, setFilterBatteryTypeId] = useState(null);
-  const [isMoveToWarehouseModalVisible, setIsMoveToWarehouseModalVisible] =
-    useState(false);
-  const [isMoveToStationModalVisible, setIsMoveToStationModalVisible] =
-    useState(false);
-  const [pinToMove, setPinToMove] = useState(null); // Pin được chọn để thao tác
-  const [availableWarehouseBatteries, setAvailableWarehouseBatteries] =
-    useState([]); // Pin tốt trong kho để chuyển ra
+ 
 
   // --- 1. FUNCTIONS TẢI DỮ LIỆU ---
 
@@ -393,7 +385,7 @@ const fetchBatteryTypes = useCallback(async () => {
             >
               {stations.map((station) => (
                 <Option key={station.id} value={station.id}>
-                  {station.name} ({station.location.city})
+                  {station.name} 
                 </Option>
               ))}
             </Select>

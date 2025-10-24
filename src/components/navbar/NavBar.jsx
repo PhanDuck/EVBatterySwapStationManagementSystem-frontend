@@ -11,14 +11,13 @@ import {
 } from "@ant-design/icons";
 import { isAuthenticated } from "../../config/auth";
 import LogoutBtn from "../LogoutBtn/LogoutBtn";
+import DashboardButton from "../DashboardBtn/DashboardButton";
 
 const Navbar = () => {
   const navigate = useNavigate();
 
   // const isAuthenticated = !!(localStorage.getItem("authToken") || sessionStorage.getItem("authToken"));
   const authed = isAuthenticated();
-
-
 
   const handleGuardedNav = (path) => {
     if (!authed) {
@@ -27,7 +26,6 @@ const Navbar = () => {
     }
     navigate(path);
   };
-  
 
   const swapMenuItems = [
     {
@@ -59,7 +57,6 @@ const Navbar = () => {
           <span>EV Battery Swap</span>
         </Link>
       </div>
-
 
       {/* Menu chính: Dùng class gap-8 thay vì gap-6 để thoáng hơn */}
       <div className="menu_left flex items-center gap-8 text-white">
@@ -124,7 +121,10 @@ const Navbar = () => {
             </Link>
           </>
         ) : (
-          <LogoutBtn />
+          <>
+            <DashboardButton />
+            <LogoutBtn />
+          </>
         )}
       </div>
     </nav>
