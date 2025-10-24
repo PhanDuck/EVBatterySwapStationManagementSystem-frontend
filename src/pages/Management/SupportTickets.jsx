@@ -25,15 +25,15 @@ const { Option } = Select;
 export default function SupportPage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
-  const [editingRecord, setEditingRecord] = useState(null);
   const [viewingRecord, setViewingRecord] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [form] = Form.useForm();
   const [responses, setResponses] = useState([]);
   const [loadingReply, setLoadingReply] = useState(false);
-  
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+  const [stationList, setStationList] = useState([]);
+
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
   const role = currentUser?.role;
 
@@ -76,6 +76,40 @@ export default function SupportPage() {
     fetchData();
   }, [role]);
 
+  const fetchStations = async () => {
+    try {
+      const res = await api.get("/station");
+      setStationList(res.data || []);
+    } catch (error) {
+      console.error("Error fetching stations:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (role === "DRIVER") {
+      fetchStations();
+    }
+  }, [role]);
+
+  const handleCreateTicket = async (values) => {
+    try {
+      const payload = {
+        subject: values.subject,
+        description: values.description,
+        stationId: values.stationId, // ✅ gửi stationId
+      };
+
+      await api.post("/support-ticket", payload);
+      message.success("🎫 Ticket created successfully!");
+      setIsCreateModalVisible(false);
+      form.resetFields();
+      fetchData(); // ✅ load lại danh sách
+    } catch (error) {
+      console.error("Error creating ticket:", error);
+      message.error("❌ Failed to create ticket!");
+    }
+  };
+
   // ✨ Hàm mới để xử lý thay đổi status
   const handleStatusChange = async (ticketId, newStatus) => {
     try {
@@ -91,13 +125,13 @@ export default function SupportPage() {
         )
       );
 
-      message.success(`Ticket #${ticketId} status updated to ${newStatus}`);
+      message.success(`Ticket ${ticketId} status updated to ${newStatus}`);
     } catch (error) {
       console.error("Failed to update ticket status:", error);
       message.error("Failed to update status. Please try again.");
     }
   };
-  
+
   const handleView = (record) => {
     setViewingRecord(record);
     setIsViewModalVisible(true);
@@ -105,12 +139,29 @@ export default function SupportPage() {
   };
   const fetchResponses = async (ticketId) => {
     try {
-      const res = await api.get(`/ticket-response/ticket/${ticketId}`);
-      setResponses(res.data || []);
+      if (role === "DRIVER") {
+        // 🚗 DRIVER: Lấy phản hồi qua API /support-ticket/my-tickets
+        const res = await api.get("/support-ticket/my-tickets");
+        // Tìm đúng ticket theo ID
+        const myTicket = res.data?.find((t) => t.id === ticketId);
+        // Nếu ticket có trường responses (backend trả về)
+        if (myTicket && myTicket.responses) {
+          setResponses(myTicket.responses);
+        } else {
+          setResponses([]);
+        }
+      } else {
+        // 👨‍💼 ADMIN / STAFF: Lấy phản hồi qua API riêng
+        const res = await api.get(`/ticket-response/ticket/${ticketId}`);
+        setResponses(res.data || []);
+      }
     } catch (error) {
       console.error("Error loading reply history:", error);
+      message.error("Không thể tải phản hồi!");
+      setResponses([]);
     }
   };
+
   const handleReply = async (values) => {
     setLoadingReply(true);
     try {
@@ -123,7 +174,7 @@ export default function SupportPage() {
     } catch (error) {
       message.error("❌ Failed to send reply");
     } finally {
-      setLoadingReply(false); 
+      setLoadingReply(false);
     }
   };
 
@@ -180,7 +231,7 @@ export default function SupportPage() {
               : "orange";
           return <Tag color={color}>{status}</Tag>;
         }
-        
+
         // Nếu là ADMIN/STAFF, hiển thị Select
         return (
           <Select
@@ -205,9 +256,9 @@ export default function SupportPage() {
     },
     {
       title: "Assigned To",
-      dataIndex: "assignedTo",
-      key: "assignedTo",
-      render: (assignedTo) => assignedTo || "Unassigned",
+      dataIndex: "stationName",
+      key: "stationName",
+      render: (stationName) => stationName || "Unassigned",
       width: 150,
     },
     {
@@ -223,15 +274,6 @@ export default function SupportPage() {
           >
             View
           </Button>
-          {role == "DRIVER" && (
-            <Button
-              icon={<MessageOutlined />}
-              size="small"
-              onClick={() => handleReply(record)}
-            >
-              Reply
-            </Button>
-          )}
         </Space>
       ),
       width: 160,
@@ -255,11 +297,7 @@ export default function SupportPage() {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => {
-                  setEditingRecord(null);
-                  setIsModalVisible(true);
-                  form.resetFields();
-                }}
+                onClick={() => setIsCreateModalVisible(true)}
               >
                 Create Ticket
               </Button>
@@ -281,7 +319,7 @@ export default function SupportPage() {
       {/* View Ticket Modal */}
       {/* 🧩 View Modal */}
       <Modal
-        title={`Ticket Details - ${viewingRecord?.id}`}
+        title={`Ticket Details - #${viewingRecord?.id || ""}`}
         open={isViewModalVisible}
         onCancel={() => setIsViewModalVisible(false)}
         footer={
@@ -289,49 +327,62 @@ export default function SupportPage() {
         }
         width={700}
       >
-        {viewingRecord && (
-          <div>
+        {viewingRecord ? (
+          <>
             {/* Ticket Info */}
-            <p>
-              <strong>Subject:</strong> {viewingRecord.subject}
-            </p>
-            <div style={{ marginBottom: "8px" }}>
-              <strong>Description:</strong>
-              <div
-                style={{
-                  background: "#fafafa",
-                  padding: "12px",
-                  borderRadius: "6px",
-                  marginTop: "6px",
-                }}
-              >
-                {viewingRecord.description}
+            <div style={{ marginBottom: "12px" }}>
+              <p>
+                <strong>Subject:</strong> {viewingRecord.subject || "N/A"}
+              </p>
+              <div style={{ marginBottom: "8px" }}>
+                <strong>Description:</strong>
+                <div
+                  style={{
+                    background: "#fafafa",
+                    padding: "12px",
+                    borderRadius: "6px",
+                    marginTop: "6px",
+                  }}
+                >
+                  {viewingRecord.description || "Không có mô tả."}
+                </div>
               </div>
+
+              <p>
+                <strong>Status:</strong>{" "}
+                <Tag
+                  color={viewingRecord.status === "OPEN" ? "orange" : "green"}
+                >
+                  {viewingRecord.status}
+                </Tag>
+              </p>
+              <p>
+                <strong>Assigned To:</strong>{" "}
+                {viewingRecord.assignedTo || "Unassigned"}
+              </p>
+              <p>
+                <strong>Created At:</strong>{" "}
+                {viewingRecord.createdAt
+                  ? new Date(viewingRecord.createdAt).toLocaleString()
+                  : "Unknown"}
+              </p>
             </div>
 
-            <p>
-              <strong>Status:</strong> {viewingRecord.status}
-            </p>
-            <p>
-              <strong>Assigned To:</strong>{" "}
-              {viewingRecord.assignedTo || "Not assigned"}
-            </p>
-            <p>
-              <strong>Created At:</strong>{" "}
-              {new Date(viewingRecord.createdAt).toLocaleString()}
-            </p>
-
-            {/* Response History */}
+            {/* Reply History */}
             <div style={{ marginTop: "20px" }}>
               <strong>Reply History:</strong>
               {responses.length === 0 ? (
-                <p> Chưa có phản hồi nào.</p>
+                <p style={{ marginTop: "8px" }}>Chưa có phản hồi nào.</p>
               ) : (
                 <div
                   style={{
-                    maxHeight: "200px",
+                    maxHeight: "220px",
                     overflowY: "auto",
                     paddingRight: "5px",
+                    background: "#fdfdfd",
+                    border: "1px solid #eee",
+                    borderRadius: "6px",
+                    marginTop: "8px",
                   }}
                 >
                   {responses.map((res, index) => (
@@ -339,14 +390,16 @@ export default function SupportPage() {
                       key={index}
                       style={{
                         padding: "10px",
-                        borderBottom: "1px solid #eee",
+                        borderBottom: "1px solid #f0f0f0",
                       }}
                     >
-                      <p>
-                        <strong>{res.staffName}</strong>
+                      <p style={{ marginBottom: 4 }}>
+                        <strong>
+                          {res.staffName || res.driverName || "Unknown User"}
+                        </strong>
                       </p>
-                      <p>{res.message}</p>
-                      <small>
+                      <p style={{ marginBottom: 4 }}>{res.message}</p>
+                      <small style={{ color: "#888" }}>
                         {new Date(res.responseTime).toLocaleString()}
                       </small>
                     </div>
@@ -355,7 +408,7 @@ export default function SupportPage() {
               )}
             </div>
 
-            {/* Reply Box (Only Admin / Staff) */}
+            {/* Reply Box — Only Admin/Staff */}
             {(role === "ADMIN" || role === "STAFF") && (
               <div style={{ marginTop: "20px" }}>
                 <Form onFinish={handleReply}>
@@ -380,8 +433,72 @@ export default function SupportPage() {
                 </Form>
               </div>
             )}
-          </div>
+          </>
+        ) : (
+          <p>Loading ticket details...</p>
         )}
+      </Modal>
+      {/* 🧾 Create Ticket Modal — chỉ dành cho DRIVER */}
+      <Modal
+        title="Create Support Ticket"
+        open={isCreateModalVisible}
+        onCancel={() => setIsCreateModalVisible(false)}
+        footer={null}
+      >
+        <Form
+          layout="vertical"
+          onFinish={handleCreateTicket}
+          form={form}
+          style={{ marginTop: "10px" }}
+        >
+          {/* 🏙️ Thêm chọn trạm */}
+          <Form.Item
+            label="Station"
+            name="stationId"
+            rules={[{ required: true, message: "Please select a station!" }]}
+          >
+            <Select placeholder="Select your station">
+              {stationList.map((station) => (
+                <Option key={station.id} value={station.id}>
+                  {station.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            label="Subject"
+            name="subject"
+            rules={[
+              { required: true, message: "Please enter the ticket subject!" },
+            ]}
+          >
+            <Input placeholder="Enter ticket subject" />
+          </Form.Item>
+
+          <Form.Item
+            label="Description"
+            name="description"
+            rules={[
+              { required: true, message: "Please enter ticket details!" },
+            ]}
+          >
+            <TextArea
+              rows={4}
+              placeholder="Describe your issue or question..."
+            />
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: "right", marginTop: "10px" }}>
+            <Space>
+              <Button onClick={() => setIsCreateModalVisible(false)}>
+                Cancel
+              </Button>
+              <Button type="primary" htmlType="submit">
+                Submit Ticket
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );

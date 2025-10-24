@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo, useCallback, } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   Table,
@@ -12,10 +13,15 @@ import {
   Tag,
   message,
   Spin,
+  notification,
 } from "antd";
-import { PlusOutlined, CheckOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  CheckOutlined,
+  CloseCircleOutlined,
+} from "@ant-design/icons";
 import api from "../../config/axios";
-import BookingForm from "../../components/BookingForm/BookingForm";
+import dayjs from "dayjs";
 
 const { Option } = Select;
 const GET_COMPATIBLE_STATIONS_API_URL = "/booking/compatible-stations";
@@ -24,6 +30,8 @@ export default function BookingsPage() {
   const [data, setData] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [stations, setStations] = useState([]);
+  const [compatibleStations, setCompatibleStations] = useState([]);
+  const [isStationLoading, setIsStationLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -32,7 +40,7 @@ export default function BookingsPage() {
   const [search, setSearch] = useState("");
   const [editingRecord, setEditingRecord] = useState(null);
 
-  // 🧩 Lấy thông tin user hiện tại
+  // 🧩 User hiện tại
   let user = {};
   try {
     const raw = localStorage.getItem("currentUser");
@@ -42,6 +50,7 @@ export default function BookingsPage() {
   }
   const role = user?.role;
   const userId = user?.id;
+  const navigate = useNavigate();
 
   // 🟢 Fetch dữ liệu ban đầu
   const fetchData = useCallback(async () => {
@@ -51,7 +60,9 @@ export default function BookingsPage() {
 
       if (role === "ADMIN" || role === "STAFF") {
         [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
-          role === "ADMIN" ? api.get("/booking") : api.get("/booking/my-stations"),
+          role === "ADMIN"
+            ? api.get("/booking")
+            : api.get("/booking/my-stations"),
           api.get("/vehicle"),
           api.get("/station"),
           api.get("/admin/user"),
@@ -87,6 +98,35 @@ export default function BookingsPage() {
     fetchData();
   }, [fetchData]);
 
+  // 🚀 Tải danh sách trạm tương thích
+  const fetchCompatibleStations = useCallback(async (vehicleId) => {
+    if (!vehicleId) {
+      setCompatibleStations([]);
+      return;
+    }
+    setIsStationLoading(true);
+    try {
+      const res = await api.get(`${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`);
+      setCompatibleStations(res.data || []);
+    } catch (error) {
+      console.error("Lỗi khi tải trạm tương thích:", error);
+      setCompatibleStations([]);
+      notification.error({
+        message: "Lỗi Tải Danh Sách Trạm",
+        description: "Không thể tải danh sách trạm tương thích cho xe đã chọn.",
+      });
+    } finally {
+      setIsStationLoading(false);
+    }
+  }, []);
+
+  // 🚀 Khi thay đổi xe
+  const handleVehicleChange = (vehicleId) => {
+    form.setFieldsValue({ stationId: null });
+    setCompatibleStations([]);
+    if (vehicleId) fetchCompatibleStations(vehicleId);
+  };
+
   // 📖 Map ID sang tên
   const driverName = (id) =>
     users.find((u) => u.id === id)?.fullName || `${id}`;
@@ -97,26 +137,31 @@ export default function BookingsPage() {
 
   // 🔍 Tìm kiếm
   const filteredData = useMemo(() => {
-    return data.filter(
-      (item) =>
-        driverName(item.driverId)
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        vehicleName(item.vehicleId)
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        stationName(item.stationId).toLowerCase().includes(search.toLowerCase())
-    );
+    return data
+      .filter(
+        (item) =>
+          driverName(item.driverId)
+            .toLowerCase()
+            .includes(search.toLowerCase()) ||
+          vehicleName(item.vehicleId)
+            .toLowerCase()
+            .includes(search.toLowerCase()) ||
+          stationName(item.stationId)
+            .toLowerCase()
+            .includes(search.toLowerCase())
+      )
+      .sort((a, b) => new Date(b.bookingTime) - new Date(a.bookingTime));
   }, [data, search, users, vehicles, stations]);
 
-  // ➕ Tạo booking mới (Driver)
-  const handleCreate = async (values) => {
+  // ➕ Tạo booking mới
+  const handleCreate = async () => {
     try {
+      const validValues = await form.validateFields();
       const payload = {
         driverId: userId,
-        vehicleId: values.vehicleId,
-        stationId: values.stationId,
-        bookingTime: values.bookingTime,
+        vehicleId: validValues.vehicleId,
+        stationId: validValues.stationId,
+        bookingTime: validValues.bookingTime?.toISOString(),
         status: "PENDING",
       };
 
@@ -134,16 +179,14 @@ export default function BookingsPage() {
     }
   };
 
-  // ✏️ Cập nhật status (Admin/Staff)
+  // ✏️ Cập nhật status
   const handleUpdateStatus = async () => {
     try {
       const validValues = await form.validateFields();
       const bookingId = editingRecord?.id;
       if (!bookingId) return;
       setSubmitting(true);
-      await api.patch(
-        `/booking/${bookingId}/status?status=${validValues.status}`
-      );
+      await api.patch(`/booking/${bookingId}/status?status=${validValues.status}`);
       message.success("Cập nhật trạng thái thành công!");
       setData((prev) =>
         prev.map((b) =>
@@ -161,17 +204,10 @@ export default function BookingsPage() {
     }
   };
 
-  // ➕ Mở modal
-  const openNew = () => {
-    form.resetFields();
-    setEditingRecord(null);
-    setIsModalVisible(true);
-  };
+  // ✅ Xác nhận booking
   const handleConfirm = async (record) => {
     try {
       const res = await api.patch(`/booking/${record.id}/confirm`);
-
-      // ✅ Cập nhật lại state ngay
       setData((prev) =>
         prev.map((item) =>
           item.id === record.id
@@ -179,12 +215,38 @@ export default function BookingsPage() {
             : item
         )
       );
-
       message.success("Xác nhận booking thành công!");
     } catch (err) {
       console.error("Confirm booking error:", err);
       message.error("Không thể xác nhận booking!");
     }
+  };
+
+  // ❌ Hủy booking (Driver)
+  const handleCancelBooking = async (record) => {
+    Modal.confirm({
+      title: "Xác nhận hủy đặt lịch?",
+      content: "Bạn có chắc muốn hủy booking này không?",
+      okText: "Hủy Booking",
+      cancelText: "Quay lại",
+      okButtonProps: { danger: true },
+      async onOk() {
+        try {
+          await api.patch(`/booking/my-bookings/${record.id}/cancel`);
+          setData((prev) =>
+            prev.map((item) =>
+              item.id === record.id
+                ? { ...item, status: "CANCELLED" }
+                : item
+            )
+          );
+          message.success("Đã hủy booking thành công!");
+        } catch (err) {
+          console.error("Cancel booking error:", err);
+          message.error("Không thể hủy booking!");
+        }
+      },
+    });
   };
 
   // 🧾 Cột hiển thị
@@ -208,7 +270,12 @@ export default function BookingsPage() {
       key: "stationId",
       render: (id) => stationName(id),
     },
-    { title: "Booking Time", dataIndex: "bookingTime", key: "bookingTime" },
+    {
+      title: "Booking Time",
+      dataIndex: "bookingTime",
+      key: "bookingTime",
+      render: (t) => (t ? dayjs(t).format("DD/MM/YYYY HH:mm") : "-"),
+    },
     {
       title: "Status",
       dataIndex: "status",
@@ -228,10 +295,10 @@ export default function BookingsPage() {
     {
       title: "Actions",
       key: "actions",
-      render: (_, record) => {
-        return (
-          <Space>
-            {(role === "ADMIN" || role === "STAFF") &&  record.status === "PENDING" && (
+      render: (_, record) => (
+        <Space>
+          {(role === "ADMIN" || role === "STAFF") &&
+            record.status === "PENDING" && (
               <Button
                 type="primary"
                 icon={<CheckOutlined />}
@@ -240,9 +307,18 @@ export default function BookingsPage() {
                 Confirm
               </Button>
             )}
-          </Space>
-        );
-      },
+
+          {role === "DRIVER" && record.status === "PENDING" && (
+            <Button
+              danger
+              icon={<CloseCircleOutlined />}
+              onClick={() => handleCancelBooking(record)}
+            >
+              Cancel
+            </Button>
+          )}
+        </Space>
+      ),
     },
   ];
 
@@ -259,7 +335,11 @@ export default function BookingsPage() {
               style={{ width: 250 }}
             />
             {role === "DRIVER" && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => navigate("/stations/booking")}
+              >
                 New Booking
               </Button>
             )}
@@ -275,62 +355,6 @@ export default function BookingsPage() {
           />
         </Spin>
       </Card>
-
-      {/* 🔹 Modal Form */}
-      <Modal
-        title={editingRecord ? "Edit Booking Status" : "New Booking"}
-        open={isModalVisible}
-        onCancel={() => {
-          setIsModalVisible(false);
-          setEditingRecord(null);
-        }}
-        footer={null}
-      >
-        {role === 'DRIVER' && !editingRecord && (
-          <BookingForm 
-            form={form} 
-            onFinish={handleCreate}
-            submitButton={
-              <Space>
-                <Button type="primary" htmlType="submit" loading={submitting}>
-                  Create
-                </Button>
-                <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
-              </Space>
-            }
-          />
-        )}
-
-        {(role === "ADMIN" || role === "STAFF") && editingRecord && (
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleUpdateStatus}
-            initialValues={{ status: editingRecord.status }}
-          >
-            <Form.Item
-              name="status"
-              label="Status"
-              rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
-            >
-              <Select>
-                <Option value="PENDING">PENDING</Option>
-                <Option value="CONFIRMED">CONFIRMED</Option>
-                <Option value="COMPLETED">COMPLETED</Option>
-                <Option value="CANCELLED">CANCELLED</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item>
-              <Space>
-                <Button type="primary" htmlType="submit" loading={submitting}>
-                  Update
-                </Button>
-                <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        )}
-      </Modal>
     </div>
   );
 }

@@ -23,6 +23,7 @@ import HomeLayout from "../Layouts/HomeLayout";
 import SupportPage from "../pages/Shared/Support";
 import MoMoReturnPage from "../pages/Payment/MoMoReturnPage";
 import PaymentResult from "../pages/Payment/PaymentResult";
+import EnterConfirmationCode from "../pages/Shared/EnterConfirmationCode";
 
 export default function AppRouter() {
   const authed = isAuthenticated();
@@ -51,6 +52,7 @@ export default function AppRouter() {
           <Route path="/packages" element={<Packages />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/stations/nearby" element={<StationsNearbyPage />} />
+          <Route path="/codeConfirm" element={<EnterConfirmationCode />} />
           
           {/* Protected */}
           <Route element={<PrivateRoute roles={["Driver"]} />}>

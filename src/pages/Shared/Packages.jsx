@@ -12,7 +12,7 @@ function PackagesPage() {
   };
   const handlePayMoMo = async (packageId) => {
   try {
-    const redirectUrl = "http://localhost:5173/payment/result";
+    const redirectUrl = "http://103.200.20.190/payment/result";
     
     // Gửi cả packageId và redirectUrl qua query params
     const res = await api.post(
