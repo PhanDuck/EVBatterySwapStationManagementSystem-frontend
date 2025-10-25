@@ -36,7 +36,7 @@ const ServicePackagesPage = () => {
   const fetchPackages = async () => {
     try {
       const res = await api.get("/service-package");
-      setPackages(res.data);
+      setPackages(res.data.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (err) {
       message.error("Failed to fetch service packages");
       console.error(err);
@@ -56,7 +56,7 @@ const ServicePackagesPage = () => {
   const fetchDriverSubscriptions = async () => {
     try {
       const res = await api.get("/driver-subscription");
-      setDriverSubscriptions(res.data);
+      setDriverSubscriptions(res.data.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (err) {
       message.error("Failed to fetch driver subscriptions");
       console.error(err);
@@ -133,7 +133,7 @@ const ServicePackagesPage = () => {
   };
 
   const packageColumns = [
-    { title: "ID", dataIndex: "id", key: "id" },
+    { title: "ID", dataIndex: "id", key: "id", sorter: (a, b) => a.id - b.id },
     { title: "Tên gói dịch vụ", dataIndex: "name", key: "name" },
     {
       title: "Giá (VNĐ)",
@@ -181,7 +181,12 @@ const ServicePackagesPage = () => {
   const packageMap = useMemo(() => new Map(packages.map(pkg => [pkg.id, pkg.name])), [packages]);
 
   const subscriptionColumns = [
-    { title: "Subscription ID", dataIndex: "id", key: "id" },
+    {
+      title: "Subscription ID",
+      dataIndex: "id",
+      key: "id",
+      sorter: (a, b) => a.id - b.id,
+    },
     {
       title: "Driver Name",
       dataIndex: "driverId",

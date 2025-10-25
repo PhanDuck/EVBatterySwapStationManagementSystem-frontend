@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Card, Table, Button, Space, Tag, DatePicker, Select, Statistic, Row, Col, Input, Modal, Form, message,} from "antd";
 import { DollarOutlined, SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined,} from "@ant-design/icons";
 import api from "../../config/axios"; 
-import MomoLogo from '../../assets/img/MoMoLogo.svg'
+import MomoLogo from "../../assets/img/MoMoLogo.svg";
+import dayjs from "dayjs"; // Import dayjs
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -22,11 +23,11 @@ const TransactionsPage = () => {
   // 🔹 Fetch dữ liệu từ API
   const fetchTransactions = async () => {
     setLoading(true);
-    const Role =  JSON.parse(localStorage.getItem('currentUser')).role;
-   let apiPath = Role === "DRIVER" ? "/payment/my-payments" : "/payment";
+    const Role = JSON.parse(localStorage.getItem("currentUser")).role;
+    let apiPath = Role === "DRIVER" ? "/payment/my-payments" : "/payment";
     try {
       const res = await api.get(apiPath); // 🟢 chỉnh endpoint đúng với backend của bạn
-      const list = res.data || [];
+      const list = (res.data || []).sort((a, b) => b.id - a.id); // Sắp xếp ID giảm dần
       setTransactions(list);
       setFilteredTransactions(list);
     } catch (err) {
@@ -125,6 +126,8 @@ const TransactionsPage = () => {
       dataIndex: "id",
       key: "id",
       render: (text) => <strong>{text}</strong>,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: "descend",
     },
     {
       title: "Loại",
@@ -184,6 +187,7 @@ const TransactionsPage = () => {
     {
       title: "Thời gian",
       dataIndex: "paymentDate",
+      sorter: (a, b) => dayjs(a.paymentDate).unix() - dayjs(b.paymentDate).unix(),
     },
   ];
 
@@ -251,7 +255,7 @@ const TransactionsPage = () => {
           </Form.Item>
 
           <Form.Item
-            label="Số tiền ($)"
+            label="Số tiền ($) "
             name="amount"
             rules={[{ required: true, message: "Nhập số tiền" }]}
           >

@@ -1,0 +1,43 @@
+/* StationsNearby.css */
+
+/* Tùy chỉnh Tooltip cho tuyến đường */
+.route-tooltip {
+  background-color: rgba(0, 123, 255, 0.8);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Biểu tượng vị trí người dùng */
+.user-geo-icon {
+  border-radius: 50%;
+}
+
+/* CSS MỚI cho nút toggle */
+.sidebar-toggle-button {
+  position: absolute;
+  top: 50%; /* Canh giữa theo chiều dọc */
+  left: 10px; /* Khoảng cách từ lề trái */
+  transform: translateY(-50%); /* Tinh chỉnh để nút nằm chính giữa */
+  z-index: 1001; /* Đảm bảo nút luôn nằm trên cùng */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); /* Thêm bóng đổ cho đẹp */
+}
+
+/* Đảm bảo các nút điều khiển của Leaflet có z-index cao */
+.leaflet-control-container .leaflet-control {
+    z-index: 1000 !important;
+}
+
+/* Định vị nút mở sidebar bên dưới nút zoom */
+.leaflet-top.leaflet-left {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Điều chỉnh khoảng cách cho nút mở sidebar */
+.leaflet-top.leaflet-left .leaflet-control:last-child {
+    margin-top: 10px;
+}

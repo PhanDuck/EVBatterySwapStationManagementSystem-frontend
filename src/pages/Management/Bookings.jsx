@@ -137,20 +137,16 @@ export default function BookingsPage() {
 
   // 🔍 Tìm kiếm
   const filteredData = useMemo(() => {
-    return data
-      .filter(
-        (item) =>
-          driverName(item.driverId)
-            .toLowerCase()
-            .includes(search.toLowerCase()) ||
-          vehicleName(item.vehicleId)
-            .toLowerCase()
-            .includes(search.toLowerCase()) ||
-          stationName(item.stationId)
-            .toLowerCase()
-            .includes(search.toLowerCase())
-      )
-      .sort((a, b) => new Date(b.bookingTime) - new Date(a.bookingTime));
+    return data.filter(
+      (item) =>
+        driverName(item.driverId)
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        vehicleName(item.vehicleId)
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        stationName(item.stationId).toLowerCase().includes(search.toLowerCase())
+    );
   }, [data, search, users, vehicles, stations]);
 
   // ➕ Tạo booking mới
@@ -251,7 +247,14 @@ export default function BookingsPage() {
 
   // 🧾 Cột hiển thị
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id", width: 80 },
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: "descend",
+    },
     {
       title: "Driver",
       dataIndex: "driverId",
@@ -274,6 +277,7 @@ export default function BookingsPage() {
       title: "Booking Time",
       dataIndex: "bookingTime",
       key: "bookingTime",
+      sorter: (a, b) => dayjs(a.bookingTime).unix() - dayjs(b.bookingTime).unix(),
       render: (t) => (t ? dayjs(t).format("DD/MM/YYYY HH:mm") : "-"),
     },
     {

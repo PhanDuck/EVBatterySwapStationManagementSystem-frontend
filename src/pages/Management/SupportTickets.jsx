@@ -52,16 +52,18 @@ export default function SupportPage() {
 
       const users = Array.isArray(userRes.data) ? userRes.data : [userRes.data];
 
-      const tickets = (ticketRes.data || []).map((t) => {
-        const user = users.find(
-          (u) => u.id === t.customerId || u.id === t.createdBy
-        );
-        return {
-          ...t,
-          key: t.id ?? t._id,
-          user: user || null,
-        };
-      });
+      const tickets = (ticketRes.data || [])
+        .map((t) => {
+          const user = users.find(
+            (u) => u.id === t.customerId || u.id === t.createdBy
+          );
+          return {
+            ...t,
+            key: t.id ?? t._id,
+            user: user || null,
+          };
+        })
+        .sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
 
       setData(tickets);
     } catch (err) {
@@ -183,6 +185,7 @@ export default function SupportPage() {
       title: "Ticket ID",
       dataIndex: "id",
       key: "id",
+      sorter: (a, b) => a.id - b.id, // Thêm sorter cho cột ID
       render: (text) => (
         <Space>
           <MessageOutlined />

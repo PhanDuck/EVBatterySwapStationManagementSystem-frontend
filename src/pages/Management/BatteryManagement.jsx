@@ -72,7 +72,7 @@ export default function BatteryManagement() {
             stationData.find((s) => s.id === b.currentStation)?.name ||
             "Không xác định",
         }));
-        setBatteries(mapped);
+        setBatteries(mapped.sort((a, b) => b.id - a.id)); // Sắp xếp theo ID giảm dần
       } catch (err) {
         console.error("❌ Lỗi tải dữ liệu:", err);
         message.error("Không thể tải danh sách pin!");
@@ -149,7 +149,13 @@ export default function BatteryManagement() {
 
   // 📊 Cột bảng
   const columns = [
-    { title: "ID", dataIndex: "id", width: 80 },
+    {
+      title: "ID",
+      dataIndex: "id",
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: "descend",
+    },
     { title: "Mẫu pin", dataIndex: "model", width: 150 },
     { title: "Loại pin", dataIndex: "batteryTypeName", width: 150 },
     { title: "Dung lượng (kWh)", dataIndex: "capacity", width: 150 },
@@ -181,12 +187,17 @@ export default function BatteryManagement() {
       dataIndex: "manufactureDate",
       width: 160,
       render: (v) => (v ? new Date(v).toLocaleDateString("vi-VN") : "—"),
+      sorter: (a, b) =>
+        dayjs(a.manufactureDate).unix() - dayjs(b.manufactureDate).unix(),
     },
     {
       title: "Bảo trì lần cuối",
       dataIndex: "lastMaintenanceDate",
       width: 180,
       render: (v) => (v ? new Date(v).toLocaleDateString("vi-VN") : "—"),
+      sorter: (a, b) =>
+        dayjs(a.lastMaintenanceDate).unix() -
+        dayjs(b.lastMaintenanceDate).unix(),
     },
     { title: "Số lần đã sử dụng", dataIndex: "usageCount", width: 150 },
     {

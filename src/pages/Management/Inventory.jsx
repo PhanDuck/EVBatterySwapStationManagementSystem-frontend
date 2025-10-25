@@ -100,7 +100,7 @@ export default function InventoryPage() {
       const inventory = Array.isArray(res.data.batteries)
         ? res.data.batteries
         : [];
-      setStationInventory(inventory); // <-- CHỈNH SỬA
+      setStationInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (err) {
       message.error("Không thể tải tồn kho trạm!");
       console.error(err);
@@ -129,7 +129,7 @@ export default function InventoryPage() {
       const inventory = Array.isArray(res.data.batteries)
         ? res.data.batteries
         : [];
-      setWarehouseInventory(inventory);
+      setWarehouseInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (err) {
       message.error("Không thể tải tồn Kho!");
       console.error("Lỗi API Tồn kho Kho:", err.response?.data || err.message);
@@ -336,7 +336,14 @@ export default function InventoryPage() {
 
   // Cột cho Bảng Pin Cần Bảo Dưỡng tại Trạm
   const stationColumns = [
-    { title: "Pin ID", dataIndex: "id", key: "id", width: FIXED_COL_WIDTH.PIN_ID },
+    {
+      title: "Pin ID",
+      dataIndex: "id",
+      key: "id",
+      width: FIXED_COL_WIDTH.PIN_ID,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: "descend",
+    },
     {
       title: "Dung tích pin",
       dataIndex: "capacity",
@@ -431,7 +438,14 @@ export default function InventoryPage() {
 
   // Cột cho Bảng Tồn Kho Pin trong Kho
   const warehouseColumns = [
-    { title: "Pin ID", dataIndex: "id", key: "id", width: FIXED_COL_WIDTH.PIN_ID },
+    {
+      title: "Pin ID",
+      dataIndex: "id",
+      key: "id",
+      width: FIXED_COL_WIDTH.PIN_ID,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: "descend",
+    },
     {
       title: "Dung tích pin",
       dataIndex: "capacity",

@@ -22,7 +22,10 @@ export default function AccountPage() {
       try {
         const res = await api.get("/admin/user"); // <-- đúng path thật
         // normalize id field (api may return _id)
-        const list = (res.data || []).map((u) => ({ ...u, id: u.id ?? u._id })).filter((u) => u.status?.toLowerCase() !== "deleted");
+        const list = (res.data || [])
+          .map((u) => ({ ...u, id: u.id ?? u._id }))
+          .filter((u) => u.status?.toLowerCase() !== "deleted")
+          .sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
         setAccounts(list);
       } catch (err) {
         console.error(err);
@@ -148,6 +151,7 @@ export default function AccountPage() {
       dataIndex: "id",
       key: "id",
       width: 80,
+      sorter: (a, b) => a.id - b.id, // Thêm sorter cho cột ID
     },
     {
       title: "Tên đầy đủ",

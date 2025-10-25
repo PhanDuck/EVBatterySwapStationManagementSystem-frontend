@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo,  } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Card,
   Table,
@@ -15,6 +15,7 @@ import {
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
+import dayjs from "dayjs"; // Import dayjs
 
 const { Option } = Select;
 
@@ -52,7 +53,11 @@ export default function DriverSubscriptionManagement() {
         api.get("/service-package"),
       ]);
 
-      setData(Array.isArray(subscriptionRes?.data) ? subscriptionRes.data : []);
+      setData(
+        (Array.isArray(subscriptionRes?.data) ? subscriptionRes.data : []).sort(
+          (a, b) => b.id - a.id
+        ) // Sắp xếp ID giảm dần
+      );
       setDrivers(Array.isArray(driverRes?.data) ? driverRes.data : []);
       setPackages(Array.isArray(packageRes?.data) ? packageRes.data : []);
     } catch (err) {
@@ -144,7 +149,14 @@ export default function DriverSubscriptionManagement() {
 
   // 🧾 Columns Table
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id", width: 80 },
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: "descend",
+    },
     {
       title: "Driver",
       dataIndex: "driverId",
@@ -157,8 +169,18 @@ export default function DriverSubscriptionManagement() {
       key: "packageId",
       render: (id) => packageName(id),
     },
-    { title: "Start Date", dataIndex: "startDate", key: "startDate" },
-    { title: "End Date", dataIndex: "endDate", key: "endDate" },
+    {
+      title: "Start Date",
+      dataIndex: "startDate",
+      key: "startDate",
+      sorter: (a, b) => dayjs(a.startDate).unix() - dayjs(b.startDate).unix(),
+    },
+    {
+      title: "End Date",
+      dataIndex: "endDate",
+      key: "endDate",
+      sorter: (a, b) => dayjs(a.endDate).unix() - dayjs(b.endDate).unix(),
+    },
     {
       title: "Status",
       dataIndex: "status",
@@ -187,7 +209,7 @@ export default function DriverSubscriptionManagement() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ width: 250 }}
-            />            
+            />
           </Space>
         }
       >
@@ -201,7 +223,6 @@ export default function DriverSubscriptionManagement() {
         </Spin>
       </Card>
 
-      
     </div>
   );
 }

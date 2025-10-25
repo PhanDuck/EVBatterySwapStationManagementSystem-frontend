@@ -58,7 +58,7 @@ function AboutPage() {
               <Card bordered={false} style={{ textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                 <Statistic
                   title="Trạm Đổi Pin"
-                  value={150}
+                  value={10}
                   suffix="+"
                   valueStyle={{ color: '#1e3a8a', fontSize: '2.5rem' }}
                   prefix={<EnvironmentOutlined />}
@@ -80,7 +80,7 @@ function AboutPage() {
               <Card bordered={false} style={{ textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                 <Statistic
                   title="Người Dùng"
-                  value={10000}
+                  value={50}
                   suffix="+"
                   valueStyle={{ color: '#1e3a8a', fontSize: '2.5rem' }}
                   prefix={<TeamOutlined />}
@@ -203,7 +203,7 @@ function AboutPage() {
                 <EnvironmentOutlined style={{ fontSize: '3rem', color: '#1e3a8a', marginBottom: 16 }} />
                 <Title level={4}>Mạng Lưới Rộng</Title>
                 <Paragraph style={{ color: '#475569' }}>
-                  Hơn 150 trạm đổi pin phủ khắp 34 tỉnh thành, luôn sẵn sàng phục vụ mọi lúc mọi nơi
+                  Hơn 10 trạm đổi pin phủ khắp 34 tỉnh thành, luôn sẵn sàng phục vụ mọi lúc mọi nơi
                 </Paragraph>
               </Card>
             </Col>
@@ -223,7 +223,7 @@ function AboutPage() {
                   children: (
                     <div>
                       <Title level={4}>Bước 1: Đặt Lịch Online</Title>
-                      <Paragraph>Đặt lịch nhanh chóng qua website hoặc app, chọn trạm và thời gian phù hợp</Paragraph>
+                      <Paragraph>Đặt lịch nhanh chóng qua website , chọn trạm và thời gian phù hợp</Paragraph>
                     </div>
                   ),
                   color: 'blue',
@@ -232,7 +232,7 @@ function AboutPage() {
                   children: (
                     <div>
                       <Title level={4}>Bước 2: Đến Trạm</Title>
-                      <Paragraph>Di chuyển đến trạm đã chọn theo lịch hẹn, nhân viên sẵn sàng hỗ trợ</Paragraph>
+                      <Paragraph>Di chuyển đến trạm đã chọn theo lịch hẹn</Paragraph>
                     </div>
                   ),
                   color: 'green',
@@ -261,53 +261,68 @@ function AboutPage() {
         </div>
 
         {/* Cam kết */}
-        <Card
-          bordered={false}
-          style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            textAlign: 'center',
-            padding: '40px 20px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-            borderRadius: 12,
-          }}
-        >
-          <Title level={2} style={{ color: 'white', marginBottom: 24 }}>
-            Cam Kết Của Chúng Tôi
-          </Title>
-          <Row gutter={[32, 32]} justify="center">
-            <Col xs={24} md={8}>
-              <div>
-                <Title level={4} style={{ color: 'white' }}>
-                  🌱 Bền Vững
-                </Title>
-                <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
-                  Góp phần bảo vệ môi trường và phát triển giao thông xanh
-                </Text>
-              </div>
-            </Col>
-            <Col xs={24} md={8}>
-              <div>
-                <Title level={4} style={{ color: 'white' }}>
-                  ⚡ Nhanh Chóng
-                </Title>
-                <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
-                  Tiết kiệm thời gian quý báu của bạn với dịch vụ đổi pin siêu tốc
-                </Text>
-              </div>
-            </Col>
-            <Col xs={24} md={8}>
-              <div>
-                <Title level={4} style={{ color: 'white' }}>
-                  🛡️ An Toàn
-                </Title>
-                <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
-                  Pin được kiểm tra kỹ lưỡng, đảm bảo an toàn tuyệt đối
-                </Text>
-              </div>
-            </Col>
-          </Row>
-        </Card>
+        <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden' }}>
+          <Card
+            bordered={false}
+            style={{
+              backgroundImage: `url(${BackgroundImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              color: 'white',
+              textAlign: 'center',
+              padding: '40px 20px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            }}
+          >
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.6)', // Lớp phủ màu tối
+              zIndex: 1,
+            }}></div>
+            
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <Title level={2} style={{ color: 'white', marginBottom: 24 }}>
+                Cam Kết Của Chúng Tôi
+              </Title>
+              <Row gutter={[32, 32]} justify="center">
+                <Col xs={24} md={8}>
+                  <div>
+                    <Title level={4} style={{ color: 'white' }}>
+                      🌱 Bền Vững
+                    </Title>
+                    <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
+                      Góp phần bảo vệ môi trường và phát triển giao thông xanh
+                    </Text>
+                  </div>
+                </Col>
+                <Col xs={24} md={8}>
+                  <div>
+                    <Title level={4} style={{ color: 'white' }}>
+                      ⚡ Nhanh Chóng
+                    </Title>
+                    <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
+                      Tiết kiệm thời gian quý báu của bạn với dịch vụ đổi pin siêu tốc
+                    </Text>
+                  </div>
+                </Col>
+                <Col xs={24} md={8}>
+                  <div>
+                    <Title level={4} style={{ color: 'white' }}>
+                      🛡️ An Toàn
+                    </Title>
+                    <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
+                      Pin được kiểm tra kỹ lưỡng, đảm bảo an toàn tuyệt đối
+                    </Text>
+                  </div>
+                </Col>
+              </Row>
+            </div>
+          </Card>
+        </div>
       </section>
     </div>
   );

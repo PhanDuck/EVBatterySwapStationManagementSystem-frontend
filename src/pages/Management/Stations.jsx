@@ -50,7 +50,7 @@ const StationPage = () => {
     let apiPath = Role === "ADMIN" ? "/station" : "/staff-station-assignment/my-stations";
     try {
       const res = await api.get(apiPath);
-      setStations(res.data);
+      setStations(res.data.sort((a, b) => b.id - a.id));
     } catch (err) {
       message.error("Failed to fetch stations");
       console.error(err);
@@ -136,6 +136,7 @@ const StationPage = () => {
       title: "Station ID",
       dataIndex: "id",
       key: "id",
+      sorter: (a, b) => a.id - b.id,
       render: (text) => (
         <Space>
           <EnvironmentOutlined />

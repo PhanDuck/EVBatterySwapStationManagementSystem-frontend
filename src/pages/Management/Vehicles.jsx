@@ -53,11 +53,13 @@ const VehiclePage = () => {
             ? await api.get("/vehicle")
             : await api.get("/vehicle/my-vehicles");
 
-        const list = Array.isArray(res.data)
-          ? res.data
-          : res.data?.data && Array.isArray(res.data.data)
-          ? res.data.data
-          : [];
+        const list = (
+          Array.isArray(res.data)
+            ? res.data
+            : res.data?.data && Array.isArray(res.data.data)
+            ? res.data.data
+            : []
+        ).sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
 
         setVehicles(list);
       } catch (err) {
@@ -95,6 +97,7 @@ const VehiclePage = () => {
       title: "Vehicle ID",
       dataIndex: "id",
       key: "id",
+      sorter: (a, b) => a.id - b.id, // Thêm sorter
       render: (text) => (
         <Space>
           <CarOutlined />

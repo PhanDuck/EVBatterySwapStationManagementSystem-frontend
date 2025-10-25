@@ -1,4 +1,5 @@
 import videohomepage from "../../assets/videos/videohomepage.mp4";
+import BackgroundImage from "../../assets/img/backgroundaboutus.png";
 
 import { Button, Card, Row, Col, Typography } from "antd";
 import {
@@ -51,7 +52,6 @@ function Home() {
       </section>
 
       {/* Hero */}
-
       <section
         style={{
           background: "linear-gradient(135deg, #0A2540 0%, #1B4B6B 100%)",
@@ -74,9 +74,6 @@ function Home() {
                 trải nghiệm đơn giản, rõ ràng cho mọi tài xế.
               </Paragraph>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <Button type="primary" onClick={handleBook}>
-                  Đặt lịch đổi pin
-                </Button>
                 <Link to="/stations/nearby">
                   <Button>Trạm gần tôi</Button>
                 </Link>
@@ -217,16 +214,28 @@ function Home() {
       </section>
 
       {/* Stats strip */}
-      {/* Stats strip - ĐÃ CẢI THIỆN UI/UX */}
       <section
         style={{
-          background: "linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)",
+          backgroundImage: `url(${BackgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
           color: "white",
-          padding: "60px 0", // Tăng padding lên 60px
+          padding: "60px 0",
+          position: 'relative',
         }}
       >
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          zIndex: 1,
+        }}></div>
+        
         <div
-          style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 20px" }}
+          style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 20px", position: 'relative', zIndex: 2 }}
         >
           <Row gutter={[24, 40]} justify="center">
             {/* ITEM 1: TRẠM */}
@@ -234,31 +243,31 @@ function Home() {
               <EnvironmentOutlined
                 style={{
                   fontSize: "32px",
-                  color: "#FFC107",
+                  color: "#fff",
                   marginBottom: "8px",
                 }}
               />
               <Title level={2} style={{ color: "white", margin: 0 }}>
                 10+
               </Title>
-              <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.8)" }}>
+              <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.9)" }}>
                 Trạm đổi pin
               </div>
             </Col>
 
-            {/* ITEM 2: NGƯỜI DÙNG (Đã thêm Icon) */}
+            {/* ITEM 2: NGƯỜI DÙNG */}
             <Col xs={12} md={6} style={{ textAlign: "center" }}>
               <UserOutlined
                 style={{
                   fontSize: "32px",
-                  color: "#FFC107",
+                  color: "#fff",
                   marginBottom: "8px",
                 }}
               />
               <Title level={2} style={{ color: "white", margin: 0 }}>
                 50+
               </Title>
-              <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.8)" }}>
+              <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.9)" }}>
                 Người dùng
               </div>
             </Col>
@@ -268,28 +277,28 @@ function Home() {
               <ThunderboltOutlined
                 style={{
                   fontSize: "32px",
-                  color: "#FFC107",
+                  color: "#fff",
                   marginBottom: "8px",
                 }}
               />
               <Title level={2} style={{ color: "white", margin: 0 }}>
-                100+
+                1000+
               </Title>
-              <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.8)" }}>
+              <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.9)" }}>
                 Lượt đổi thành công
               </div>
             </Col>
 
-            {/* ITEM 4: CO2 (Đã thêm Icon - Sử dụng CloudTwoTone cho thân thiện môi trường) */}
+            {/* ITEM 4: CO2 */}
             <Col xs={12} md={6} style={{ textAlign: "center" }}>
               <CloudTwoTone
-                twoToneColor="#4CAF50"
+                twoToneColor="#fff"
                 style={{ fontSize: "32px", marginBottom: "8px" }}
               />
               <Title level={2} style={{ color: "white", margin: 0 }}>
                 1 tấn
               </Title>
-              <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.8)" }}>
+              <div style={{ fontSize: "1rem", color: "rgba(255,255,255,0.9)" }}>
                 CO2 tiết kiệm
               </div>
             </Col>

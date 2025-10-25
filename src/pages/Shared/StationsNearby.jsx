@@ -1,10 +1,20 @@
 import React, { Fragment, useEffect, useState, useRef, useMemo } from "react";
-// 🆕 Thêm Tooltip
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, Tooltip } from "react-leaflet"; 
+// 🆕 Thêm Tooltip và Button
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  Polyline,
+  Tooltip,
+} from "react-leaflet";
 import { Select, Card, Spin, Button } from "antd";
+import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons"; // Import icons
 import api from "../../config/axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "./StationsNearby.css"; // Import CSS
 
 const { Option } = Select;
 
@@ -59,13 +69,11 @@ const StationsNearby = () => {
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [selectedStation, setSelectedStation] = useState(null);
-  
-  const [userGeoPosition, setUserGeoPosition] = useState(null); 
-  const [mapCenter, setMapCenter] = useState([10.762622, 106.660172]); 
-  
-  const [routeCoordinates, setRouteCoordinates] = useState(null); 
-  // 🆕 State mới để lưu thông tin đường đi
-  const [routeInfo, setRouteInfo] = useState(null); 
+  const [userGeoPosition, setUserGeoPosition] = useState(null);
+  const [mapCenter, setMapCenter] = useState([10.762622, 106.660172]);
+  const [routeCoordinates, setRouteCoordinates] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true); // State cho sidebar
   
   const markerRefs = useRef({});
 
@@ -176,7 +184,9 @@ const StationsNearby = () => {
     return selectedCity
       ? [
           ...new Set(
-            stations.filter((s) => s.city === selectedCity).map((s) => s.district)
+            stations
+              .filter((s) => s.city === selectedCity)
+              .map((s) => s.district)
           ),
         ]
       : [];
@@ -190,182 +200,233 @@ const StationsNearby = () => {
     );
   }, [stations, selectedCity, selectedDistrict]);
 
-
   if (loading) return <Spin tip="Đang tải dữ liệu trạm..." />;
-  
 
   return (
     <Fragment>
-      
-      <div style={{ display: "flex", height: "90vh", gap: "1rem" }}>
-        {/* Sidebar bộ lọc (Giữ nguyên) */}
-        <Card title={<div style={{ fontSize: '24px', fontWeight: "bold", color: '#1890ff', textAlign: 'center', marginTop: '16px' }}> <h1>Hệ thống trạm</h1>
-        </div>} style={{ width: 300 }}>
-          
-          {/* Select Thành phố (Giữ nguyên) */}
-          <p><strong>Thành phố:</strong></p>
-          <Select
-            style={{ width: "100%", marginBottom: 10 }}
-            placeholder="Chọn thành phố"
-            allowClear
-            onChange={(v) => {
-              setSelectedCity(v);
-              setSelectedDistrict(null);
-              clearRoute();
+      <div style={{ display: "flex", height: "90vh", position: "relative" }}>
+        {/* Nút Toggle CỐ ĐỊNH */}
+        <Button
+          type="primary"
+          icon={isSidebarVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+          onClick={() => setIsSidebarVisible(!isSidebarVisible)}
+          className="sidebar-toggle-button"
+        />
+
+        {/* Sidebar */}
+        {isSidebarVisible && (
+          <Card
+            title={
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  color: "#1890ff",
+                  textAlign: "center",
+                  marginTop: "16px",
+                }}
+              >
+                <h1>Hệ thống trạm</h1>
+              </div>
+            }
+            style={{
+              width: 300,
+              transition: "width 0.3s ease, padding 0.3s ease",
+              flexShrink: 0,
+              zIndex: 999,
             }}
           >
-            {cities.map((city) => (
-              <Option key={city} value={city}>
-                {city}
-              </Option>
-            ))}
-          </Select>
-          
-          {/* Select Quận / Huyện (Giữ nguyên) */}
-          <p><strong>Quận / Huyện:</strong></p>
-          <Select
-            style={{ width: "100%" }}
-            placeholder="Chọn quận / huyện"
-            allowClear
-            value={selectedDistrict}
-            onChange={(v) => {
+            <p>
+              <strong>Thành phố:</strong>
+            </p>
+            <Select
+              style={{ width: "100%", marginBottom: 10 }}
+              placeholder="Chọn thành phố"
+              allowClear
+              onChange={(v) => {
+                setSelectedCity(v);
+                setSelectedDistrict(null);
+                clearRoute();
+              }}
+            >
+              {cities.map((city) => (
+                <Option key={city} value={city}>
+                  {city}
+                </Option>
+              ))}
+            </Select>
+
+            <p>
+              <strong>Quận / Huyện:</strong>
+            </p>
+            <Select
+              style={{ width: "100%" }}
+              placeholder="Chọn quận / huyện"
+              allowClear
+              value={selectedDistrict}
+              onChange={(v) => {
                 setSelectedDistrict(v);
                 clearRoute();
-            }}
-            disabled={!selectedCity}
-          >
-            {districts.map((d) => (
-              <Option key={d} value={d}>
-                {d}
-              </Option>
-            ))}
-          </Select>
+              }}
+              disabled={!selectedCity}
+            >
+              {districts.map((d) => (
+                <Option key={d} value={d}>
+                  {d}
+                </Option>
+              ))}
+            </Select>
 
-          {/* List trạm (Giữ nguyên) */}
-          <p style={{ marginTop: 16 }}>
-            <strong>Trạm hiện có:</strong> ({filteredStations.length})
-          </p>
-          <ul style={{ maxHeight: 300, overflowY: "auto", paddingLeft: 16 }}>
-            {filteredStations.map((s) => (
-              <li
-                key={s.id}
-                onClick={() => {
+            <p style={{ marginTop: 16 }}>
+              <strong>Trạm hiện có:</strong> ({filteredStations.length})
+            </p>
+            <ul
+              style={{
+                maxHeight: 300,
+                overflowY: "auto",
+                paddingLeft: 16,
+              }}
+            >
+              {filteredStations.map((s) => (
+                <li
+                  key={s.id}
+                  onClick={() => {
                     setSelectedStation(s);
                     setMapCenter([s.latitude, s.longitude]);
                     setTimeout(() => {
-                        const ref = markerRefs.current[s.id];
-                        if (ref) ref.openPopup();
+                      const ref = markerRefs.current[s.id];
+                      if (ref) ref.openPopup();
                     }, 100);
-                }}
-                style={{
-                  cursor: "pointer",
-                  marginBottom: 8,
-                  color: selectedStation?.id === s.id ? '#fa541c' : "#1890ff",
-                  fontWeight: selectedStation?.id === s.id ? 'bold' : 'normal'
-                }}
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    marginBottom: 8,
+                    color: selectedStation?.id === s.id ? "#fa541c" : "#1890ff",
+                    fontWeight:
+                      selectedStation?.id === s.id ? "bold" : "normal",
+                  }}
+                >
+                  📍 {s.name} ({s.district})
+                </li>
+              ))}
+            </ul>
+
+            <div style={{ marginTop: "1rem", textAlign: "center" }}>
+              <Button
+                type="default"
+                danger
+                onClick={clearRoute}
+                disabled={!routeCoordinates}
               >
-                📍 {s.name} ({s.district})
-              </li>
-            ))}
-          </ul>
-          
-          {/* Nút xóa đường đi */}
-          <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-             <Button type="default" danger onClick={clearRoute} disabled={!routeCoordinates}>
                 Xóa Chỉ Đường
-            </Button>
-            {/* 🆕 Hiển thị thông tin tổng quan dưới nút Xóa */}
-            {routeInfo && (
-                <p style={{ fontSize: '14px', marginTop: '10px', fontWeight: 'bold' }}>
-                    Tổng: {formatDistance(routeInfo.distance)} ({formatTime(routeInfo.duration)})
+              </Button>
+              {routeInfo && (
+                <p
+                  style={{
+                    fontSize: "14px",
+                    marginTop: "10px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Tổng: {formatDistance(routeInfo.distance)} (
+                  {formatTime(routeInfo.duration)})
                 </p>
-            )}
-          </div>
-          
-        </Card>
+              )}
+            </div>
+          </Card>
+        )}
 
         {/* Map */}
-        <MapContainer
-          center={mapCenter} 
-          zoom={12}
-          style={{ flex: 1 }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          {/* 🔴 VẼ ĐƯỜNG ĐI (Polyline) */}
-          {routeCoordinates && (
-            <Polyline 
-                positions={routeCoordinates} 
-                color="#007bff" 
-                weight={5} 
-                opacity={0.8}
-            >
-                {/* 🆕 TOOLTIP HIỂN THỊ THÔNG TIN ĐƯỜNG ĐI */}
-                {routeInfo && (
-                    <Tooltip 
-                        direction="center" // Đặt Tooltip ở giữa đường
-                        permanent={true}   // Luôn hiển thị
-                        className="route-tooltip"
-                    >
-                        {formatDistance(routeInfo.distance)} | {formatTime(routeInfo.duration)}
-                    </Tooltip>
-                )}
-            </Polyline>
-          )}
-
-          {/* Marker cho vị trí người dùng (Geolocation) */}
-          {userGeoPosition && (
-            <Marker
-              position={userGeoPosition}
-              icon={L.divIcon({
-                className: 'user-geo-icon',
-                html: '<div style="background-color: #007bff; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>', 
-                iconSize: [20, 20],
-              })}
-            >
-              <Popup>
-                <strong>📍 Vị trí của bạn</strong> <br/> (Điểm bắt đầu chỉ đường)
-              </Popup>
-            </Marker>
-          )}
-
-          {selectedStation && (
-            <FlyToLocation
-              position={[selectedStation.latitude, selectedStation.longitude]}
+        <div style={{ flex: 1, position: "relative", height: "100%" }}>
+          <MapContainer
+            center={mapCenter}
+            zoom={12}
+            style={{ height: "100%", width: "100%" }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-          )}
 
-          {/* Markers Trạm */}
-          {filteredStations.map((s) => (
-            <Marker
-              key={s.id}
-              position={[s.latitude, s.longitude]}
-              ref={(ref) => (markerRefs.current[s.id] = ref)}
-            >
-              <Popup>
-                <strong>{s.name}</strong> <br />
-                📍 {s.location} <br />
-                ☎️ {s.contactInfo} <br />⚡ Pin hiện có: {s.currentBatteryCount}{" "}
-                / {s.capacity}
-                
-                {/* NÚT CHỈ ĐƯỜNG TRONG POPUP */}
-                <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
-                    <Button 
-                        type="primary" 
-                        size="small"
-                        onClick={() => handleDirectionsClick(s)}
-                        disabled={!userGeoPosition}
+            {/* 🔴 VẼ ĐƯỜNG ĐI (Polyline) */}
+            {routeCoordinates && (
+              <Polyline
+                positions={routeCoordinates}
+                color="#007bff"
+                weight={5}
+                opacity={0.8}
+              >
+                {routeInfo && (
+                  <Tooltip
+                    direction="center"
+                    permanent={true}
+                    className="route-tooltip"
+                  >
+                    {formatDistance(routeInfo.distance)} |{" "}
+                    {formatTime(routeInfo.duration)}
+                  </Tooltip>
+                )}
+              </Polyline>
+            )}
+
+            {/* Marker cho vị trí người dùng (Geolocation) */}
+            {userGeoPosition && (
+              <Marker
+                position={userGeoPosition}
+                icon={L.divIcon({
+                  className: "user-geo-icon",
+                  html: '<div style="background-color: #007bff; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>',
+                  iconSize: [20, 20],
+                })}
+              >
+                <Popup>
+                  <strong>📍 Vị trí của bạn</strong> <br /> (Điểm bắt đầu chỉ
+                  đường)
+                </Popup>
+              </Marker>
+            )}
+
+            {selectedStation && (
+              <FlyToLocation
+                position={[selectedStation.latitude, selectedStation.longitude]}
+              />
+            )}
+
+            {/* Markers Trạm */}
+            {filteredStations.map((s) => (
+              <Marker
+                key={s.id}
+                position={[s.latitude, s.longitude]}
+                ref={(ref) => (markerRefs.current[s.id] = ref)}
+              >
+                <Popup>
+                  <strong>{s.name}</strong> <br />
+                  📍 {s.location} <br />
+                  ☎️ {s.contactInfo} <br />⚡ Pin hiện có:{" "}
+                  {s.currentBatteryCount} / {s.capacity}
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      borderTop: "1px solid #eee",
+                      paddingTop: "8px",
+                    }}
+                  >
+                    <Button
+                      type="primary"
+                      size="small"
+                      onClick={() => handleDirectionsClick(s)}
+                      disabled={!userGeoPosition}
                     >
-                        {userGeoPosition ? "Chỉ Đường Đến Đây" : "Đang chờ vị trí..."}
+                      {userGeoPosition
+                        ? "Chỉ Đường Đến Đây"
+                        : "Đang chờ vị trí..."}
                     </Button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
       </div>
     </Fragment>
   );
