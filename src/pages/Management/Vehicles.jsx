@@ -42,6 +42,7 @@ const VehiclePage = () => {
 
   const role = String(user?.role || "USER").trim().toUpperCase();
   const userId = user?.userID || user?.id || null;
+  const isDriver = role === "DRIVER";
 
   // 🚗 Lấy danh sách vehicle
   useEffect(() => {
@@ -242,15 +243,20 @@ const VehiclePage = () => {
         title="Vehicle Management"
         extra={
           <Space>
+            {/* Ẩn nút tìm kiếm nếu là DRIVER, hoặc luôn hiển thị nếu muốn DRIVER cũng có thể tìm kiếm */}
             <Input
               placeholder="Search by model or plate"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 250 }}
             />
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-              Register Vehicle
-            </Button>
+
+            {/* Chỉ hiển thị nút Register Vehicle nếu role là DRIVER */}
+            {isDriver && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+                Register Vehicle
+              </Button>
+            )}
           </Space>
         }
       >
