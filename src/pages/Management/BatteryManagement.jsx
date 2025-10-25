@@ -342,7 +342,7 @@ export default function BatteryManagement() {
             </Select>
           </Form.Item>
 
-          <Form.Item name="currentStation" label="Trạm hiện tại">
+          {/* <Form.Item name="currentStation" label="Trạm hiện tại">
             <Select placeholder="Chọn trạm">
               {stations.map((s) => (
                 <Option key={s.id} value={s.id}>
@@ -350,7 +350,7 @@ export default function BatteryManagement() {
                 </Option>
               ))}
             </Select>
-          </Form.Item>
+          </Form.Item> */}
 
           <Form.Item
             name="manufactureDate"

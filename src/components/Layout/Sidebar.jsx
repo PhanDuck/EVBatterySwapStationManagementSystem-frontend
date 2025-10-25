@@ -50,10 +50,16 @@ export default function RoleSidebar({ role = "ADMIN" }) {
         path: "/admin/vehicles",
       },
       {
+        key: "assignments",
+        label: "Assignments",
+        icon: <UserOutlined />,
+        path: "/admin/assignments",
+      },
+      {
         key: "inventories",
         label: "Inventories",
         icon: <SettingOutlined />,
-        path: "/staff/inventories",
+        path: "/admin/inventories",
       },
       {
         key: "transactions",
