@@ -367,7 +367,7 @@ export default function InventoryPage() {
       render: (soh) => {
         const sohValue = soh ? parseFloat(soh).toFixed(2) : "N/A";
         return sohValue !== "N/A" ? (
-          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "gold"}>
+          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
             {sohValue}
           </Tag>
         ) : (
@@ -391,7 +391,7 @@ export default function InventoryPage() {
       if (numericCharge >= 70) {
         color = "green"; 
       } else {
-        color = "gold"; 
+        color = "orange"; 
       }
 
       return <Tag color={color}>{chargeValue}</Tag>;
@@ -404,7 +404,7 @@ export default function InventoryPage() {
       key: "status",
       width: FIXED_COL_WIDTH.STATUS,
       render: (status) => (
-        <Tag color={status === "AVAILABLE" ? "green" : "gold"}>{status}</Tag>
+        <Tag color={status === "AVAILABLE" ? "green" : "orange"}>{status}</Tag>
       ),
     },
     {
@@ -415,7 +415,7 @@ export default function InventoryPage() {
       render: (date) => (date ? new Date(date).toLocaleDateString() : "N/A"), // Định dạng ngày cho an toàn
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       width: FIXED_COL_WIDTH.ACTIONS,
       render: (_, record) => (
@@ -469,7 +469,7 @@ export default function InventoryPage() {
       render: (soh) => {
         const sohValue = soh ? parseFloat(soh).toFixed(2) : "N/A";
         return sohValue !== "N/A" ? (
-          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "gold"}>
+          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
             {sohValue}
           </Tag>
         ) : (
@@ -493,7 +493,7 @@ export default function InventoryPage() {
         if (numericCharge >= 70) {
           color = "green"; 
         } else {
-          color = "gold"; 
+          color = "orange"; 
         }
 
         return <Tag color={color}>{chargeValue}</Tag>;
@@ -505,7 +505,7 @@ export default function InventoryPage() {
       key: "status",
       width: FIXED_COL_WIDTH.STATUS,
       render: (status) => (
-        <Tag color={status === "AVAILABLE" ? "green" : "gold"}>{status}</Tag>
+        <Tag color={status === "AVAILABLE" ? "green" : "orange"}>{status}</Tag>
       ),
     },
     {
@@ -516,7 +516,7 @@ export default function InventoryPage() {
       render: () => null, // Luôn trả về rỗng
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       width: FIXED_COL_WIDTH.ACTIONS,
       render: (_, record) => (  

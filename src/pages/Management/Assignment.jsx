@@ -298,9 +298,16 @@ export default function AssignmentPage() {
     // Dependency: Phụ thuộc vào assignments, allStaffs, allStations (dữ liệu gốc), và 2 giá trị tìm kiếm
   }, [assignments, allStaffs, allStations, searchStaffId, searchStationId]);
 
-  // --- F. ĐỊNH NGHĨA CỘT CHO BẢNG ---
+  // --- E. ĐỊNH NGHĨA CỘT CHO BẢNG ---
 
   const columns = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      sorter: (a, b) => a.id - b.id,
+      render: (text) => <strong>{text}</strong>
+    },
     {
       title: (
         <Space size={4}>
@@ -311,7 +318,6 @@ export default function AssignmentPage() {
       // Sử dụng trường staffName đã được ánh xạ
       dataIndex: "staffName",
       key: "staffName",
-      sorter: (a, b) => a.staffName.localeCompare(b.staffName),
       render: (text, record) => (
         <Tooltip title={`Staff ID: ${record.staffId}`}>
           <Tag color="blue">{text}</Tag>
@@ -328,7 +334,6 @@ export default function AssignmentPage() {
       // Sử dụng trường stationName đã được ánh xạ
       dataIndex: "stationName",
       key: "stationName",
-      sorter: (a, b) => a.stationName.localeCompare(b.stationName),
       render: (text, record) => (
         <Tooltip title={`Trạm ID: ${record.stationId}`}>
           <Tag color="green">{text}</Tag>
@@ -362,12 +367,11 @@ export default function AssignmentPage() {
           year: 'numeric',
         });
       },
-      sorter: (a, b) => {
-        const dateA = a.assignedAt// Sử dụng assignedAt để so sánh
-        const dateB = b.assignedAt
-        return new Date(dateA) - new Date(dateB);
-      },
-
+      // sorter: (a, b) => {
+      //   const dateA = a.assignedAt// Sử dụng assignedAt để so sánh
+      //   const dateB = b.assignedAt
+      //   return new Date(dateA) - new Date(dateB);
+      // },
     },
     {
       title: "Thao tác",
@@ -396,7 +400,7 @@ export default function AssignmentPage() {
     },
   ];
 
-  // --- G. RENDER UI ---
+  // --- F. RENDER UI ---
 
   return (
     <div style={{ padding: "24px" }}>

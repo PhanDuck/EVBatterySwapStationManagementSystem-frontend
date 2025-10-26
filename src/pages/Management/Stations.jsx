@@ -28,6 +28,105 @@ import { getCurrentRole } from "../../config/auth"; // ✅ import role checker
 
 const { Option } = Select;
 
+/**
+ * Component Modal hiển thị danh sách Pin tại một Trạm
+ */
+const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
+  const [batteries, setBatteries] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Ánh xạ Battery Type ID sang Tên 
+  const getBatteryTypeName = (id) => {
+    const type = batteryTypes.find((t) => t.id === id);
+    return type ? type.name : "N/A";
+  };
+
+  // 🔋 Hàm tải danh sách pin
+  const fetchBatteries = async (stationId) => {
+    setLoading(true);
+    try {
+      // API: GET /api/station/{id}/batteries (theo hình ảnh Swagger)
+      const res = await api.get(`/station/${stationId}/batteries`);
+      
+      // Dữ liệu API trả về mảng trực tiếp
+      const data = Array.isArray(res.data) 
+        ? res.data 
+        : (res.data?.data && Array.isArray(res.data.data) ? res.data.data : []);
+
+      setBatteries(data);
+      message.success(`Tải thành công ${data.length} pin tại trạm ${stationId}.`);
+    } catch (err) {
+      message.error("Lỗi khi tải danh sách pin tại trạm.");
+      console.error("Lỗi API tải pin:", err);
+      setBatteries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isVisible && station?.id) {
+      fetchBatteries(station.id);
+    } else if (!isVisible) {
+      setBatteries([]); // Clear data khi modal đóng
+    }
+  }, [isVisible, station]);
+
+  const batteryColumns = [
+    {
+      title: "ID Pin",
+      dataIndex: "id",
+      key: "id",
+      width: 100,
+      render: (text) => <strong>{text}</strong>,
+    },
+    {
+      title: "Model",
+      dataIndex: "model",
+      key: "model",
+    },
+    {
+      title: "Loại Pin",
+      dataIndex: "batteryTypeId",
+      key: "batteryTypeId",
+      render: (id) => getBatteryTypeName(id),
+    },
+    {
+      title: "Trạng thái (SOC)",
+      dataIndex: "soc",
+      key: "soc",
+      sorter: (a, b) => a.soc - b.soc,
+      render: (soc) => <Tag color={soc > 50 ? "green" : soc > 20 ? "orange" : "red"}>{soc}%</Tag>,
+    },
+    {
+      title: "Tình trạng Sức khỏe (SOH)",
+      dataIndex: "soh",
+      key: "soh",
+      sorter: (a, b) => a.soh - b.soh,
+      render: (soh) => <Tag color={soh > 80 ? "blue" : "default"}>{soh}%</Tag>,
+    },
+  ];
+
+  return (
+    <Modal
+      title={`Danh sách ${batteries.length}/${station?.capacity || 0} Pin tại Trạm ${station?.name || ''}`}
+      open={isVisible}
+      onCancel={onCancel}
+      footer={null}
+      width={1000}
+      destroyOnClose={true} // Tải lại dữ liệu mỗi lần mở
+    >
+      <Table
+        columns={batteryColumns}
+        dataSource={batteries}
+        loading={loading}
+        rowKey="id"
+        pagination={{ pageSize: 5 }}
+      />
+    </Modal>
+  );
+};
+
 const StationPage = () => {
   const [stations, setStations] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -36,6 +135,8 @@ const StationPage = () => {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [batteryTypes, setBatteryTypes] = useState([]);
+  const [isBatteryModalVisible, setIsBatteryModalVisible] = useState(false);
+  const [viewingStation, setViewingStation] = useState(null);
   const Role = JSON.parse(localStorage.getItem('currentUser'))?.role; // Get role directly
 
   // ---------------------------
@@ -128,6 +229,12 @@ const StationPage = () => {
     form.setFieldsValue(station);
   };
 
+  // 🆕 Handler để mở Modal Pin
+  const handleViewBatteries = (station) => {
+    setViewingStation(station);
+    setIsBatteryModalVisible(true);
+  };
+
   // ---------------------------
   // Columns
   // ---------------------------
@@ -165,7 +272,12 @@ const StationPage = () => {
       dataIndex: "capacity",
       key: "capacity",
       render: (capacity, record) => (
-        <Space direction="vertical" size="small">
+        <Space 
+          direction="vertical" 
+          size="small" 
+          onClick={() => handleViewBatteries(record)}
+          style={{ cursor: "pointer" }}
+        >
           <span>
             <strong>{record.currentBatteryCount || 0}</strong> / {capacity} slots
           </span>
@@ -485,6 +597,13 @@ const StationPage = () => {
           </Form.Item>
         </Form>
       </Modal>
+      {/* 🆕 MODAL HIỂN THỊ DANH SÁCH PIN */}
+      <BatteryListModal
+        station={viewingStation}
+        isVisible={isBatteryModalVisible}
+        onCancel={() => setIsBatteryModalVisible(false)}
+        batteryTypes={batteryTypes}
+      />
     </div>
   );
 };

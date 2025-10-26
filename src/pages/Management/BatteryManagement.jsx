@@ -160,10 +160,14 @@ export default function BatteryManagement() {
     { title: "Loại pin", dataIndex: "batteryTypeName", width: 150 },
     { title: "Dung lượng (kWh)", dataIndex: "capacity", width: 150 },
     {
-      title: "Tình trạng sức khỏe (%)",
+      title: "Tình trạng pin (%)",
       dataIndex: "stateOfHealth",
       width: 180,
-      render: (v) => `${v}%`,
+      render: (v) => {
+        return <Tag color={parseFloat(v) >= 70 ? "green" : "orange"}>
+                  {v}
+                </Tag>;
+      },
     },
     { title: "Trạm hiện tại", dataIndex: "currentStationName", width: 200 },
     {
@@ -310,7 +314,7 @@ export default function BatteryManagement() {
 
           <Form.Item
             name="stateOfHealth"
-            label="Tình trạng sức khỏe (%)"
+            label="Tình trạng pin (%)"
             rules={[{ required: true }]}
           >
             <InputNumber style={{ width: "100%" }} min={0} max={100} />
