@@ -42,7 +42,7 @@ const ServicePackagesPage = () => {
       console.error(err);
     }
   };
-  
+
   const fetchAllUsers = async () => {
     try {
       const res = await api.get("/admin/user");
@@ -56,7 +56,7 @@ const ServicePackagesPage = () => {
   const fetchDriverSubscriptions = async () => {
     try {
       const res = await api.get("/driver-subscription");
-      setDriverSubscriptions(res.data.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
+      setDriverSubscriptions(res.data.sort((a, b) => b.id - a.id));
     } catch (err) {
       message.error("Failed to fetch driver subscriptions");
       console.error(err);
@@ -65,11 +65,20 @@ const ServicePackagesPage = () => {
 
   const handleSubmit = async (values) => {
     try {
+      // Chuyển đổi tên trường cho đúng với API
+      const payload = {
+        name: values.name,
+        description: values.description,
+        price: values.price,
+        duration: values.duration, // API dùng "duration" không phải "durationDays"
+        maxSwaps: values.maxSwaps, // API dùng "maxSwaps" không phải "maxSwap"
+      };
+
       if (editingPackage) {
-        await api.put(`/service-package/${editingPackage.id}`, values);
+        await api.put(`/service-package/${editingPackage.id}`, payload);
         message.success("Package updated successfully");
       } else {
-        await api.post("/service-package", values);
+        await api.post("/service-package", payload);
         message.success("Package created successfully");
       }
       setIsModalVisible(false);
@@ -99,7 +108,7 @@ const ServicePackagesPage = () => {
       },
     });
   };
-  
+
   const handleDeleteDriverSubscription = (id) => {
     Modal.confirm({
       title: "Are you sure you want to delete this subscription?",
@@ -129,7 +138,14 @@ const ServicePackagesPage = () => {
   const handleEdit = (pkg) => {
     setEditingPackage(pkg);
     setIsModalVisible(true);
-    form.setFieldsValue(pkg);
+    // Map dữ liệu từ API response sang form fields
+    form.setFieldsValue({
+      name: pkg.name,
+      description: pkg.description,
+      price: pkg.price,
+      duration: pkg.duration || pkg.durationDays, // Hỗ trợ cả 2 tên
+      maxSwaps: pkg.maxSwaps || pkg.maxSwap, // Hỗ trợ cả 2 tên
+    });
   };
 
   const packageColumns = [
@@ -144,9 +160,15 @@ const ServicePackagesPage = () => {
     },
     {
       title: "Thời hạn",
-      dataIndex: "durationDays",
-      key: "durationDays",
-      render: (days) => `${days} ngày`,
+      dataIndex: "duration",
+      key: "duration",
+      render: (days) => `${days || 0} ngày`,
+    },
+    {
+      title: "Số lần đổi pin",
+      dataIndex: "maxSwaps",
+      key: "maxSwaps",
+      render: (swaps) => `${swaps || 0} lần`,
     },
     { title: "Mô tả", dataIndex: "description", key: "description" },
     {
@@ -176,9 +198,14 @@ const ServicePackagesPage = () => {
     },
   ];
 
-  // Create maps for quick lookups
-  const userMap = useMemo(() => new Map(users.map(user => [user.id, user.fullName])), [users]);
-  const packageMap = useMemo(() => new Map(packages.map(pkg => [pkg.id, pkg.name])), [packages]);
+  const userMap = useMemo(
+    () => new Map(users.map((user) => [user.id, user.fullName])),
+    [users]
+  );
+  const packageMap = useMemo(
+    () => new Map(packages.map((pkg) => [pkg.id, pkg.name])),
+    [packages]
+  );
 
   const subscriptionColumns = [
     {
@@ -267,11 +294,8 @@ const ServicePackagesPage = () => {
           rowKey="id"
         />
       </Card>
-      
-      <Card
-        title="Driver Subscriptions"
-        style={{ marginTop: '24px' }}
-      >
+
+      <Card title="Driver Subscriptions" style={{ marginTop: "24px" }}>
         <Table
           columns={subscriptionColumns}
           dataSource={driverSubscriptions}
@@ -285,6 +309,7 @@ const ServicePackagesPage = () => {
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
+        width={600}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
@@ -292,29 +317,62 @@ const ServicePackagesPage = () => {
             label="Tên gói dịch vụ"
             rules={[{ required: true, message: "Vui lòng nhập tên gói!" }]}
           >
-            <Input />
+            <Input placeholder="Ví dụ: Gói Cơ Bản, Gói Cao Cấp" />
           </Form.Item>
+
           <Form.Item
             name="price"
-            label="Giá"
+            label="Giá (VNĐ)"
             rules={[{ required: true, message: "Vui lòng nhập giá!" }]}
           >
-            <InputNumber style={{ width: "100%" }} />
+            <InputNumber
+              style={{ width: "100%" }}
+              min={0}
+              formatter={(value) =>
+                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+              }
+              parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+              placeholder="Nhập giá gói"
+            />
           </Form.Item>
+
           <Form.Item
-            name="durationDays"
+            name="duration"
             label="Thời hạn (ngày)"
             rules={[{ required: true, message: "Vui lòng nhập thời hạn!" }]}
           >
-            <InputNumber style={{ width: "100%" }} />
+            <InputNumber
+              style={{ width: "100%" }}
+              min={1}
+              placeholder="Số ngày có hiệu lực"
+            />
           </Form.Item>
+
+          <Form.Item
+            name="maxSwaps"
+            label="Số lần đổi pin tối đa"
+            rules={[
+              { required: true, message: "Vui lòng nhập số lần đổi pin!" },
+            ]}
+          >
+            <InputNumber
+              style={{ width: "100%" }}
+              min={1}
+              placeholder="Số lần đổi pin trong gói"
+            />
+          </Form.Item>
+
           <Form.Item
             name="description"
             label="Mô tả"
             rules={[{ required: true, message: "Vui lòng nhập mô tả!" }]}
           >
-            <Input.TextArea rows={3} />
+            <Input.TextArea
+              rows={3}
+              placeholder="Mô tả chi tiết về gói dịch vụ"
+            />
           </Form.Item>
+
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">

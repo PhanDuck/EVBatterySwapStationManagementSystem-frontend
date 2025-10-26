@@ -41,7 +41,6 @@ const VehiclePage = () => {
   })();
 
   const role = String(user?.role || "USER").trim().toUpperCase();
-  const userId = user?.userID || user?.id || null;
   const isDriver = role === "DRIVER";
 
   // 🚗 Lấy danh sách vehicle
@@ -60,7 +59,7 @@ const VehiclePage = () => {
             : res.data?.data && Array.isArray(res.data.data)
             ? res.data.data
             : []
-        ).sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
+        ).sort((a, b) => b.id - a.id);
 
         setVehicles(list);
       } catch (err) {
@@ -72,7 +71,7 @@ const VehiclePage = () => {
     };
 
     fetchVehicles();
-  }, [role, userId]);
+  }, [role]);
 
   // 🔋 Lấy loại pin
   useEffect(() => {
@@ -98,7 +97,7 @@ const VehiclePage = () => {
       title: "Vehicle ID",
       dataIndex: "id",
       key: "id",
-      sorter: (a, b) => a.id - b.id, // Thêm sorter
+      sorter: (a, b) => a.id - b.id,
       render: (text) => (
         <Space>
           <CarOutlined />
@@ -122,7 +121,16 @@ const VehiclePage = () => {
       key: "batteryTypeId",
       render: (id) => getBatteryTypeName(id),
     },
-    
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => (
+        <Tag color={status === "ACTIVE" ? "green" : "red"}>
+          {status}
+        </Tag>
+      ),
+    },
     {
       title: "Actions",
       key: "actions",
@@ -146,6 +154,7 @@ const VehiclePage = () => {
               icon={<DeleteOutlined />}
               size="small"
               onClick={() => handleDelete(record.id)}
+              disabled={record.status === 'INACTIVE'}
             >
               Delete
             </Button>
@@ -186,21 +195,26 @@ const VehiclePage = () => {
     }
   };
 
-  // 🔴 DELETE
+  // 🔴 SOFT DELETE
   const handleDelete = (id) => {
     Modal.confirm({
-      title: "Xóa phương tiện này?",
-      okText: "Xóa",
+      title: "Bạn có chắc muốn vô hiệu hóa xe này?",
+      content: "Hành động này sẽ chuyển trạng thái xe thành INACTIVE.",
+      okText: "Vô hiệu hóa",
       okType: "danger",
       cancelText: "Hủy",
       onOk: async () => {
         try {
           await api.delete(`/vehicle/${id}`);
-          setVehicles((prev) => prev.filter((v) => v.id !== id));
-          message.success("Đã xóa phương tiện!");
+          setVehicles((prev) =>
+            prev.map((v) =>
+              v.id === id ? { ...v, status: "INACTIVE" } : v
+            )
+          );
+          message.success("Đã vô hiệu hóa phương tiện!");
         } catch (err) {
           console.error(err);
-          message.error("Không thể xóa phương tiện!");
+          message.error("Không thể vô hiệu hóa phương tiện!");
         }
       },
     });
@@ -243,15 +257,12 @@ const VehiclePage = () => {
         title="Vehicle Management"
         extra={
           <Space>
-            {/* Ẩn nút tìm kiếm nếu là DRIVER, hoặc luôn hiển thị nếu muốn DRIVER cũng có thể tìm kiếm */}
             <Input
               placeholder="Search by model or plate"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 250 }}
             />
-
-            {/* Chỉ hiển thị nút Register Vehicle nếu role là DRIVER */}
             {isDriver && (
               <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                 Register Vehicle

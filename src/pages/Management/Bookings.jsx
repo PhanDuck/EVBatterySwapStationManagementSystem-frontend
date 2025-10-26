@@ -24,6 +24,7 @@ import api from "../../config/axios";
 import dayjs from "dayjs";
 
 const { Option } = Select;
+const { TextArea } = Input;
 const GET_COMPATIBLE_STATIONS_API_URL = "/booking/compatible-stations";
 
 export default function BookingsPage() {
@@ -39,6 +40,11 @@ export default function BookingsPage() {
   const [form] = Form.useForm();
   const [search, setSearch] = useState("");
   const [editingRecord, setEditingRecord] = useState(null);
+  
+  // State mới cho modal hủy booking
+  const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
+  const [cancellingBooking, setCancellingBooking] = useState(null);
+  const [cancelForm] = Form.useForm();
 
   // 🧩 User hiện tại
   let user = {};
@@ -218,6 +224,51 @@ export default function BookingsPage() {
     }
   };
 
+  // ❌ Hủy booking (Admin/Staff) - CẬP NHẬT
+  const handleAdminCancelBooking = (record) => {
+    setCancellingBooking(record);
+    setIsCancelModalVisible(true);
+    cancelForm.resetFields();
+  };
+
+  // Xử lý submit form hủy booking - SỬA LẠI
+  const handleCancelSubmit = async () => {
+    try {
+      const values = await cancelForm.validateFields();
+      const bookingId = cancellingBooking?.id;
+      
+      if (!bookingId) return;
+
+      setSubmitting(true);
+      
+      // Gọi API DELETE với reason trong request body
+      await api.delete(`/booking/${bookingId}`, {
+        data: {
+          reason: values.reason,
+        },
+      });
+
+      // Cập nhật state local
+      setData((prev) =>
+        prev.map((item) =>
+          item.id === bookingId ? { ...item, status: "CANCELLED" } : item
+        )
+      );
+
+      message.success("Đã hủy booking thành công!");
+      setIsCancelModalVisible(false);
+      setCancellingBooking(null);
+      cancelForm.resetFields();
+    } catch (err) {
+      console.error("Cancel booking error:", err);
+      message.error(
+        err.response?.data?.message || "Không thể hủy booking!"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // ❌ Hủy booking (Driver)
   const handleCancelBooking = async (record) => {
     Modal.confirm({
@@ -231,9 +282,7 @@ export default function BookingsPage() {
           await api.patch(`/booking/my-bookings/${record.id}/cancel`);
           setData((prev) =>
             prev.map((item) =>
-              item.id === record.id
-                ? { ...item, status: "CANCELLED" }
-                : item
+              item.id === record.id ? { ...item, status: "CANCELLED" } : item
             )
           );
           message.success("Đã hủy booking thành công!");
@@ -277,7 +326,8 @@ export default function BookingsPage() {
       title: "Booking Time",
       dataIndex: "bookingTime",
       key: "bookingTime",
-      sorter: (a, b) => dayjs(a.bookingTime).unix() - dayjs(b.bookingTime).unix(),
+      sorter: (a, b) =>
+        dayjs(a.bookingTime).unix() - dayjs(b.bookingTime).unix(),
       render: (t) => (t ? dayjs(t).format("DD/MM/YYYY HH:mm") : "-"),
     },
     {
@@ -301,6 +351,7 @@ export default function BookingsPage() {
       key: "actions",
       render: (_, record) => (
         <Space>
+          {/* Nút Confirm cho Admin/Staff - chỉ hiện với PENDING */}
           {(role === "ADMIN" || role === "STAFF") &&
             record.status === "PENDING" && (
               <Button
@@ -312,6 +363,19 @@ export default function BookingsPage() {
               </Button>
             )}
 
+          {/* Nút Cancel cho Admin/Staff - hiện với PENDING hoặc CONFIRMED */}
+          {(role === "ADMIN" || role === "STAFF") &&
+            (record.status === "PENDING" || record.status === "CONFIRMED") && (
+              <Button
+                danger
+                icon={<CloseCircleOutlined />}
+                onClick={() => handleAdminCancelBooking(record)}
+              >
+                Cancel
+              </Button>
+            )}
+
+          {/* Nút Cancel cho Driver - chỉ hiện với PENDING */}
           {role === "DRIVER" && record.status === "PENDING" && (
             <Button
               danger
@@ -359,6 +423,64 @@ export default function BookingsPage() {
           />
         </Spin>
       </Card>
+
+      {/* Modal nhập lý do hủy booking */}
+      <Modal
+        title={`Hủy Booking #${cancellingBooking?.id || ""}`}
+        open={isCancelModalVisible}
+        onCancel={() => {
+          setIsCancelModalVisible(false);
+          setCancellingBooking(null);
+          cancelForm.resetFields();
+        }}
+        footer={null}
+        width={500}
+      >
+        <Form
+          form={cancelForm}
+          layout="vertical"
+          onFinish={handleCancelSubmit}
+        >
+          <Form.Item
+            name="reason"
+            label="Lý do hủy"
+            rules={[
+              { required: true, message: "Vui lòng nhập lý do hủy booking!" },
+              { min: 10, message: "Lý do phải có ít nhất 10 ký tự!" },
+            ]}
+          >
+            <TextArea
+              rows={4}
+              placeholder="Nhập lý do hủy booking (ví dụ: Khách hàng yêu cầu, Trạm bảo trì, v.v.)"
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
+            <Space>
+              <Button
+                onClick={() => {
+                  setIsCancelModalVisible(false);
+                  setCancellingBooking(null);
+                  cancelForm.resetFields();
+                }}
+              >
+                Hủy bỏ
+              </Button>
+              <Button
+                type="primary"
+                danger
+                htmlType="submit"
+                loading={submitting}
+                icon={<CloseCircleOutlined />}
+              >
+                Xác nhận hủy
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
