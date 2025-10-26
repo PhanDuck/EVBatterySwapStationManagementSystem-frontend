@@ -205,7 +205,7 @@ export default function BatteryManagement() {
     },
     { title: "Số lần đã sử dụng", dataIndex: "usageCount", width: 150 },
     {
-      title: "Hành động",
+      title: "Thao tác",
       key: "actions",
       fixed: "right",
       width: 160,
@@ -218,6 +218,7 @@ export default function BatteryManagement() {
           <Space>
             {canEdit && (
               <Button
+                type="primary"
                 icon={<EditOutlined />}
                 size="small"
                 onClick={() => handleEdit(record)}
@@ -227,6 +228,7 @@ export default function BatteryManagement() {
             )}
             {role === "ADMIN" && (
               <Button
+                type="primary"
                 danger
                 icon={<DeleteOutlined />}
                 size="small"

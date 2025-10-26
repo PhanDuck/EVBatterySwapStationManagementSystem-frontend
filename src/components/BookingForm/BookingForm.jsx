@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Form, Select, DatePicker, Spin, notification } from "antd";
 import api from "../../config/axios";
-import dayjs from "dayjs";
+//import dayjs from "dayjs";
 
 const { Option } = Select;
 
@@ -67,9 +67,9 @@ const BookingFormFields = ({ form, onVehicleChange }) => {
     }
   };
   
-  const disabledDate = (current) => {
-    return current && current < dayjs().startOf("day");
-  };
+  // const disabledDate = (current) => {
+  //   return current && current < dayjs().startOf("day");
+  // };
 
   if (isVehicleLoading) {
     return <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><Spin tip="Đang tải danh sách xe..." /></div>;
@@ -119,7 +119,7 @@ const BookingFormFields = ({ form, onVehicleChange }) => {
         </Select>
       </Form.Item>
 
-      <Form.Item
+      {/* <Form.Item
         name="bookingTime"
         label="3. Chọn thời gian hẹn"
         rules={[{ required: true, message: "Vui lòng chọn ngày và giờ!" }]}
@@ -131,7 +131,7 @@ const BookingFormFields = ({ form, onVehicleChange }) => {
           style={{ width: "100%" }}
           placeholder="Chọn ngày và giờ"
         />
-      </Form.Item>
+      </Form.Item> */}
     </>
   );
 };

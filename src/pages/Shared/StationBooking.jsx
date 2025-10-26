@@ -48,8 +48,8 @@ function StationBookingPage() {
     setLoading(true);
     // Định dạng lại thời gian trước khi gửi đi để phù hợp với múi giờ Việt Nam
     const payload = {
-      ...values,
-      bookingTime: dayjs(values.bookingTime).format("YYYY-MM-DDTHH:mm:ss"),
+      vehicleId: values.vehicleId, 
+      stationId: values.stationId,
     };
     try {
       const res = await api.post(POST_BOOKING_API_URL, payload);
@@ -57,7 +57,7 @@ function StationBookingPage() {
         ...res.data,
         vehicleName: `ID ${values.vehicleId}`, // Placeholder
         stationName: `ID ${values.stationId}`, // Placeholder
-        bookingTime: dayjs(values.bookingTime),
+        //bookingTime: dayjs(values.bookingTime),
       });
       setBookingSuccess(true);
       notification.success({
@@ -77,13 +77,11 @@ function StationBookingPage() {
   };
 
   const handleValuesChange = () => {
-    const { vehicleId, stationId, bookingTime } = form.getFieldsValue();
-    if (vehicleId && stationId && bookingTime) {
-      setCurrentStep(3);
-    } else if (vehicleId && stationId) {
-      setCurrentStep(2);
+    const { vehicleId, stationId } = form.getFieldsValue();
+    if (vehicleId && stationId) {
+      setCurrentStep(2); 
     } else if (vehicleId) {
-      setCurrentStep(1);
+      setCurrentStep(1); 
     } else {
       setCurrentStep(0);
     }
@@ -108,7 +106,9 @@ function StationBookingPage() {
                 subTitle={
                   <div>
                     <Paragraph>Mã xác nhận: <strong>{bookingDetails?.confirmationCode}</strong></Paragraph>
-                    <Paragraph>Lịch hẹn của bạn đã được lên lịch vào lúc <strong>{bookingDetails?.bookingTime.format('HH:mm DD/MM/YYYY')}</strong> ({bookingDetails?.bookingTime.fromNow()}).</Paragraph>
+                    {/*<Paragraph>Lịch hẹn của bạn đã được lên lịch vào lúc <strong>{bookingDetails?.bookingTime.format('HH:mm DD/MM/YYYY')}</strong> ({bookingDetails?.bookingTime.fromNow()}).</Paragraph>*/}
+                    <Paragraph>Pin của bạn đã được chuẩn bị xong, hãy đến lấy pin trong vòng 3 tiếng sau khi đặt.</Paragraph>
+                    <Paragraph><strong>Lưu ý bạn không thể hủy sau 2 tiếng kể từ lúc đặt lịch.</strong></Paragraph>
                   </div>
                 }
                 extra={[
@@ -128,7 +128,6 @@ function StationBookingPage() {
                 <Steps current={currentStep} style={{ marginBottom: 32 }} size="small">
                   <Step title="Chọn Xe" icon={<CarOutlined />} />
                   <Step title="Chọn Trạm" icon={<EnvironmentOutlined />} />
-                  <Step title="Chọn Thời Gian" icon={<ClockCircleOutlined />} />
                 </Steps>
                 <Form
                   form={form}

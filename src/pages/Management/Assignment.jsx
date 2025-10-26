@@ -285,11 +285,11 @@ export default function AssignmentPage() {
     // Bước 2: Lọc dữ liệu
     return mapped.filter((record) => {
       const staffMatch = staffSearchValue
-        ? String(record.staffId) === staffSearchValue
+        ? record.staffName.toLowerCase().includes(staffSearchValue)
         : true;
 
       const stationMatch = stationSearchValue
-        ? String(record.stationId) === stationSearchValue
+        ? record.stationName.toLowerCase().includes(stationSearchValue)
         : true;
 
       // Chỉ hiển thị khi cả 2 điều kiện tìm kiếm đều thỏa mãn (hoặc không tìm kiếm gì)
@@ -435,7 +435,7 @@ export default function AssignmentPage() {
           <Col xs={24} sm={12}>
             <Input
               prefix={<UserOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
-              placeholder="Tìm theo ID nhân viên"
+              placeholder="Tìm nhân viên"
               onChange={(e) => setSearchStaffId(e.target.value)}
               value={searchStaffId}
               allowClear
@@ -446,7 +446,7 @@ export default function AssignmentPage() {
           <Col xs={24} sm={12}>
             <Input
               prefix={<DesktopOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
-              placeholder="Tìm theo ID trạm"
+              placeholder="Tìm trạm"
               onChange={(e) => setSearchStationId(e.target.value)}
               value={searchStationId}
               allowClear

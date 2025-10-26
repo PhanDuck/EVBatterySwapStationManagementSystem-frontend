@@ -92,19 +92,30 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
       render: (id) => getBatteryTypeName(id),
     },
     {
-      title: "Trạng thái (SOC)",
-      dataIndex: "soc",
-      key: "soc",
-      sorter: (a, b) => a.soc - b.soc,
-      render: (soc) => <Tag color={soc > 50 ? "green" : soc > 20 ? "orange" : "red"}>{soc}%</Tag>,
+      title: "Mức sạc (%)",
+      dataIndex: "chargeLevel",
+      key: "chargeLevel",
+      render: (s) => <Tag color={s > 70 ? "green" : s > 20 ? "orange" : "red"}>{s}</Tag>,
     },
     {
-      title: "Tình trạng Sức khỏe (SOH)",
-      dataIndex: "soh",
-      key: "soh",
-      sorter: (a, b) => a.soh - b.soh,
-      render: (soh) => <Tag color={soh > 80 ? "blue" : "default"}>{soh}%</Tag>,
+      title: "Tình trạng pin (%)",
+      dataIndex: "stateOfHealth",
+      key: "stateOfHealth",
+      render: (s) => <Tag color={s > 70 ? "green" : s > 20 ? "orange" : "red"}>{s}</Tag>,
     },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => {
+        const colorMap = {
+          AVAILABLE: "green",
+          IN_USE: "blue",
+          MAINTENANCE: "orange",
+        };
+        return <Tag color={colorMap[status] || "default"}>{status}</Tag>;
+      }
+    }
   ];
 
   return (
@@ -240,7 +251,7 @@ const StationPage = () => {
   // ---------------------------
   const columns = [
     {
-      title: "Station ID",
+      title: "ID",
       dataIndex: "id",
       key: "id",
       sorter: (a, b) => a.id - b.id,
@@ -252,12 +263,12 @@ const StationPage = () => {
       ),
     },
     {
-      title: "Station Name",
+      title: "Trạm",
       dataIndex: "name",
       key: "name",
     },
     {
-      title: "Address",
+      title: "Địa chỉ",
       dataIndex: "location",
       key: "location",
       width: 340,
@@ -268,7 +279,7 @@ const StationPage = () => {
       ),
     },
     {
-      title: "Capacity",
+      title: "Số lượng pin",
       dataIndex: "capacity",
       key: "capacity",
       render: (capacity, record) => (
@@ -308,7 +319,7 @@ const StationPage = () => {
       ),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: (status) => {
@@ -322,17 +333,17 @@ const StationPage = () => {
       },
     },
     {
-      title: "Contact Info",
+      title: "Số điện thoại",
       dataIndex: "contactInfo",
       key: "contactInfo",
     },
     {
-      title: "City",
+      title: "Tỉnh/Thành phố",
       dataIndex: "city",
       key: "city",
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       render: (_, record) =>
         Role === "ADMIN" ? ( // Corrected role check from "Admin" to "ADMIN"
