@@ -329,7 +329,6 @@ export default function BatteryManagement() {
           >
             <Select>
               <Option value="AVAILABLE">AVAILABLE</Option>
-              <Option value="IN_USE">IN_USE</Option>
               <Option value="MAINTENANCE">MAINTENANCE</Option>
             </Select>
           </Form.Item>

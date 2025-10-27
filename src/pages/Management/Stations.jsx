@@ -110,7 +110,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
       render: (status) => {
         const colorMap = {
           AVAILABLE: "green",
-          IN_USE: "blue",
+          PENDING: "blue",
           MAINTENANCE: "orange",
         };
         return <Tag color={colorMap[status] || "default"}>{status}</Tag>;

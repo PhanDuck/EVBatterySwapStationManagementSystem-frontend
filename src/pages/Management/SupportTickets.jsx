@@ -182,7 +182,7 @@ export default function SupportPage() {
 
   const columns = [
     {
-      title: "Ticket ID",
+      title: "ID",
       dataIndex: "id",
       key: "id",
       sorter: (a, b) => a.id - b.id, // Thêm sorter cho cột ID
@@ -195,15 +195,15 @@ export default function SupportPage() {
       width: 120,
     },
     {
-      title: "Subject",
+      title: "Mô tả",
       dataIndex: "subject",
       key: "subject",
       ellipsis: true,
       render: (subject) => <strong>{subject}</strong>,
-      width: 200,
+      width: 150,
     },
     {
-      title: "Customer Info",
+      title: "Khách hàng",
       key: "customer",
       render: (_, record) => {
         const { driverName, driverEmail } = record || {};
@@ -216,13 +216,14 @@ export default function SupportPage() {
           </Space>
         );
       },
-      width: 220,
+      width: 120,
     },
 
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
+      width: 220,
       render: (status, record) => {
         // Nếu là DRIVER, chỉ hiển thị Tag
         if (role === "DRIVER") {
@@ -258,7 +259,7 @@ export default function SupportPage() {
       width: 150,
     },
     {
-      title: "Assigned To",
+      title: "Trạm",
       dataIndex: "stationName",
       key: "stationName",
       render: (stationName) => stationName || "Unassigned",

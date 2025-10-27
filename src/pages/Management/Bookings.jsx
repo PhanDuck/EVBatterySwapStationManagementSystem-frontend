@@ -224,29 +224,26 @@ export default function BookingsPage() {
     }
   };
 
-  // ❌ Hủy booking (Admin/Staff) - CẬP NHẬT
+  // ❌ Hủy booking - Dùng cho ADMIN/STAFF: Mở Modal nhập lý do
   const handleAdminCancelBooking = (record) => {
+    // Chỉ cho phép hủy khi trạng thái là PENDING hoặc CONFIRMED
+    if (record.status !== "PENDING" && record.status !== "CONFIRMED") {
+      return message.error("Booking không thể hủy ở trạng thái này!");
+    }
     setCancellingBooking(record);
     setIsCancelModalVisible(true);
     cancelForm.resetFields();
   };
 
-  // Xử lý submit form hủy booking - SỬA LẠI
-  const handleCancelSubmit = async () => {
-    try {
-      const values = await cancelForm.validateFields();
-      const bookingId = cancellingBooking?.id;
-      
-      if (!bookingId) return;
+  // ✅ Xử lý xác nhận Hủy Booking cho ADMIN/STAFF
+  const handleCancelSubmit = async (values) => {
+    const bookingId = cancellingBooking?.id;
+    if (!bookingId) return;
 
-      setSubmitting(true);
-      
-      // Gọi API DELETE với reason trong request body
-      await api.delete(`/booking/${bookingId}`, {
-        data: {
-          reason: values.reason,
-        },
-      });
+    setSubmitting(true);
+    try {
+        // ❗ SỬ DỤNG API DELETE VỚI REASON TRONG QUERY DÀNH CHO STAFF/ADMIN
+        await api.delete(`/booking/staff/${bookingId}/cancel?reason=${encodeURIComponent(values.reason)}`);
 
       // Cập nhật state local
       setData((prev) =>
@@ -258,27 +255,32 @@ export default function BookingsPage() {
       message.success("Đã hủy booking thành công!");
       setIsCancelModalVisible(false);
       setCancellingBooking(null);
-      cancelForm.resetFields();
     } catch (err) {
       console.error("Cancel booking error:", err);
       message.error(
-        err.response?.data?.message || "Không thể hủy booking!"
+        err.response?.data?.message || "Không thể hủy booking! Vui lòng kiểm tra API."
       );
     } finally {
       setSubmitting(false);
     }
   };
 
-  // ❌ Hủy booking (Driver)
-  const handleCancelBooking = async (record) => {
+  // ❌ Hủy booking - Dùng cho DRIVER: Dùng Modal Confirm đơn giản
+  const handleDriverCancelBooking = (record) => {
+    // Chỉ cho phép hủy khi trạng thái là PENDING hoặc CONFIRMED
+    if (record.status !== "PENDING" && record.status !== "CONFIRMED") {
+      return message.error("Booking không thể hủy ở trạng thái này!");
+    }
+
     Modal.confirm({
       title: "Xác nhận hủy đặt lịch?",
-      content: "Bạn có chắc muốn hủy booking này không?",
-      okText: "Hủy Booking",
+      content: "Bạn có chắc muốn hủy đặt lịch này không?",
+      okText: "Hủy đặt lịch",
       cancelText: "Quay lại",
       okButtonProps: { danger: true },
       async onOk() {
         try {
+          // ❗ SỬ DỤNG API PATCH DÀNH CHO DRIVER
           await api.patch(`/booking/my-bookings/${record.id}/cancel`);
           setData((prev) =>
             prev.map((item) =>
@@ -287,9 +289,11 @@ export default function BookingsPage() {
           );
           message.success("Đã hủy booking thành công!");
         } catch (err) {
-          console.error("Cancel booking error:", err);
-          message.error("Không thể hủy booking!");
-        }
+          console.error("Driver Cancel booking error:", err);
+          message.error(
+            err.response?.data?.message || "Không thể hủy đặt lịch sau 2 tiếng kể từ lúc đặt!"
+          );
+                }
       },
     });
   };
@@ -305,25 +309,25 @@ export default function BookingsPage() {
       defaultSortOrder: "descend",
     },
     {
-      title: "Driver",
+      title: "Tài xế",
       dataIndex: "driverId",
       key: "driverId",
       render: (id) => driverName(id),
     },
     {
-      title: "Vehicle",
+      title: "Xe",
       dataIndex: "vehicleId",
       key: "vehicleId",
       render: (id) => vehicleName(id),
     },
     {
-      title: "Station",
+      title: "Trạm",
       dataIndex: "stationId",
       key: "stationId",
       render: (id) => stationName(id),
     },
     {
-      title: "Booking Time",
+      title: "Thời gian đặt",
       dataIndex: "bookingTime",
       key: "bookingTime",
       sorter: (a, b) =>
@@ -331,7 +335,7 @@ export default function BookingsPage() {
       render: (t) => (t ? dayjs(t).format("DD/MM/YYYY HH:mm") : "-"),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: (s) => {
@@ -347,46 +351,48 @@ export default function BookingsPage() {
       },
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
-      render: (_, record) => (
-        <Space>
-          {/* Nút Confirm cho Admin/Staff - chỉ hiện với PENDING */}
-          {(role === "ADMIN" || role === "STAFF") &&
-            record.status === "PENDING" && (
+      render: (_, record) => {
+        const isCancellableStatus = record.status === "PENDING" || record.status === "CONFIRMED";
+        return (
+          <Space>
+            {/* Nút Hủy */}
+            {isCancellableStatus && (role === "ADMIN" || role === "STAFF") && (
+              <Button
+                type="primary"
+                danger
+                icon={<CloseCircleOutlined />}
+                onClick={() => handleAdminCancelBooking(record)} // Dùng hàm cho Admin/Staff
+              >
+                Hủy
+              </Button>
+            )}
+
+            {isCancellableStatus && role === "DRIVER" && (
+              <Button
+                type="primary"
+                danger
+                icon={<CloseCircleOutlined />}
+                onClick={() => handleDriverCancelBooking(record)} // Dùng hàm cho Driver
+              >
+                Hủy
+              </Button>
+            )}
+
+            {/* Nút Xác nhận (Chỉ Admin/Staff) */}
+            {(role === "ADMIN" || role === "STAFF") && record.status === "PENDING" && (
               <Button
                 type="primary"
                 icon={<CheckOutlined />}
                 onClick={() => handleConfirm(record)}
               >
-                Confirm
+                Xác nhận
               </Button>
             )}
-
-          {/* Nút Cancel cho Admin/Staff - hiện với PENDING hoặc CONFIRMED */}
-          {(role === "ADMIN" || role === "STAFF") &&
-            (record.status === "PENDING" || record.status === "CONFIRMED") && (
-              <Button
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => handleAdminCancelBooking(record)}
-              >
-                Cancel
-              </Button>
-            )}
-
-          {/* Nút Cancel cho Driver - chỉ hiện với PENDING */}
-          {role === "DRIVER" && record.status === "PENDING" && (
-            <Button
-              danger
-              icon={<CloseCircleOutlined />}
-              onClick={() => handleCancelBooking(record)}
-            >
-              Cancel
-            </Button>
-          )}
-        </Space>
-      ),
+          </Space>
+        )
+      },
     },
   ];
 
@@ -408,7 +414,7 @@ export default function BookingsPage() {
                 icon={<PlusOutlined />}
                 onClick={() => navigate("/stations/booking")}
               >
-                New Booking
+                Thêm Đặt Lịch Mới
               </Button>
             )}
           </Space>
@@ -424,7 +430,7 @@ export default function BookingsPage() {
         </Spin>
       </Card>
 
-      {/* Modal nhập lý do hủy booking */}
+      {/* Modal nhập lý do hủy booking cho Admin/Staff */}
       <Modal
         title={`Hủy Booking #${cancellingBooking?.id || ""}`}
         open={isCancelModalVisible}
@@ -445,8 +451,7 @@ export default function BookingsPage() {
             name="reason"
             label="Lý do hủy"
             rules={[
-              { required: true, message: "Vui lòng nhập lý do hủy booking!" },
-              { min: 10, message: "Lý do phải có ít nhất 10 ký tự!" },
+              { message: "Vui lòng nhập lý do hủy booking!" },
             ]}
           >
             <TextArea

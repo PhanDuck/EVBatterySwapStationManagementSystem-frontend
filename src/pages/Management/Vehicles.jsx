@@ -94,7 +94,7 @@ const VehiclePage = () => {
   // 🧾 Cột bảng
   const columns = [
     {
-      title: "Vehicle ID",
+      title: "ID",
       dataIndex: "id",
       key: "id",
       sorter: (a, b) => a.id - b.id,
@@ -106,17 +106,17 @@ const VehiclePage = () => {
       ),
     },
     {
-      title: "License Plate",
+      title: "Biển số xe",
       dataIndex: "plateNumber",
       key: "plateNumber",
     },
     {
-      title: "Model",
+      title: "Dòng xe",
       dataIndex: "model",
       key: "model",
     },
     {
-      title: "Battery Type",
+      title: "Loại pin",
       dataIndex: "batteryTypeId",
       key: "batteryTypeId",
       render: (id) => getBatteryTypeName(id),
@@ -132,7 +132,7 @@ const VehiclePage = () => {
       ),
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       render: (_, record) => {
         const isDriver = role === "DRIVER";
@@ -146,7 +146,7 @@ const VehiclePage = () => {
               size="small"
               onClick={() => handleEdit(record)}
             >
-              Edit
+              Cập nhật
             </Button>
             <Button
               type="primary"
@@ -156,7 +156,7 @@ const VehiclePage = () => {
               onClick={() => handleDelete(record.id)}
               disabled={record.status === 'INACTIVE'}
             >
-              Delete
+              Xóa
             </Button>
           </Space>
         );
