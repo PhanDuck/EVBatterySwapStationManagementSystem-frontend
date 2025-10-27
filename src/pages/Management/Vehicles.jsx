@@ -12,16 +12,26 @@ import {
   message,
   Spin,
   Empty,
+  Row, 
+  Col, 
+  Typography, 
+  Divider,
 } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   CarOutlined,
+  SwapOutlined, 
+  ThunderboltOutlined, 
+  HeartOutlined, 
+  CalendarOutlined, 
+  EnvironmentOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 
 const { Option } = Select;
+const { Title, Text } = Typography;
 
 const VehiclePage = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -31,6 +41,11 @@ const VehiclePage = () => {
   const [form] = Form.useForm();
   const [searchText, setSearchText] = useState("");
   const [batteryTypes, setBatteryTypes] = useState([]);
+  const [stations, setStations] = useState([]);
+  const [isHistoryModalVisible, setIsHistoryModalVisible] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState(null);
+  const [vehicleHistory, setVehicleHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const user = (() => {
     try {
@@ -43,35 +58,311 @@ const VehiclePage = () => {
   const role = String(user?.role || "USER").trim().toUpperCase();
   const isDriver = role === "DRIVER";
 
+// --- Component Modal Lịch sử Đổi Pin ---
+const VehicleSwapHistoryModal = ({
+  open,
+  onClose,
+  vehicleHistory,
+  loading,
+  vehicleId,
+  stations,
+}) => {
+  const swapCount = vehicleHistory.length;
+
+  // ⚙️ Component con hiển thị thông tin pin
+  const BatteryInfoCard = ({ title, batteryData, type }) => {
+    const color = type === "new" ? "#52c41a" : "#faad14"; // Xanh cho Pin Mới (Swap In), Vàng cho Pin Cũ (Swap Out)
+
+    const isSwapIn = type === "new";
+    const batteryId = isSwapIn
+      ? batteryData?.swapInBatteryId
+      : batteryData?.swapOutBatteryId;
+    const model = isSwapIn
+      ? batteryData?.swapInBatteryModel
+      : batteryData?.swapOutBatteryModel;
+    const chargeLevel = isSwapIn
+      ? batteryData?.swapInBatteryChargeLevel
+      : batteryData?.swapOutBatteryChargeLevel;
+    const soh = isSwapIn
+      ? batteryData?.swapInBatteryHealth
+      : batteryData?.swapOutBatteryHealth;
+
+    return (
+      <Card
+        bordered
+        title={
+          <Text strong style={{ color: color }}>
+            {title}
+          </Text>
+        }
+        style={{
+          minHeight: 250,
+          borderColor: color,
+        }}
+        headStyle={{ backgroundColor: "#fafafa" }}
+      >
+        <Space direction="vertical" style={{ width: "100%" }}>
+          {/* 1. ID Pin */}
+          <Row justify="space-between" style={{ paddingBottom: 5 }}>
+            <Col>
+              <Text strong>ID Pin:</Text>
+            </Col>
+            <Col>
+              <Text>{batteryId || "—"}</Text>
+            </Col>
+          </Row>
+          <Divider style={{ margin: "5px 0" }} />
+
+          {/* 2. Loại Pin (Model) */}
+          <Row justify="space-between" style={{ paddingBottom: 5 }}>
+            <Col>
+              <Text strong>Loại Pin:</Text>
+            </Col>
+            <Col>
+              <Text>{model || "—"}</Text>
+            </Col>
+          </Row>
+          <Divider style={{ margin: "5px 0" }} />
+
+          {/* 3. Mức sạc (Charge Level) */}
+          <Row justify="space-between" style={{ paddingBottom: 5 }}>
+            <Col>
+              <Text strong>
+                <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc (%):
+              </Text>
+            </Col>
+            <Col>
+              <Tag color={chargeLevel > 70 ? "green" : "orange"}>
+                {chargeLevel || "—"}
+              </Tag>
+            </Col>
+          </Row>
+          <Divider style={{ margin: "5px 0" }} />
+
+          {/* 4. Tình trạng pin (State of Health) */}
+          <Row justify="space-between">
+            <Col>
+              <Text strong>
+                <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng pin (%):
+              </Text>
+            </Col>
+            <Col>
+              <Tag color={soh > 70 ? "green" : "orange"}>
+                {soh || "—"}
+              </Tag>
+            </Col>
+          </Row>
+        </Space>
+      </Card>
+    );
+  };
+
+  const HistoryItem = ({ transaction }) => {
+    // 💡 Sử dụng JS Date Object để định dạng thay vì moment
+    const date = new Date(transaction.endTime);
+    const timeString = date.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const dateString = date.toLocaleDateString("vi-VN");
+    const dateTimeFormatted = `${timeString} ${dateString}`;
+    const station = stations.find(s => s.id === transaction.stationId);
+    const stationName = station ? station.name : "Trạm không rõ";
+
+      return (
+        <Card
+          style={{ marginBottom: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
+          bodyStyle={{ padding: "16px" }}
+        >
+          {/* Header - ID Giao dịch, Thời gian, Trạm */}
+          <Row
+            justify="space-between"
+            align="middle"
+            style={{
+              marginBottom: 15,
+              paddingBottom: 10,
+              borderBottom: "1px solid #f0f0f0",
+            }}
+          >
+            <Col>
+              <Title level={5} style={{ margin: 0 }}>
+                ID Giao dịch: <Text code>{transaction.id}</Text>
+              </Title>
+              <Space size="small" style={{ marginTop: 4 }}>
+                <CalendarOutlined style={{ color: "#1890ff" }} />
+                <Text type="secondary" style={{ fontSize: "0.85em" }}>
+                  {dateTimeFormatted}
+                </Text>
+              </Space>
+            </Col>
+            <Col style={{ textAlign: "right" }}>
+              <Space size="small">
+                <EnvironmentOutlined style={{ color: "#52c41a" }} />
+                <Text strong>{stationName}</Text>
+              </Space>
+              <Text
+                type="secondary"
+                style={{ display: "block", fontSize: "0.85em" }}
+              >
+                NV: {transaction.staffName || "N/A"}
+              </Text>
+            </Col>
+          </Row>
+
+        {/* Pin Cũ vs Pin Mới */}
+        <Row gutter={16} align="middle">
+          <Col span={11}>
+            <BatteryInfoCard
+              title="Pin cũ (Đã tháo ra)"
+              batteryData={transaction}
+              type="old"
+            />
+          </Col>
+          <Col span={2} style={{ textAlign: "center" }}>
+            <SwapOutlined style={{ fontSize: "24px", color: "#1890ff" }} />
+          </Col>
+          <Col span={11}>
+            <BatteryInfoCard
+              title="Pin mới (Đã lắp vào)"
+              batteryData={transaction}
+              type="new"
+            />
+          </Col>
+        </Row>
+      </Card>
+    );
+  };
+  
+  return (
+    <Modal
+      title={
+        <Title level={3} style={{ margin: 0 }}>
+          Lịch sử <Tag color="blue">{swapCount}</Tag> lần đổi pin cho Xe ID: {vehicleId}
+        </Title>
+      }
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={1000} // Tăng chiều rộng để phù hợp với 2 cột
+      destroyOnClose={true}
+    >
+      <Spin spinning={loading}>
+        {swapCount === 0 && !loading ? (
+          <Empty description="Phương tiện này chưa có lịch sử đổi pin." />
+        ) : (
+          <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '10px' }}>
+            {/* Sắp xếp history theo endTime mới nhất trước */}
+            {vehicleHistory.map((item) => (
+              <HistoryItem transaction={item} key={item.id} />
+            ))}
+          </div>
+        )}
+      </Spin>
+    </Modal>
+  );
+};
+
+  // 🔄 Lấy số lần đổi pin cho tất cả các xe 
+  const fetchSwapCountsForAllVehicles = async (initialVehicles) => {
+    if (initialVehicles.length === 0) return;
+
+    try {
+      // Tạo một mảng promises để gọi API cho từng xe
+      const countPromises = initialVehicles.map(async (vehicle) => {
+        try {
+          // Giả định API cho số lần đổi pin của một xe là /swap-transaction/vehicle/{id}/count
+          const res = await api.get(
+            `/swap-transaction/vehicle/${vehicle.id}/count`
+          );
+          // Giả sử API trả về đối tượng { count: N } hoặc chỉ là số N
+          const count = res.data?.count !== undefined ? res.data.count : (typeof res.data === 'number' ? res.data : 0);
+          return { id: vehicle.id, swapCount: count };
+        } catch (error) {
+          console.error(`Lỗi tải SwapCount cho xe ${vehicle.id}:`, error);
+          return { id: vehicle.id, swapCount: 0 };
+        }
+      });
+
+      // Chờ tất cả promises hoàn thành
+      const results = await Promise.all(countPromises);
+      const countMap = results.reduce((map, item) => {
+        map[item.id] = item.swapCount;
+        return map;
+      }, {});
+
+      // Cập nhật state vehicles với swapCount
+      setVehicles((prev) =>
+        prev.map((v) => ({ ...v, swapCount: countMap[v.id] || 0 }))
+      );
+    } catch (error) {
+      console.error("Lỗi tổng thể khi tải SwapCounts:", error);
+    }
+  };
+
   // 🚗 Lấy danh sách vehicle
   useEffect(() => {
     const fetchVehicles = async () => {
       setLoading(true);
+      let initialVehicleList = [];
       try {
+        // 1. Tải danh sách xe
         const res =
           role === "ADMIN" || role === "STAFF"
             ? await api.get("/vehicle")
             : await api.get("/vehicle/my-vehicles");
 
-        const list = (
+        initialVehicleList = (
           Array.isArray(res.data)
             ? res.data
             : res.data?.data && Array.isArray(res.data.data)
             ? res.data.data
             : []
         ).sort((a, b) => b.id - a.id);
+        
+      // 2. CẬP NHẬT STATE VỚI DANH SÁCH XE CƠ BẢN (CHƯA CÓ SWAP COUNT)
+      // Điều này đảm bảo state vehicles có dữ liệu ngay lập tức.
+      // Các xe sẽ có swapCount = undefined/null/0 cho đến khi count được tải.
+      // *Bạn phải đảm bảo rằng các object xe trong initialVehicleList có thuộc tính swapCount: 0* (Xem bước 2a).
 
-        setVehicles(list);
-      } catch (err) {
-        console.error(err);
-        message.error("Không thể tải danh sách phương tiện!");
-      } finally {
-        setLoading(false);
+      // 2a. Gán tạm swapCount = 0 vào danh sách xe ban đầu để hiển thị 0 trước:
+      const vehiclesWithInitialCount = initialVehicleList.map(v => ({
+          ...v,
+          swapCount: 0 // <=== Thêm thuộc tính này vào dữ liệu ban đầu
+      }));
+
+      // 3. CẬP NHẬT state vehicles
+      setVehicles(vehiclesWithInitialCount);
+      
+      // 4. BẮT ĐẦU TẢI SỐ LẦN ĐỔI PIN
+      if (initialVehicleList.length > 0) {
+        // Hàm này sẽ TỰ GỌI setVehicles LẦN 2 để cập nhật swapCount đúng
+        await fetchSwapCountsForAllVehicles(initialVehicleList);
       }
-    };
+      // --------------------
+
+    } catch (err) {
+      message.error("Không thể tải danh sách phương tiện!");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
     fetchVehicles();
   }, [role]);
+
+  // 📍 Lấy danh sách trạm
+  useEffect(() => {
+    const fetchStations = async () => {
+        try {
+            const res = await api.get("/station");
+            setStations(res.data || []);
+        } catch (error) {
+            console.error("Không thể tải danh sách trạm:", error);
+        }
+    };
+    fetchStations();
+  }, []);
 
   // 🔋 Lấy loại pin
   useEffect(() => {
@@ -89,6 +380,50 @@ const VehiclePage = () => {
   const getBatteryTypeName = (id) => {
     const type = batteryTypes.find((t) => t.id === id);
     return type ? type.name : "Không xác định";
+  };
+
+  // 🆕 Hàm xử lý xem lịch sử
+  const handleViewHistory = async (vehicleId) => {
+    setSelectedVehicleId(vehicleId);
+    setIsHistoryModalVisible(true);
+    setHistoryLoading(true);
+    setVehicleHistory([]); // Xóa lịch sử cũ
+
+    try {
+      const res = await api.get(
+        `/swap-transaction/vehicle/${vehicleId}/history`
+      );
+      const historyList = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data || [];
+
+      const newSwapCount = historyList.length;
+
+      setVehicleHistory(
+        historyList.sort((a, b) => new Date(b.endTime) - new Date(a.endTime))
+      );
+
+      // CẬP NHẬT LẠI state vehicles để hiển thị số lần đổi pin MỚI ra bảng chính
+      setVehicles(prevVehicles =>
+          prevVehicles.map(v => 
+              v.id === vehicleId 
+                  ? { ...v, swapCount: newSwapCount } 
+                  : v
+          )
+      );
+
+    } catch (error) {
+      message.error("Không thể tải lịch sử đổi pin.");
+      console.error("❌ Lỗi tải lịch sử đổi pin:", error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleHistoryModalClose = () => {
+    setIsHistoryModalVisible(false);
+    setSelectedVehicleId(null);
+    setVehicleHistory([]);
   };
 
   // 🧾 Cột bảng
@@ -122,13 +457,31 @@ const VehiclePage = () => {
       render: (id) => getBatteryTypeName(id),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: (status) => (
         <Tag color={status === "ACTIVE" ? "green" : "red"}>
           {status}
         </Tag>
+      ),
+    },
+    {
+      title: "Lần đổi pin",
+      dataIndex: "swapCount", 
+      key: "swapCount",
+      width: 120,
+      sorter: (a, b) => (a.swapCount || 0) - (b.swapCount || 0),
+      render: (swapCount, record) => (
+        <Button
+          type="link"
+          onClick={() => handleViewHistory(record.id)}
+          style={{ padding: 0, height: 'auto', lineHeight: 'normal' }}
+        >
+          <Text strong style={{ color: '#000000ff' }}>
+            {swapCount || 0}
+          </Text>
+        </Button>
       ),
     },
     {
@@ -146,7 +499,7 @@ const VehiclePage = () => {
               size="small"
               onClick={() => handleEdit(record)}
             >
-              Cập nhật
+              Sửa
             </Button>
             <Button
               type="primary"
@@ -182,7 +535,7 @@ const VehiclePage = () => {
         message.success("Cập nhật phương tiện thành công!");
       } else {
         const res = await api.post("/vehicle", payload);
-        const newVehicle = res?.data || { ...payload, id: Date.now() };
+        const newVehicle = res?.data || { ...payload, id: Date.now(), swapCount: 0, status: "ACTIVE" };
         setVehicles((prev) => [newVehicle, ...prev]);
         message.success("Đăng ký phương tiện thành công!");
       }
@@ -254,18 +607,18 @@ const VehiclePage = () => {
   return (
     <div style={{ padding: 24 }}>
       <Card
-        title="Vehicle Management"
+        title="Quản lý xe"
         extra={
           <Space>
             <Input
-              placeholder="Search by model or plate"
+              placeholder="Tìm theo dòng xe hoặc biển số"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 250 }}
             />
             {isDriver && (
               <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                Register Vehicle
+                Đăng ký xe mới
               </Button>
             )}
           </Space>
@@ -280,10 +633,8 @@ const VehiclePage = () => {
               dataSource={filteredData}
               rowKey={(record) => record.id || record.vin}
               pagination={{
-                pageSize: 10,
-                showQuickJumper: true,
                 showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} vehicles`,
+                  `${range[0]}-${range[1]} trên ${total} xe`,
               }}
             />
           )}
@@ -291,7 +642,7 @@ const VehiclePage = () => {
       </Card>
 
       <Modal
-        title={editingVehicle ? "Edit Vehicle" : "Register New Vehicle"}
+        title={editingVehicle ? "Chỉnh sửa phương tiện" : "Đăng ký phương tiện mới"}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
@@ -349,6 +700,16 @@ const VehiclePage = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* 🆕 Modal Lịch sử Đổi Pin mới */}
+      <VehicleSwapHistoryModal
+        open={isHistoryModalVisible}
+        onClose={handleHistoryModalClose}
+        vehicleHistory={vehicleHistory}
+        loading={historyLoading}
+        vehicleId={selectedVehicleId}
+        stations={stations}
+      />
     </div>
   );
 };

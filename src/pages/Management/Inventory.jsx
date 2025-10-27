@@ -349,14 +349,14 @@ export default function InventoryPage() {
       dataIndex: "capacity",
       key: "capacity",
       width: FIXED_COL_WIDTH.CAPACITY,
-      render: (capacity) => capacity || "N/A",
+      render: (capacity) => capacity || "—",
     },
     {
       title: "Loại Pin",
       dataIndex: "batteryTypeId",
       key: "batteryTypeId",
       width: FIXED_COL_WIDTH.BATTERY_TYPE,
-      render: (typeId) => batteryTypesMap[typeId] || "N/A",
+      render: (typeId) => batteryTypesMap[typeId] || "—",
     },
     {
       title: "Tình trạng pin (%)",
@@ -365,13 +365,13 @@ export default function InventoryPage() {
       width: FIXED_COL_WIDTH.SOH,
       // ĐIỀU CHỈNH: Format SOH (Làm tròn 2 chữ số thập phân)
       render: (soh) => {
-        const sohValue = soh ? parseFloat(soh).toFixed(2) : "N/A";
-        return sohValue !== "N/A" ? (
+        const sohValue = soh ? parseFloat(soh).toFixed(2) : "—";
+        return sohValue !== "—" ? (
           <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
             {sohValue}
           </Tag>
         ) : (
-          "N/A"
+          "N—"
         );
       },
     },
@@ -381,9 +381,9 @@ export default function InventoryPage() {
       key: "chargeLevel",
       width: FIXED_COL_WIDTH.CHARGE,
       render: (chargeLevel) => {
-      const chargeValue = chargeLevel ? parseFloat(chargeLevel).toFixed(0) : "N/A";
+      const chargeValue = chargeLevel ? parseFloat(chargeLevel).toFixed(0) : "—";
 
-      if (chargeValue === "N/A") return "N/A";
+      if (chargeValue === "—") return "—";
 
       let color;
       const numericCharge = parseFloat(chargeValue);
@@ -412,7 +412,7 @@ export default function InventoryPage() {
       dataIndex: "lastMaintenanceDate",
       key: "lastMaintenanceDate",
       width: FIXED_COL_WIDTH.DATE,
-      render: (date) => (date ? new Date(date).toLocaleDateString() : "N/A"), // Định dạng ngày cho an toàn
+      render: (date) => (date ? new Date(date).toLocaleDateString() : "—"), // Định dạng ngày cho an toàn
     },
     {
       title: "Thao tác",
@@ -451,14 +451,14 @@ export default function InventoryPage() {
       dataIndex: "capacity",
       key: "capacity",
       width: FIXED_COL_WIDTH.CAPACITY,
-      render: (capacity) => capacity || "N/A",
+      render: (capacity) => capacity || "—",
     },
     {
       title: "Loại Pin",
       dataIndex: "batteryTypeId",
       key: "batteryTypeId",
       width: FIXED_COL_WIDTH.BATTERY_TYPE,
-      render: (typeId) => batteryTypesMap[typeId] || "N/A",
+      render: (typeId) => batteryTypesMap[typeId] || "—",
     },
     {
       title: "Tình trạng pin (%)",
@@ -467,13 +467,13 @@ export default function InventoryPage() {
       width: FIXED_COL_WIDTH.SOH,
       // ĐIỀU CHỈNH: Format SOH (Làm tròn 2 chữ số thập phân)
       render: (soh) => {
-        const sohValue = soh ? parseFloat(soh).toFixed(2) : "N/A";
-        return sohValue !== "N/A" ? (
+        const sohValue = soh ? parseFloat(soh).toFixed(2) : "—";
+        return sohValue !== "—" ? (
           <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
             {sohValue}
           </Tag>
         ) : (
-          "N/A"
+          "—"
         );
       },
     },
@@ -483,9 +483,9 @@ export default function InventoryPage() {
       key: "chargeLevel",
       width: FIXED_COL_WIDTH.CHARGE,
       render: (chargeLevel) => {
-        const chargeValue = chargeLevel ? parseFloat(chargeLevel).toFixed(0) : "N/A";
+        const chargeValue = chargeLevel ? parseFloat(chargeLevel).toFixed(0) : "—";
 
-        if (chargeValue === "N/A") return "N/A";
+        if (chargeValue === "—") return "—";
 
         let color;
         const numericCharge = parseFloat(chargeValue);
@@ -531,7 +531,7 @@ export default function InventoryPage() {
                 size="small"
                 setOpen={true}
               >
-                Sửa SOH
+                Cập nhật tình trạng
               </Button>
             </Tooltip>
           )}
@@ -552,7 +552,7 @@ export default function InventoryPage() {
                 size="small"
                 disabled={!selectedStationId}
               >
-                Ra Trạm
+                Ra trạm
               </Button>
             </Tooltip>
           )}
@@ -565,7 +565,7 @@ export default function InventoryPage() {
     <div style={{ padding: "24px" }}>
       {/* CARD QUẢN LÝ TỒN KHO TẠI TRẠM */}
       <Card
-        title="Quản lý Tồn kho Pin tại Trạm"
+        title="Quản lý tồn kho pin tại trạm"
         extra={
           <Space>
             <Select
@@ -588,25 +588,28 @@ export default function InventoryPage() {
                 if (selectedStationId) fetchStationInventory(selectedStationId);
               }}
             >
-              Tải lại Pin Trạm
+              Tải lại pin tại trạm
             </Button>
           </Space>
         }
         style={{ marginBottom: "20px" }}
       >
-        <h4>Danh sách Pin cần Bảo dưỡng/Lỗi tại Trạm đang chọn:</h4>
+        <h4>Danh sách pin cần bảo dưỡng hoặc lỗi tại trạm đang chọn:</h4>
         <Table
           columns={stationColumns}
           dataSource={stationInventory}
           loading={loading}
           rowKey="id"
-          pagination={{ pageSize: 5 }}
+          pagination={{ 
+            showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} trên ${total} pin`,
+            }}
         />
       </Card>
 
       {/* CARD QUẢN LÝ TỒN KHO TẠI KHO (WAREHOUSE) */}
       <Card
-        title="Quản lí tồn kho Pin trong Kho Bảo trì"
+        title="Quản lý tồn kho pin trong kho bảo trì"
         extra={
           <Space>
             {/* NÚT LỌC PIN THEO LOẠI */}
@@ -618,7 +621,7 @@ export default function InventoryPage() {
             >
               {filterBatteryTypeId
                 ? `Lọc theo: ${batteryTypesMap[filterBatteryTypeId]}`
-                : "Lọc Pin theo Loại"}
+                : "Lọc pin theo loại"}
             </Button>
 
             {/* NÚT BỎ LỌC (Chỉ hiện khi đang lọc) */}
@@ -630,7 +633,7 @@ export default function InventoryPage() {
                 }}
                 icon={<RollbackOutlined />}
               >
-                Bỏ Lọc
+                Bỏ lọc
               </Button>
             )}
             {/* NÚT TẢI LẠI KHO BÌNH THƯỜNG */}
@@ -641,18 +644,21 @@ export default function InventoryPage() {
                 fetchWarehouseInventory(null);
               }}
             >
-              Tải lại Pin Kho
+              Tải lại pin kho
             </Button>
           </Space>
         }
       >
-        <h4>Pin sẵn sàng (AVAILABLE) và Pin đang bảo trì (MAINTENANCE):</h4>
+        <h4>Danh sách pin sẵn sàng (AVAILABLE) và pin đang bảo trì (MAINTENANCE):</h4>
         <Table
           columns={warehouseColumns}
           dataSource={warehouseInventory}
           loading={loading}
           rowKey="id"
-          pagination={{ pageSize: 10 }}
+          pagination={{ 
+            showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} trên ${total} pin`,
+            }}
         />
       </Card>
 
@@ -678,7 +684,7 @@ export default function InventoryPage() {
             <Tag color="blue">
               {currentBatteryToEdit
                 ? batteryTypesMap[currentBatteryToEdit.batteryTypeId]
-                : "N/A"}
+                : "—"}
             </Tag>
           </p>
 
@@ -715,7 +721,7 @@ export default function InventoryPage() {
                 htmlType="submit"
                 loading={loading} // Sử dụng state loading nếu bạn muốn có hiệu ứng tải
               >
-                Hoàn tất bảo trì & Cập nhật
+                Hoàn tất bảo trì & cập nhật
               </Button>
               <Button onClick={() => setIsEditSOHModalVisible(false)}>
                 Hủy

@@ -38,7 +38,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
   // Ánh xạ Battery Type ID sang Tên 
   const getBatteryTypeName = (id) => {
     const type = batteryTypes.find((t) => t.id === id);
-    return type ? type.name : "N/A";
+    return type ? type.name : "—";
   };
 
   // 🔋 Hàm tải danh sách pin
@@ -120,7 +120,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
 
   return (
     <Modal
-      title={`Danh sách ${batteries.length}/${station?.capacity || 0} Pin tại Trạm ${station?.name || ''}`}
+      title={`Danh sách ${batteries.length}/${station?.capacity || 0} pin tại ${station?.name || ''}`}
       open={isVisible}
       onCancel={onCancel}
       footer={null}
@@ -132,7 +132,10 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
         dataSource={batteries}
         loading={loading}
         rowKey="id"
-        pagination={{ pageSize: 5 }}
+        pagination={{ 
+          showTotal: (total, range) =>
+            `${range[0]}-${range[1]} trên tổng ${total} trạm`,
+          }}
       />
     </Modal>
   );
@@ -147,7 +150,7 @@ const StationPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [batteryTypes, setBatteryTypes] = useState([]);
   const [isBatteryModalVisible, setIsBatteryModalVisible] = useState(false);
-  const [viewingStation, setViewingStation] = useState(null);
+  const [viewingStation, setViewingStation] = useState(null);
   const Role = JSON.parse(localStorage.getItem('currentUser'))?.role; // Get role directly
 
   // ---------------------------
@@ -354,7 +357,7 @@ const StationPage = () => {
               size="small"
               onClick={() => handleEdit(record)}
             >
-              Edit
+              Sửa
             </Button>
             <Button
               type="primary"
@@ -363,7 +366,7 @@ const StationPage = () => {
               size="small"
               onClick={() => handleDelete(record.id)}
             >
-              Delete
+              Xóa
             </Button>
           </Space>
         ) : (
@@ -402,7 +405,7 @@ const StationPage = () => {
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card>
             <Statistic
-              title="Total Stations"
+              title="Tổng số trạm"
               value={totalStations}
               prefix={<EnvironmentOutlined />}
             />
@@ -411,7 +414,7 @@ const StationPage = () => {
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card>
             <Statistic
-              title="Active Stations"
+              title="Trạm hoạt động"
               value={activeStations}
               valueStyle={{ color: "#3f8600" }}
               prefix={<ThunderboltOutlined />}
@@ -420,18 +423,18 @@ const StationPage = () => {
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card>
-            <Statistic title="Total Capacity" value={totalCapacity} suffix="slots" />
+            <Statistic title="Tổng sức chứa" value={totalCapacity} suffix="slots" />
           </Card>
         </Col>
       </Row>
 
       {/* Table */}
       <Card
-        title="Station Management"
+        title="Quản lý trạm đổi pin"
         extra={
           <Space>
             <Input
-              placeholder="Search by name or address"
+              placeholder="Tìm theo tên hoặc địa chỉ"
               allowClear
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 300 }}
@@ -442,15 +445,15 @@ const StationPage = () => {
               onChange={(val) => setStatusFilter(val)}
               style={{ width: 180 }}
             >
-              <Option value="all">All status</Option>
-              <Option value="ACTIVE">Active</Option>
-              <Option value="MAINTENANCE">Maintenance</Option>
-              <Option value="INACTIVE">Inactive</Option>
-              <Option value="UNDER CONSTRUCTION">Under Construction</Option>
+              <Option value="all"> Chọn trạng thái</Option>
+              <Option value="ACTIVE">ACTIVE</Option>
+              <Option value="MAINTENANCE">MAINTENANCE</Option>
+              <Option value="INACTIVE">INACTIVE</Option>
+              <Option value="UNDER CONSTRUCTION">UNDER CONSTRUCTION</Option>
             </Select>
             {Role === "ADMIN" && ( // Corrected role check from "Admin" to "ADMIN"
               <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                Add Station
+                Thêm Trạm
               </Button>
             )}
           </Space>
@@ -462,12 +465,9 @@ const StationPage = () => {
           rowKey="id"
           scroll={{ x: 1200 }}
           pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
             showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} stations`,
-          }}
+              `${range[0]}-${range[1]} trên tổng ${total} trạm`,
+            }}
         />
       </Card>
 

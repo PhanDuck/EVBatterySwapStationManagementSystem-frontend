@@ -225,10 +225,9 @@ const TransactionsPage = () => {
         dataSource={filteredTransactions}
         rowKey="id"
         pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
-        }}
+          showTotal: (total, range) =>
+            `${range[0]}-${range[1]} trên tổng ${total} giao dịch`,
+          }}
       />
 
       {/* Modal thêm/sửa */}

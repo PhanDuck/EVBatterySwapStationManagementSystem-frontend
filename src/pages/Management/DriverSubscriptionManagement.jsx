@@ -217,12 +217,12 @@ export default function DriverSubscriptionManagement() {
   const columns = [
     { title: "ID", dataIndex: "id", key: "id", width: 80, sorter: (a, b) => a.id - b.id },
     ...(role !== 'DRIVER' ? [{ title: "Driver", dataIndex: "driverId", key: "driverId", render: driverName }] : []),
-    { title: "Package", dataIndex: "packageId", key: "packageId", render: packageName },
-    { title: "Start Date", dataIndex: "startDate", key: "startDate", render: (text) => dayjs(text).format('DD/MM/YYYY') },
-    { title: "End Date", dataIndex: "endDate", key: "endDate", render: (text) => dayjs(text).format('DD/MM/YYYY') },
-    { title: "Status", dataIndex: "status", key: "status", render: (s) => <Tag color={s === "ACTIVE" ? "green" : "red"}>{s}</Tag> },
-    { title: "Remaining Swaps", dataIndex: "remainingSwaps", key: "remainingSwaps" },
-    ...(role === "DRIVER" ? [{ title: "Actions", key: "actions", render: (_, record) => (
+    { title: "Gói", dataIndex: "packageId", key: "packageId", render: packageName },
+    { title: "Ngày đăng kí", dataIndex: "startDate", key: "startDate", render: (text) => dayjs(text).format('DD/MM/YYYY') },
+    { title: "Ngày hết hạn", dataIndex: "endDate", key: "endDate", render: (text) => dayjs(text).format('DD/MM/YYYY') },
+    { title: "Trạng thái", dataIndex: "status", key: "status", render: (s) => <Tag color={s === "ACTIVE" ? "green" : "red"}>{s}</Tag> },
+    { title: "Lần đổi còn lại", dataIndex: "remainingSwaps", key: "remainingSwaps" },
+    ...(role === "DRIVER" ? [{ title: "Thao tác", key: "actions", render: (_, record) => (
         <Space>
           <Button icon={<ArrowUpOutlined />} onClick={() => openUpgradeModal(record)} disabled={record.status !== "ACTIVE"}>Nâng cấp</Button>
           <Button icon={<ArrowDownOutlined />} type="primary" danger onClick={() => openDowngradeModal(record)} disabled={record.status !== "ACTIVE"}>Hạ cấp</Button>
@@ -232,12 +232,12 @@ export default function DriverSubscriptionManagement() {
 
   const renderCalculationDetails = (isDowngrade = false) => {
     const formatCurrency = (value) => {
-        if (typeof value !== 'number') return 'N/A';
+        if (typeof value !== 'number') return '—';
         return `${value.toLocaleString()} đ`;
     };
 
     const formatSwaps = (value) => {
-        if (typeof value !== 'number') return 'N/A';
+        if (typeof value !== 'number') return '—';
         return value;
     };
   
@@ -262,10 +262,10 @@ export default function DriverSubscriptionManagement() {
             <Title level={5}>Chi tiết thay đổi gói cước</Title>
             <List itemLayout="horizontal">
               <List.Item>
-                <List.Item.Meta title="Gói hiện tại" description={calculation.currentPackageName || 'N/A'} />
+                <List.Item.Meta title="Gói hiện tại" description={calculation.currentPackageName || '—'} />
               </List.Item>
               <List.Item>
-                <List.Item.Meta title="Gói mới" description={calculation.newPackageName || 'N/A'} />
+                <List.Item.Meta title="Gói mới" description={calculation.newPackageName || '—'} />
               </List.Item>
               <List.Item>
                 <List.Item.Meta title="Số lượt đổi còn lại" description={formatSwaps(calculation.remainingSwaps)} />

@@ -209,37 +209,37 @@ const ServicePackagesPage = () => {
 
   const subscriptionColumns = [
     {
-      title: "Subscription ID",
+      title: "ID",
       dataIndex: "id",
       key: "id",
       sorter: (a, b) => a.id - b.id,
     },
     {
-      title: "Driver Name",
+      title: "Tài xế",
       dataIndex: "driverId",
       key: "driverName",
       render: (driverId) => userMap.get(driverId) || "Unknown User",
     },
     {
-      title: "Package Name",
+      title: "Gói",
       dataIndex: "packageId",
       key: "packageName",
       render: (packageId) => packageMap.get(packageId) || "Unknown Package",
     },
     {
-      title: "Start Date",
+      title: "Ngày đăng kí",
       dataIndex: "startDate",
       key: "startDate",
       render: (date) => new Date(date).toLocaleDateString("vi-VN"),
     },
     {
-      title: "End Date",
+      title: "Ngày hết hạn",
       dataIndex: "endDate",
       key: "endDate",
       render: (date) => new Date(date).toLocaleDateString("vi-VN"),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: (status) => {
@@ -248,7 +248,7 @@ const ServicePackagesPage = () => {
       },
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       render: (_, record) => (
         <Button
@@ -273,7 +273,7 @@ const ServicePackagesPage = () => {
   return (
     <div style={{ padding: "24px" }}>
       <Card
-        title="Quản lý Gói Dịch Vụ"
+        title="Quản lý gói dịch vụ"
         extra={
           <Space>
             <Input
@@ -292,14 +292,22 @@ const ServicePackagesPage = () => {
           columns={packageColumns}
           dataSource={filteredPackages}
           rowKey="id"
+          pagination={{ 
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} trên tổng ${total} gói`,
+            }}
         />
       </Card>
 
-      <Card title="Driver Subscriptions" style={{ marginTop: "24px" }}>
+      <Card title="Quản lý gói cước của tài xế" style={{ marginTop: "24px" }}>
         <Table
           columns={subscriptionColumns}
           dataSource={driverSubscriptions}
           rowKey="id"
+          pagination={{ 
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} trên tổng ${total} gói`,
+            }}
           scroll={{ x: 1000 }}
         />
       </Card>

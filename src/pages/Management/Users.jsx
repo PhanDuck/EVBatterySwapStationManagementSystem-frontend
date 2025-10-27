@@ -215,6 +215,7 @@ export default function AccountPage() {
               Sửa
             </Button>
             <Button
+              type="primary"
               danger
               icon={<DeleteOutlined />}
               size="small"
@@ -236,7 +237,7 @@ export default function AccountPage() {
         title="Quản lý người dùng"
         extra={
           <Input.Search
-            placeholder="Search name, Email, Phone"
+            placeholder="Tìm theo tên, Email hoặc SĐT"
             allowClear
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: 300 }}
@@ -257,10 +258,8 @@ export default function AccountPage() {
             })}
             rowKey={(record) => record.id ?? record._id}
             pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
               showTotal: (total, range) =>
-                `${range[0]}-${range[1]} trong tổng ${total}`,
+                `${range[0]}-${range[1]} trên tổng ${total} người`,
             }}
           />
         </Spin>

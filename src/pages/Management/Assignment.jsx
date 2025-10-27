@@ -57,7 +57,7 @@ const AssignStaffModal = ({
       // API: POST /api/staff-station-assignment
       await api.post(API_ASSIGNMENTS, values);
       message.success(
-        `✅ Phân quyền nhân viên ${values.staffId} quản lí trạm ${values.stationId} thành công!`
+        `✅ Phân quyền nhân viên ${values.staffId} quản lý trạm ${values.stationId} thành công!`
       );
       onSuccess();
     } catch (error) {
@@ -257,7 +257,7 @@ export default function AssignmentPage() {
     const staffMap = new Map(
       allStaffs.map((s) => [
         String(s.id),
-        s.username || s.fullName || `ID: ${s.id} (Tên N/A)`,
+        s.username || s.fullName || `ID: ${s.id}`,
       ])
     );
     const stationMap = new Map(allStations.map((t) => [String(t.id), t.name]));
@@ -273,8 +273,8 @@ export default function AssignmentPage() {
       return {
         ...record,
         // Thêm trường mới để hiển thị và lọc
-        staffName: staffName || `ID: ${record.staffId} (Tên N/A)`,
-        stationName: stationName || `ID: ${record.stationId} (Tên N/A)`,
+        staffName: staffName || `ID: ${record.staffId}`,
+        stationName: stationName || `ID: ${record.stationId}`,
       };
     });
 
@@ -353,12 +353,12 @@ export default function AssignmentPage() {
         // Ưu tiên assignedAt (từ API response)
         const dateString = record.assignedAt || record.createdAt;
 
-        if (!dateString) return "N/A";
+        if (!dateString) return "—";
 
         const dateObj = new Date(dateString);
 
         // Kiểm tra ngày hợp lệ
-        if (isNaN(dateObj.getTime())) return "N/A";
+        if (isNaN(dateObj.getTime())) return "—";
 
         // Định dạng ngày: DD/MM/YYYY
         return dateObj.toLocaleDateString("vi-VN", {
@@ -405,7 +405,7 @@ export default function AssignmentPage() {
   return (
     <div style={{ padding: "24px" }}>
       <Card
-        title="Quản lý Phân quyền Staff quản lý Trạm"
+        title="Quản lý phân quyền"
         extra={
           <Space>
             <Button
@@ -461,7 +461,10 @@ export default function AssignmentPage() {
           dataSource={filteredAndMappedAssignments}
           loading={loading}
           rowKey={(record) => `${record.staffId}-${record.stationId}`}
-          pagination={{ pageSize: 10 }}
+          pagination={{ 
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} trên ${total} phân quyền`, 
+            }}
           scroll={{ x: 1200 }}
         />
       </Card>

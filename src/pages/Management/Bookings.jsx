@@ -399,11 +399,11 @@ export default function BookingsPage() {
   return (
     <div style={{ padding: 24 }}>
       <Card
-        title="Bookings Management"
+        title="Quản lý đặt lịch"
         extra={
           <Space>
             <Input
-              placeholder="Tìm Driver / Vehicle / Station"
+              placeholder="Tìm tài xế / xe / trạm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ width: 250 }}
@@ -425,7 +425,10 @@ export default function BookingsPage() {
             dataSource={filteredData}
             columns={columns}
             rowKey="id"
-            pagination={{ pageSize: 8 }}
+            pagination={{ 
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} trên ${total} lịch`,
+              }}
           />
         </Spin>
       </Card>
@@ -450,9 +453,6 @@ export default function BookingsPage() {
           <Form.Item
             name="reason"
             label="Lý do hủy"
-            rules={[
-              { message: "Vui lòng nhập lý do hủy booking!" },
-            ]}
           >
             <TextArea
               rows={4}
@@ -471,7 +471,7 @@ export default function BookingsPage() {
                   cancelForm.resetFields();
                 }}
               >
-                Hủy bỏ
+                Quay lại
               </Button>
               <Button
                 type="primary"

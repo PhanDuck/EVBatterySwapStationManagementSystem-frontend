@@ -246,11 +246,11 @@ export default function BatteryManagement() {
   return (
     <div style={{ padding: 24 }}>
       <Card
-        title="Quản lý Pin (Battery Management)"
+        title="Quản lý pin"
         extra={
           <Space>
             <Input
-              placeholder="Tìm model / loại / trạm / trạng thái"
+              placeholder="Tìm mẫu / loại / trạm / trạng thái"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ width: 300 }}
@@ -285,8 +285,12 @@ export default function BatteryManagement() {
           })}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} trên tổng ${total} pin`,
+            }}
           scroll={{ x: 1200 }}
+          
         />
       </Card>
 

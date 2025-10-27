@@ -32,6 +32,7 @@ export default function SupportPage() {
   const [responses, setResponses] = useState([]);
   const [loadingReply, setLoadingReply] = useState(false);
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+  const [loadingCreate, setLoadingCreate] = useState(false);
   const [stationList, setStationList] = useState([]);
 
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
@@ -94,6 +95,7 @@ export default function SupportPage() {
   }, [role]);
 
   const handleCreateTicket = async (values) => {
+    setLoadingCreate(true);
     try {
       const payload = {
         subject: values.subject,
@@ -109,6 +111,8 @@ export default function SupportPage() {
     } catch (error) {
       console.error("Error creating ticket:", error);
       message.error("❌ Failed to create ticket!");
+    } finally {
+      setLoadingCreate(false);
     }
   };
 
@@ -175,6 +179,7 @@ export default function SupportPage() {
       fetchResponses(viewingRecord.id); // refresh list
     } catch (error) {
       message.error("❌ Failed to send reply");
+      console.error(error);
     } finally {
       setLoadingReply(false);
     }
@@ -195,7 +200,7 @@ export default function SupportPage() {
       width: 120,
     },
     {
-      title: "Mô tả",
+      title: "Tiêu đề",
       dataIndex: "subject",
       key: "subject",
       ellipsis: true,
@@ -256,17 +261,16 @@ export default function SupportPage() {
           </Select>
         );
       },
-      width: 150,
     },
     {
       title: "Trạm",
       dataIndex: "stationName",
       key: "stationName",
-      render: (stationName) => stationName || "Unassigned",
+      render: (stationName) => stationName || "—",
       width: 150,
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       render: (_, record) => (
         <Space>
@@ -287,11 +291,11 @@ export default function SupportPage() {
   return (
     <div style={{ padding: "24px" }}>
       <Card
-        title="Support Tickets"
+        title="Quản lí hỗ trợ"
         extra={
           <Space>
             <Input
-              placeholder="Search subject, customer"
+              placeholder="Tìm kiếm tiêu đề hoặc tên khách hàng"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 300 }}
@@ -303,11 +307,11 @@ export default function SupportPage() {
                 icon={<PlusOutlined />}
                 onClick={() => setIsCreateModalVisible(true)}
               >
-                Create Ticket
+                Thêm hỗ trợ
               </Button>
             )}
             <Button icon={<ReloadOutlined />} onClick={fetchData}>
-              Refresh
+              Tải lại
             </Button>
           </Space>
         }
@@ -317,6 +321,10 @@ export default function SupportPage() {
           dataSource={data}
           loading={loading}
           rowKey="id"
+          pagination={{
+            showTotal: (total, range) =>
+            `${range[0]}-${range[1]} trên tổng ${total} hỗ trợ`,
+          }}
         />
       </Card>
 
@@ -336,7 +344,7 @@ export default function SupportPage() {
             {/* Ticket Info */}
             <div style={{ marginBottom: "12px" }}>
               <p>
-                <strong>Subject:</strong> {viewingRecord.subject || "N/A"}
+                <strong>Subject:</strong> {viewingRecord.subject || "—"}
               </p>
               <div style={{ marginBottom: "8px" }}>
                 <strong>Description:</strong>
@@ -456,11 +464,7 @@ export default function SupportPage() {
           style={{ marginTop: "10px" }}
         >
           {/* 🏙️ Thêm chọn trạm */}
-          <Form.Item
-            label="Station"
-            name="stationId"
-            rules={[{ required: true, message: "Please select a station!" }]}
-          >
+          <Form.Item label="Trạm" name="stationId">
             <Select placeholder="Select your station">
               {stationList.map((station) => (
                 <Option key={station.id} value={station.id}>
@@ -470,7 +474,7 @@ export default function SupportPage() {
             </Select>
           </Form.Item>
           <Form.Item
-            label="Subject"
+            label="Tiêu đề"
             name="subject"
             rules={[
               { required: true, message: "Please enter the ticket subject!" },
@@ -480,7 +484,7 @@ export default function SupportPage() {
           </Form.Item>
 
           <Form.Item
-            label="Description"
+            label="Mô tả"
             name="description"
             rules={[
               { required: true, message: "Please enter ticket details!" },
@@ -495,10 +499,10 @@ export default function SupportPage() {
           <Form.Item style={{ textAlign: "right", marginTop: "10px" }}>
             <Space>
               <Button onClick={() => setIsCreateModalVisible(false)}>
-                Cancel
+                Quay lại
               </Button>
-              <Button type="primary" htmlType="submit">
-                Submit Ticket
+              <Button type="primary" htmlType="submit" loading={loadingCreate}>
+                Gửi yêu cầu
               </Button>
             </Space>
           </Form.Item>

@@ -51,7 +51,7 @@ function PackagesPage() {
       <div>
         <div className="min w-full  flex items-center justify-center py-16 px-6 ">
           <div className="max-w-8xl w-7xl grid md:grid-cols-4 gap-8 ">
-            {packages.slice(0, 5).map((plan, i) => (
+            {packages.slice(0, 12).map((plan, i) => (
               <div
                 key={i}
                 className={`relative bg-white rounded-4xl border border-gray-400 shadow-lg hover:shadow-xl 
