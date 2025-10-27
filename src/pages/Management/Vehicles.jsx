@@ -299,57 +299,66 @@ const VehicleSwapHistoryModal = ({
     }
   };
 
-  // 🚗 Lấy danh sách vehicle
-  useEffect(() => {
-    const fetchVehicles = async () => {
-      setLoading(true);
-      let initialVehicleList = [];
-      try {
-        // 1. Tải danh sách xe
-        const res =
-          role === "ADMIN" || role === "STAFF"
-            ? await api.get("/vehicle")
-            : await api.get("/vehicle/my-vehicles");
+  // 🚗 Lấy danh sách vehicle và tính SwapCount ngay lập tức
+    useEffect(() => {
+        const fetchVehiclesAndCounts = async () => {
+            setLoading(true);
+            let initialVehicleList = [];
 
-        initialVehicleList = (
-          Array.isArray(res.data)
-            ? res.data
-            : res.data?.data && Array.isArray(res.data.data)
-            ? res.data.data
-            : []
-        ).sort((a, b) => b.id - a.id);
-        
-      // 2. CẬP NHẬT STATE VỚI DANH SÁCH XE CƠ BẢN (CHƯA CÓ SWAP COUNT)
-      // Điều này đảm bảo state vehicles có dữ liệu ngay lập tức.
-      // Các xe sẽ có swapCount = undefined/null/0 cho đến khi count được tải.
-      // *Bạn phải đảm bảo rằng các object xe trong initialVehicleList có thuộc tính swapCount: 0* (Xem bước 2a).
+            try {
+                // 1. Tải danh sách xe
+                const res =
+                    role === "ADMIN" || role === "STAFF"
+                        ? await api.get("/vehicle")
+                        : await api.get("/vehicle/my-vehicles");
 
-      // 2a. Gán tạm swapCount = 0 vào danh sách xe ban đầu để hiển thị 0 trước:
-      const vehiclesWithInitialCount = initialVehicleList.map(v => ({
-          ...v,
-          swapCount: 0 // <=== Thêm thuộc tính này vào dữ liệu ban đầu
-      }));
+                initialVehicleList = (
+                    Array.isArray(res.data)
+                        ? res.data
+                        : res.data?.data && Array.isArray(res.data.data)
+                            ? res.data.data
+                            : []
+                ).sort((a, b) => b.id - a.id);
 
-      // 3. CẬP NHẬT state vehicles
-      setVehicles(vehiclesWithInitialCount);
-      
-      // 4. BẮT ĐẦU TẢI SỐ LẦN ĐỔI PIN
-      if (initialVehicleList.length > 0) {
-        // Hàm này sẽ TỰ GỌI setVehicles LẦN 2 để cập nhật swapCount đúng
-        await fetchSwapCountsForAllVehicles(initialVehicleList);
-      }
-      // --------------------
+                // 2. Tải số lần đổi pin cho TẤT CẢ các xe
+                const vehiclesWithCounts = await Promise.all(
+                    initialVehicleList.map(async (vehicle) => {
+                        try {
+                            // SỬ DỤNG API CÓ SẴN ĐỂ LẤY LỊCH SỬ VÀ ĐẾM SỐ LẦN ĐỔI PIN
+                            const historyRes = await api.get(
+                                `/swap-transaction/vehicle/${vehicle.id}/history`
+                            );
+                            
+                            const historyList = Array.isArray(historyRes.data)
+                                ? historyRes.data
+                                : historyRes.data?.data || [];
+                            
+                            // Gán swapCount bằng số lượng giao dịch đã nhận được
+                            const swapCount = historyList.length;
 
-    } catch (err) {
-      message.error("Không thể tải danh sách phương tiện!");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+                            return { ...vehicle, swapCount: swapCount };
+                        } catch (error) {
+                            // Nếu có lỗi, mặc định số lần đổi pin là 0
+                            console.error(`Lỗi tải SwapCount cho xe ${vehicle.id}:`, error);
+                            return { ...vehicle, swapCount: 0 };
+                        }
+                    })
+                );
 
-    fetchVehicles();
-  }, [role]);
+                // 3. CẬP NHẬT state vehicles với dữ liệu đầy đủ
+                setVehicles(vehiclesWithCounts);
+
+            } catch (err) {
+                message.error("Không thể tải danh sách phương tiện!");
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchVehiclesAndCounts();
+        // Loại bỏ fetchSwapCountsForAllVehicles khỏi dependency array vì nó không còn tồn tại
+    }, [role]);
 
   // 📍 Lấy danh sách trạm
   useEffect(() => {
@@ -403,7 +412,6 @@ const VehicleSwapHistoryModal = ({
         historyList.sort((a, b) => new Date(b.endTime) - new Date(a.endTime))
       );
 
-      // CẬP NHẬT LẠI state vehicles để hiển thị số lần đổi pin MỚI ra bảng chính
       setVehicles(prevVehicles =>
           prevVehicles.map(v => 
               v.id === vehicleId 
@@ -479,7 +487,7 @@ const VehicleSwapHistoryModal = ({
           style={{ padding: 0, height: 'auto', lineHeight: 'normal' }}
         >
           <Text strong style={{ color: '#000000ff' }}>
-            {swapCount || 0}
+            {swapCount === undefined ? <Spin size="small" /> : swapCount}
           </Text>
         </Button>
       ),
