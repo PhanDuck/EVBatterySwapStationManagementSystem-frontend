@@ -256,7 +256,7 @@ const ServicePackagesPage = () => {
           size="small"
           onClick={() => handleDeleteDriverSubscription(record.id)}
         >
-          Delete
+          Xóa
         </Button>
       ),
     },

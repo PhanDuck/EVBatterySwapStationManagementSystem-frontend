@@ -281,7 +281,7 @@ export default function SupportPage() {
             size="small"
             onClick={() => handleView(record)}
           >
-            View
+            Xem
           </Button>
         </Space>
       ),
@@ -332,7 +332,7 @@ export default function SupportPage() {
       {/* View Ticket Modal */}
       {/* 🧩 View Modal */}
       <Modal
-        title={`Ticket Details - #${viewingRecord?.id || ""}`}
+        title={`Chi tiết yêu cầu - #${viewingRecord?.id || ""}`}
         open={isViewModalVisible}
         onCancel={() => setIsViewModalVisible(false)}
         footer={
@@ -345,10 +345,10 @@ export default function SupportPage() {
             {/* Ticket Info */}
             <div style={{ marginBottom: "12px" }}>
               <p>
-                <strong>Subject:</strong> {viewingRecord.subject || "—"}
+                <strong>Tiêu đề:</strong> {viewingRecord.subject || "—"}
               </p>
               <div style={{ marginBottom: "8px" }}>
-                <strong>Description:</strong>
+                <strong>Mô tả:</strong>
                 <div
                   style={{
                     background: "#fafafa",
@@ -362,7 +362,7 @@ export default function SupportPage() {
               </div>
 
               <p>
-                <strong>Status:</strong>{" "}
+                <strong>Trạng thái:</strong>{" "}
                 <Tag
                   color={viewingRecord.status === "OPEN" ? "orange" : "green"}
                 >
@@ -370,11 +370,11 @@ export default function SupportPage() {
                 </Tag>
               </p>
               <p>
-                <strong>Assigned To:</strong>{" "}
-                {viewingRecord.assignedTo || "Unassigned"}
+                <strong>Giao cho:</strong>{" "}
+                {viewingRecord.assignedTo || "Chưa giao"}
               </p>
               <p>
-                <strong>Created At:</strong>{" "}
+                <strong>Tạo lúc:</strong>{" "}
                 {viewingRecord.createdAt
                   ? new Date(viewingRecord.createdAt).toLocaleString()
                   : "Unknown"}
@@ -383,7 +383,7 @@ export default function SupportPage() {
 
             {/* Reply History */}
             <div style={{ marginTop: "20px" }}>
-              <strong>Reply History:</strong>
+              <strong>Lịch sử phản hồi:</strong>
               {responses.length === 0 ? (
                 <p style={{ marginTop: "8px" }}>Chưa có phản hồi nào.</p>
               ) : (
@@ -428,12 +428,12 @@ export default function SupportPage() {
                   <Form.Item
                     name="message"
                     rules={[
-                      { required: true, message: "Please enter a reply!" },
+                      { required: true, message: "Hãy nhập phản hồi!" },
                     ]}
                   >
                     <Input.TextArea
                       rows={3}
-                      placeholder="Enter your reply..."
+                      placeholder="Nhập phản hồi..."
                     />
                   </Form.Item>
                   <Button
