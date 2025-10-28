@@ -26,8 +26,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 // Import component chứa các trường form
 import BookingFormFields from "../../components/BookingForm/BookingForm";
 
-import '../../App.css'; 
-import '../../index.css';
+import "../../App.css";
+import "../../index.css";
 
 dayjs.locale("vi");
 dayjs.extend(relativeTime);
@@ -48,7 +48,7 @@ function StationBookingPage() {
     setLoading(true);
     // Định dạng lại thời gian trước khi gửi đi để phù hợp với múi giờ Việt Nam
     const payload = {
-      vehicleId: values.vehicleId, 
+      vehicleId: values.vehicleId,
       stationId: values.stationId,
     };
     try {
@@ -79,9 +79,9 @@ function StationBookingPage() {
   const handleValuesChange = () => {
     const { vehicleId, stationId } = form.getFieldsValue();
     if (vehicleId && stationId) {
-      setCurrentStep(2); 
+      setCurrentStep(2);
     } else if (vehicleId) {
-      setCurrentStep(1); 
+      setCurrentStep(1);
     } else {
       setCurrentStep(0);
     }
@@ -95,20 +95,35 @@ function StationBookingPage() {
   };
 
   return (
-    <div style={{ padding: "24px", marginTop: 40, background: '#f0f2f5' }}>
+    <div style={{ padding: "24px", marginTop: 40, background: "#f0f2f5" }}>
       <Row justify="center">
         <Col xs={24} sm={20} md={16} lg={12} xl={10}>
-          <Card style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.1)", borderRadius: "12px" }}>
+          <Card
+            style={{
+              boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+              borderRadius: "12px",
+            }}
+          >
             {bookingSuccess ? (
               <Result
                 icon={<SmileOutlined />}
                 title="Đặt Lịch Thành Công!"
                 subTitle={
                   <div>
-                    <Paragraph>Mã xác nhận: <strong>{bookingDetails?.confirmationCode}</strong></Paragraph>
+                    <Paragraph>
+                      Mã xác nhận:{" "}
+                      <strong>{bookingDetails?.confirmationCode}</strong>
+                    </Paragraph>
                     {/*<Paragraph>Lịch hẹn của bạn đã được lên lịch vào lúc <strong>{bookingDetails?.bookingTime.format('HH:mm DD/MM/YYYY')}</strong> ({bookingDetails?.bookingTime.fromNow()}).</Paragraph>*/}
-                    <Paragraph>Pin của bạn đã được chuẩn bị xong, hãy đến lấy pin trong vòng 3 tiếng sau khi đặt.</Paragraph>
-                    <Paragraph><strong>Lưu ý bạn không thể hủy sau 2 tiếng kể từ lúc đặt lịch.</strong></Paragraph>
+                    <Paragraph>
+                      Pin của bạn đã được chuẩn bị xong, hãy đến lấy pin trong
+                      vòng 3 tiếng sau khi đặt.
+                    </Paragraph>
+                    <Paragraph>
+                      <strong>
+                        Lưu ý bạn không thể hủy sau 2 tiếng kể từ lúc đặt lịch.
+                      </strong>
+                    </Paragraph>
                   </div>
                 }
                 extra={[
@@ -119,13 +134,23 @@ function StationBookingPage() {
               />
             ) : (
               <>
-                <Title level={2} style={{ textAlign: "center", marginBottom: 16 }}>
+                <Title
+                  level={2}
+                  style={{ textAlign: "center", marginBottom: 16 }}
+                >
                   Đặt Lịch Đổi Pin
                 </Title>
-                <Paragraph type="secondary" style={{ textAlign: "center", marginBottom: 32 }}>
+                <Paragraph
+                  type="secondary"
+                  style={{ textAlign: "center", marginBottom: 32 }}
+                >
                   Nhanh chóng, tiện lợi và luôn sẵn sàng phục vụ.
                 </Paragraph>
-                <Steps current={currentStep} style={{ marginBottom: 32 }} size="small">
+                <Steps
+                  current={currentStep}
+                  style={{ marginBottom: 32 }}
+                  size="small"
+                >
                   <Step title="Chọn Xe" icon={<CarOutlined />} />
                   <Step title="Chọn Trạm" icon={<EnvironmentOutlined />} />
                 </Steps>
@@ -137,7 +162,10 @@ function StationBookingPage() {
                   size="large"
                 >
                   {/* Nhúng các trường form từ component chung */}
-                  <BookingFormFields form={form} onVehicleChange={handleValuesChange} />
+                  <BookingFormFields
+                    form={form}
+                    onVehicleChange={handleValuesChange}
+                  />
 
                   <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
                     <Button

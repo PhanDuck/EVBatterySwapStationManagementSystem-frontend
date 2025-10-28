@@ -11,9 +11,11 @@ import Inventories from "../Management/Inventory";
 
 export default function StaffDashboard() {
   return (
-    <MainLayout sidebar={<RoleSidebar role="STAFF" />} title="Trang nhân viên trạm">
+    <MainLayout
+      sidebar={<RoleSidebar role="STAFF" />}
+      title="Trang nhân viên trạm"
+    >
       <div className="p-4">
-
         <Routes>
           <Route index element={<Navigate to="bookings" />} />
           <Route path="bookings" element={<Bookings />} />

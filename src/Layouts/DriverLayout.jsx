@@ -1,7 +1,11 @@
 import React from "react";
 import { Layout, Menu } from "antd";
 import { Outlet, Link } from "react-router-dom";
-import { DashboardOutlined, CarOutlined, HistoryOutlined } from "@ant-design/icons";
+import {
+  DashboardOutlined,
+  CarOutlined,
+  HistoryOutlined,
+} from "@ant-design/icons";
 
 const { Header, Sider, Content } = Layout;
 
@@ -23,7 +27,6 @@ const DriverLayout = () => {
           <Menu.Item key="history" icon={<HistoryOutlined />}>
             <Link to="/driver/history">Swap History</Link>
           </Menu.Item>
-          
         </Menu>
       </Sider>
 

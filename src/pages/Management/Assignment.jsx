@@ -24,7 +24,7 @@ import {
   CalendarOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import api from "../../config/axios"; 
+import api from "../../config/axios";
 
 // === KHAI BÁO CÁC API ===
 const API_ASSIGNMENTS = "/staff-station-assignment";
@@ -62,7 +62,9 @@ const AssignStaffModal = ({
       onSuccess();
     } catch (error) {
       message.error(
-        `❌ Lỗi không thể phân quyền nhân viên: ${error.response?.data?.message || error.message}`
+        `❌ Lỗi không thể phân quyền nhân viên: ${
+          error.response?.data?.message || error.message
+        }`
       );
       console.error(error);
     }
@@ -119,8 +121,8 @@ const AssignStaffModal = ({
               .filter((user) => user.role === STAFF_ROLE)
               .map((staff) => (
                 <Option key={staff.id} value={staff.id}>
-                {staff.fullName} (ID: {staff.id})
-              </Option>
+                  {staff.fullName} (ID: {staff.id})
+                </Option>
               ))}
           </Select>
         </Form.Item>
@@ -205,7 +207,10 @@ export default function AssignmentPage() {
       message.warning(
         "Không thể tải danh sách nhân viên (Kiểm tra API /admin/user)."
       );
-      console.error("Lỗi API tải nhân viên:", err.response?.data || err.message);
+      console.error(
+        "Lỗi API tải nhân viên:",
+        err.response?.data || err.message
+      );
     }
 
     // Tải Trạm
@@ -306,7 +311,7 @@ export default function AssignmentPage() {
       dataIndex: "id",
       key: "id",
       sorter: (a, b) => a.id - b.id,
-      render: (text) => <strong>{text}</strong>
+      render: (text) => <strong>{text}</strong>,
     },
     {
       title: (
@@ -348,7 +353,7 @@ export default function AssignmentPage() {
         </Space>
       ),
       dataIndex: "assignedAt",
-      key: "assignedAt", 
+      key: "assignedAt",
       render: (_, record) => {
         // Ưu tiên assignedAt (từ API response)
         const dateString = record.assignedAt || record.createdAt;
@@ -362,9 +367,9 @@ export default function AssignmentPage() {
 
         // Định dạng ngày: DD/MM/YYYY
         return dateObj.toLocaleDateString("vi-VN", {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
         });
       },
       // sorter: (a, b) => {
@@ -435,18 +440,18 @@ export default function AssignmentPage() {
           {/* 1. Tìm Staff (Lọc theo Staff ID/Name) */}
           <Col xs={24} sm={12}>
             <Input
-              prefix={<UserOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
+              prefix={<UserOutlined style={{ color: "rgba(0,0,0,.25)" }} />}
               placeholder="Tìm nhân viên"
               onChange={(e) => setSearchStaffId(e.target.value)}
               value={searchStaffId}
               allowClear
             />
-          </Col>              
+          </Col>
 
           {/* 2. Tìm Trạm (Lọc theo Station ID/Name) */}
           <Col xs={24} sm={12}>
             <Input
-              prefix={<DesktopOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
+              prefix={<DesktopOutlined style={{ color: "rgba(0,0,0,.25)" }} />}
               placeholder="Tìm trạm"
               onChange={(e) => setSearchStationId(e.target.value)}
               value={searchStationId}
@@ -462,10 +467,10 @@ export default function AssignmentPage() {
           dataSource={filteredAndMappedAssignments}
           loading={loading}
           rowKey={(record) => `${record.staffId}-${record.stationId}`}
-          pagination={{ 
+          pagination={{
             showTotal: (total, range) =>
-              `${range[0]}-${range[1]} trên ${total} phân quyền`, 
-            }}
+              `${range[0]}-${range[1]} trên ${total} phân quyền`,
+          }}
           scroll={{ x: 1200 }}
         />
       </Card>

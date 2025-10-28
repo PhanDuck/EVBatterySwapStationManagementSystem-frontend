@@ -201,7 +201,6 @@ export default function RoleSidebar({ role = "ADMIN" }) {
               ))}
             </Menu>
           </div>
-         
         </div>
       </Sider>
     </div>

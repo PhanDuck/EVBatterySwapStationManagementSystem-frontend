@@ -22,7 +22,9 @@ const BookingFormFields = ({ form, onVehicleChange }) => {
     }
     setIsStationLoading(true);
     try {
-      const res = await api.get(`${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`);
+      const res = await api.get(
+        `${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`
+      );
       setCompatibleStations(res.data || []);
     } catch (error) {
       console.error("Lỗi khi tải trạm tương thích:", error);
@@ -66,13 +68,19 @@ const BookingFormFields = ({ form, onVehicleChange }) => {
       onVehicleChange(vehicleId);
     }
   };
-  
+
   // const disabledDate = (current) => {
   //   return current && current < dayjs().startOf("day");
   // };
 
   if (isVehicleLoading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><Spin tip="Đang tải danh sách xe..." /></div>;
+    return (
+      <div
+        style={{ display: "flex", justifyContent: "center", padding: "20px" }}
+      >
+        <Spin tip="Đang tải danh sách xe..." />
+      </div>
+    );
   }
 
   // Component chỉ trả về các Form.Item, không bao gồm thẻ <Form>
@@ -104,11 +112,16 @@ const BookingFormFields = ({ form, onVehicleChange }) => {
           placeholder="Chọn một trạm"
           showSearch
           optionFilterProp="children"
-          disabled={!form.getFieldValue('vehicleId') || isStationLoading}
+          disabled={!form.getFieldValue("vehicleId") || isStationLoading}
           loading={isStationLoading}
           notFoundContent={
-            isStationLoading ? <Spin size="small" /> : 
-            !form.getFieldValue('vehicleId') ? "Vui lòng chọn xe để xem trạm" : "Không tìm thấy trạm tương thích"
+            isStationLoading ? (
+              <Spin size="small" />
+            ) : !form.getFieldValue("vehicleId") ? (
+              "Vui lòng chọn xe để xem trạm"
+            ) : (
+              "Không tìm thấy trạm tương thích"
+            )
           }
         >
           {compatibleStations.map((s) => (

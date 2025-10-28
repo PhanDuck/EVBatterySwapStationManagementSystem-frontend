@@ -11,11 +11,7 @@ import {
   message,
   Tag,
 } from "antd";
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-} from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
 
 const ServicePackagesPage = () => {
@@ -294,10 +290,10 @@ const ServicePackagesPage = () => {
           columns={packageColumns}
           dataSource={filteredPackages}
           rowKey="id"
-          pagination={{ 
+          pagination={{
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} trên tổng ${total} gói`,
-            }}
+          }}
         />
       </Card>
 
@@ -306,10 +302,10 @@ const ServicePackagesPage = () => {
           columns={subscriptionColumns}
           dataSource={driverSubscriptions}
           rowKey="id"
-          pagination={{ 
+          pagination={{
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} trên tổng ${total} gói`,
-            }}
+          }}
           scroll={{ x: 1000 }}
         />
       </Card>

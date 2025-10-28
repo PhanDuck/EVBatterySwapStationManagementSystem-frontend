@@ -17,7 +17,10 @@ import Assignments from "../Management/Assignment";
 
 export default function AdminDashboard() {
   return (
-    <MainLayout sidebar={<RoleSidebar role="ADMIN" />} title="Trang quản trị hệ thống">
+    <MainLayout
+      sidebar={<RoleSidebar role="ADMIN" />}
+      title="Trang quản trị hệ thống"
+    >
       <Routes>
         <Route index element={<Navigate to="users" />} />
         <Route path="users" element={<Users />} />

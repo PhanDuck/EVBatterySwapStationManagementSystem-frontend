@@ -6,15 +6,12 @@ const PrivateRoute = ({ roles }) => {
   const authed = isAuthenticated();
   const role = getCurrentRole();
 
-
-
   if (!authed) {
     // Nếu chưa đăng nhập
     return <Navigate to="/login" replace />;
   }
 
   if (roles && !roles.includes(role)) {
-
     // Nếu đăng nhập rồi nhưng không có quyền truy cập route này
     return <Navigate to={`/${role}`} replace />;
   }

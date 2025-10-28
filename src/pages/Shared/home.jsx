@@ -217,25 +217,33 @@ function Home() {
       <section
         style={{
           backgroundImage: `url(${BackgroundImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
           color: "white",
           padding: "60px 0",
-          position: 'relative',
+          position: "relative",
         }}
       >
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          zIndex: 1,
-        }}></div>
-        
         <div
-          style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 20px", position: 'relative', zIndex: 2 }}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            zIndex: 1,
+          }}
+        ></div>
+
+        <div
+          style={{
+            maxWidth: "1100px",
+            margin: "0 auto",
+            padding: "0 20px",
+            position: "relative",
+            zIndex: 2,
+          }}
         >
           <Row gutter={[24, 40]} justify="center">
             {/* ITEM 1: TRẠM */}
@@ -313,14 +321,28 @@ function Home() {
         >
           <Row gutter={[48, 24]} align="middle">
             <Col xs={24} md={12}>
-              <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px' }}>
+              <div
+                style={{
+                  position: "relative",
+                  paddingBottom: "56.25%",
+                  height: 0,
+                  overflow: "hidden",
+                  borderRadius: "8px",
+                }}
+              >
                 <iframe
                   src="https://www.youtube.com/embed/4iAhpCPaHlc"
                   title="YouTube video player"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                  }}
                 ></iframe>
               </div>
             </Col>
@@ -328,8 +350,17 @@ function Home() {
               <Title level={2} style={{ marginBottom: 16 }}>
                 Sạc pin không phải là giải pháp duy nhất!
               </Title>
-              <Paragraph style={{ color: "#64748b", fontSize: '16px', lineHeight: '1.6' }}>
-                Đối với người dùng xe máy điện, việc chờ đợi sạc pin có thể gây ra nhiều bất tiện. Dịch vụ đổi pin của chúng tôi mang đến một giải pháp nhanh chóng, tiện lợi và an toàn, giúp bạn tiếp tục hành trình chỉ trong vài phút.
+              <Paragraph
+                style={{
+                  color: "#64748b",
+                  fontSize: "16px",
+                  lineHeight: "1.6",
+                }}
+              >
+                Đối với người dùng xe máy điện, việc chờ đợi sạc pin có thể gây
+                ra nhiều bất tiện. Dịch vụ đổi pin của chúng tôi mang đến một
+                giải pháp nhanh chóng, tiện lợi và an toàn, giúp bạn tiếp tục
+                hành trình chỉ trong vài phút.
               </Paragraph>
             </Col>
           </Row>

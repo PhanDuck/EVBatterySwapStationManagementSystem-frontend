@@ -19,49 +19,46 @@ import "./StationsNearby.css"; // Import CSS
 const { Option } = Select;
 
 // 🔴 Cấu hình OSRM
-const OSRM_BASE_URL = "https://router.project-osrm.org/route/v1"; 
-const ROUTING_PROFILE = "driving"; 
+const OSRM_BASE_URL = "https://router.project-osrm.org/route/v1";
+const ROUTING_PROFILE = "driving";
 
 // Custom Marker icon (Không đổi)
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-
-   iconRetinaUrl:
+  iconRetinaUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
   iconUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
   shadowUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-
 });
 
 // Component để focus map tới vị trí mới (Không đổi)
 function FlyToLocation({ position }) {
   const map = useMap();
   useEffect(() => {
-    if (position) map.flyTo(position, 14, { duration: 1.5 }); 
+    if (position) map.flyTo(position, 14, { duration: 1.5 });
   }, [position]);
   return null;
 }
 
 // 🆕 Hàm tiện ích để định dạng
 const formatDistance = (meters) => {
-    if (meters < 1000) {
-        return `${Math.round(meters)} m`;
-    }
-    return `${(meters / 1000).toFixed(1)} km`;
+  if (meters < 1000) {
+    return `${Math.round(meters)} m`;
+  }
+  return `${(meters / 1000).toFixed(1)} km`;
 };
 
 const formatTime = (seconds) => {
-    const minutes = Math.round(seconds / 60);
-    if (minutes < 60) {
-        return `${minutes} phút`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours} giờ ${remainingMinutes} phút`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes} phút`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return `${hours} giờ ${remainingMinutes} phút`;
 };
-
 
 const StationsNearby = () => {
   const [stations, setStations] = useState([]);
@@ -74,7 +71,7 @@ const StationsNearby = () => {
   const [routeCoordinates, setRouteCoordinates] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true); // State cho sidebar
-  
+
   const markerRefs = useRef({});
 
   // ... (fetchStations useEffect giữ nguyên)
@@ -97,9 +94,12 @@ const StationsNearby = () => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const newPosition = [position.coords.latitude, position.coords.longitude];
+          const newPosition = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ];
           setUserGeoPosition(newPosition);
-          setMapCenter(newPosition); 
+          setMapCenter(newPosition);
         },
         (error) => {
           console.warn(`Lỗi Geolocation (${error.code}): ${error.message}`);
@@ -109,71 +109,74 @@ const StationsNearby = () => {
     } else {
       console.log("Trình duyệt không hỗ trợ Geolocation.");
     }
-  }, []); 
+  }, []);
 
   // 🆕 Cập nhật hàm tính toán đường đi
   const getRoute = async (origin, destination) => {
     setRouteCoordinates(null);
     setRouteInfo(null); // 🆕 Reset thông tin đường đi
-    
-    const start = `${origin[1]},${origin[0]}`; 
+
+    const start = `${origin[1]},${origin[0]}`;
     const end = `${destination[1]},${destination[0]}`;
-    
+
     const coordinates = `${start};${end}`;
     const url = `${OSRM_BASE_URL}/${ROUTING_PROFILE}/${coordinates}?overview=full&geometries=geojson`;
 
     try {
-        const res = await fetch(url);
-        
-        if (!res.ok) {
-            throw new Error(`OSRM API thất bại với status ${res.status}`);
-        }
+      const res = await fetch(url);
 
-        const data = await res.json();
-        
-        if (data.routes && data.routes.length > 0) {
-            const route = data.routes[0];
-            
-            // Lấy tọa độ
-            const coordinatesList = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-            setRouteCoordinates(coordinatesList);
-            
-            // 🆕 Lấy thông tin khoảng cách và thời gian
-            setRouteInfo({
-                distance: route.distance, // meters
-                duration: route.duration, // seconds
-            });
+      if (!res.ok) {
+        throw new Error(`OSRM API thất bại với status ${res.status}`);
+      }
 
-        } else {
-            alert("Không tìm thấy tuyến đường.");
-        }
-        
+      const data = await res.json();
+
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+
+        // Lấy tọa độ
+        const coordinatesList = route.geometry.coordinates.map((coord) => [
+          coord[1],
+          coord[0],
+        ]);
+        setRouteCoordinates(coordinatesList);
+
+        // 🆕 Lấy thông tin khoảng cách và thời gian
+        setRouteInfo({
+          distance: route.distance, // meters
+          duration: route.duration, // seconds
+        });
+      } else {
+        alert("Không tìm thấy tuyến đường.");
+      }
     } catch (error) {
-        console.error("Lỗi khi tính toán đường đi OSRM:", error);
-        alert("Có lỗi khi tính toán đường đi. Vui lòng thử lại sau.");
+      console.error("Lỗi khi tính toán đường đi OSRM:", error);
+      alert("Có lỗi khi tính toán đường đi. Vui lòng thử lại sau.");
     }
   };
-  
+
   // Hàm xử lý khi bấm nút Chỉ Đường (Không đổi)
   const handleDirectionsClick = (station) => {
     if (!userGeoPosition) {
-        alert("Vui lòng cho phép truy cập vị trí (Geolocation) để tính toán đường đi.");
-        return;
+      alert(
+        "Vui lòng cho phép truy cập vị trí (Geolocation) để tính toán đường đi."
+      );
+      return;
     }
-    
+
     setSelectedStation(station);
     getRoute(userGeoPosition, [station.latitude, station.longitude]);
-    
+
     const ref = markerRefs.current[station.id];
     if (ref) ref.closePopup();
-  }
+  };
 
   // Hàm xóa đường đi
   const clearRoute = () => {
     setRouteCoordinates(null);
     setRouteInfo(null); // 🆕 Xóa thông tin đường đi
     setSelectedStation(null);
-  }
+  };
 
   // ... (useMemo cho cities, districts, filteredStations giữ nguyên)
   const cities = useMemo(() => {
@@ -208,7 +211,9 @@ const StationsNearby = () => {
         {/* Nút Toggle CỐ ĐỊNH */}
         <Button
           type="primary"
-          icon={isSidebarVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+          icon={
+            isSidebarVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />
+          }
           onClick={() => setIsSidebarVisible(!isSidebarVisible)}
           className="sidebar-toggle-button"
         />

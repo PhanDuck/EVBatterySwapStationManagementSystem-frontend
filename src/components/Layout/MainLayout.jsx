@@ -105,7 +105,7 @@ export default function MainLayout({ children, sidebar, title }) {
             padding: collapsed ? "10px 8px" : "10px 16px",
           }}
         >
-          <BottomSideBar collapse={collapsed}/>
+          <BottomSideBar collapse={collapsed} />
         </div>
       </Sider>
 

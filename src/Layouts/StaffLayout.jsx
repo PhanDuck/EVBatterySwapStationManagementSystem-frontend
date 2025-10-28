@@ -1,7 +1,11 @@
 import React from "react";
 import { Layout, Menu } from "antd";
 import { Outlet, Link } from "react-router-dom";
-import { DashboardOutlined, ToolOutlined, SwapOutlined } from "@ant-design/icons";
+import {
+  DashboardOutlined,
+  ToolOutlined,
+  SwapOutlined,
+} from "@ant-design/icons";
 
 const { Header, Sider, Content } = Layout;
 

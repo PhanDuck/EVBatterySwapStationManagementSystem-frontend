@@ -9,7 +9,7 @@ const DashboardButton = () => {
 
   // Giả sử role được lưu trong localStorage (thường là vậy trong project của bạn)
   const role = JSON.parse(localStorage.getItem("currentUser"))?.role;
-console.log(role);
+  console.log(role);
   const handleNavigate = () => {
     let path = "/";
 
@@ -34,7 +34,7 @@ console.log(role);
   return (
     <Button
       type="primary"
-      icon={<MdSpaceDashboard  />}
+      icon={<MdSpaceDashboard />}
       onClick={handleNavigate}
       style={{
         borderRadius: "8px",

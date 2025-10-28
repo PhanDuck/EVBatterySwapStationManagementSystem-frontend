@@ -381,21 +381,23 @@ export default function InventoryPage() {
       key: "chargeLevel",
       width: FIXED_COL_WIDTH.CHARGE,
       render: (chargeLevel) => {
-      const chargeValue = chargeLevel ? parseFloat(chargeLevel).toFixed(0) : "—";
+        const chargeValue = chargeLevel
+          ? parseFloat(chargeLevel).toFixed(0)
+          : "—";
 
-      if (chargeValue === "—") return "—";
+        if (chargeValue === "—") return "—";
 
-      let color;
-      const numericCharge = parseFloat(chargeValue);
+        let color;
+        const numericCharge = parseFloat(chargeValue);
 
-      if (numericCharge >= 70) {
-        color = "green"; 
-      } else {
-        color = "orange"; 
-      }
+        if (numericCharge >= 70) {
+          color = "green";
+        } else {
+          color = "orange";
+        }
 
-      return <Tag color={color}>{chargeValue}</Tag>;
-    },
+        return <Tag color={color}>{chargeValue}</Tag>;
+      },
     },
 
     {
@@ -484,7 +486,9 @@ export default function InventoryPage() {
       key: "chargeLevel",
       width: FIXED_COL_WIDTH.CHARGE,
       render: (chargeLevel) => {
-        const chargeValue = chargeLevel ? parseFloat(chargeLevel).toFixed(0) : "—";
+        const chargeValue = chargeLevel
+          ? parseFloat(chargeLevel).toFixed(0)
+          : "—";
 
         if (chargeValue === "—") return "—";
 
@@ -492,9 +496,9 @@ export default function InventoryPage() {
         const numericCharge = parseFloat(chargeValue);
 
         if (numericCharge >= 70) {
-          color = "green"; 
+          color = "green";
         } else {
-          color = "orange"; 
+          color = "orange";
         }
 
         return <Tag color={color}>{chargeValue}</Tag>;
@@ -521,7 +525,7 @@ export default function InventoryPage() {
       key: "actions",
       fixed: "right",
       width: FIXED_COL_WIDTH.ACTIONS,
-      render: (_, record) => (  
+      render: (_, record) => (
         <Space>
           {/* Nút "Sửa SOH" (Chỉ hiện cho ADMIN và pin MAINTENANCE) */}
           {userRole === "ADMIN" && record.status === "MAINTENANCE" && (
@@ -602,10 +606,10 @@ export default function InventoryPage() {
           dataSource={stationInventory}
           loading={loading}
           rowKey="id"
-          pagination={{ 
+          pagination={{
             showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} trên ${total} pin`,
-            }}
+              `${range[0]}-${range[1]} trên ${total} pin`,
+          }}
         />
       </Card>
 
@@ -651,16 +655,18 @@ export default function InventoryPage() {
           </Space>
         }
       >
-        <h4>Danh sách pin sẵn sàng (AVAILABLE) và pin đang bảo trì (MAINTENANCE):</h4>
+        <h4>
+          Danh sách pin sẵn sàng (AVAILABLE) và pin đang bảo trì (MAINTENANCE):
+        </h4>
         <Table
           columns={warehouseColumns}
           dataSource={warehouseInventory}
           loading={loading}
           rowKey="id"
-          pagination={{ 
+          pagination={{
             showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} trên ${total} pin`,
-            }}
+              `${range[0]}-${range[1]} trên ${total} pin`,
+          }}
         />
       </Card>
 

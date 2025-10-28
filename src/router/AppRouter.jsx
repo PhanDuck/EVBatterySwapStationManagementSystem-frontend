@@ -16,7 +16,6 @@ import StaffDashboard from "../pages/Dashboard/StaffDashboard";
 import StationsNearbyPage from "../pages/Shared/StationsNearby";
 import StationBookingPage from "../pages/Shared/StationBooking";
 
-
 import PrivateRoute from "./PrivateRoute";
 import { getCurrentRole, isAuthenticated } from "../config/auth";
 import HomeLayout from "../Layouts/HomeLayout";
@@ -53,7 +52,7 @@ export default function AppRouter() {
           <Route path="/support" element={<SupportPage />} />
           <Route path="/stations/nearby" element={<StationsNearbyPage />} />
           <Route path="/codeConfirm" element={<EnterConfirmationCode />} />
-          
+
           {/* Protected */}
           <Route element={<PrivateRoute roles={["Driver"]} />}>
             <Route path="/stations/booking" element={<StationBookingPage />} />
@@ -68,8 +67,6 @@ export default function AppRouter() {
         />
         <Route path="/register" element={<Register />} />
 
-
-
         {/* 🔒 Protected routes without HomeLayout (Dashboards, etc.) */}
         <Route element={<PrivateRoute roles={["Admin"]} />}>
           <Route path="/admin/*" element={<AdminDashboard />} />
@@ -80,11 +77,9 @@ export default function AppRouter() {
           <Route path="/payment/result" element={<PaymentResult />} />
         </Route>
 
-
         <Route element={<PrivateRoute roles={["Staff"]} />}>
           <Route path="/staff/*" element={<StaffDashboard />} />
         </Route>
-
 
         {/* 🚫 404 */}
         <Route path="*" element={<NotFound />} />

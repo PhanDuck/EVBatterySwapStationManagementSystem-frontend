@@ -110,7 +110,9 @@ export default function BookingsPage() {
     }
     setIsStationLoading(true);
     try {
-      const res = await api.get(`${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`);
+      const res = await api.get(
+        `${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`
+      );
       setCompatibleStations(res.data || []);
     } catch (error) {
       console.error("Lỗi khi tải trạm tương thích:", error);
@@ -186,7 +188,9 @@ export default function BookingsPage() {
       const bookingId = editingRecord?.id;
       if (!bookingId) return;
       setSubmitting(true);
-      await api.patch(`/booking/${bookingId}/status?status=${validValues.status}`);
+      await api.patch(
+        `/booking/${bookingId}/status?status=${validValues.status}`
+      );
       message.success("Cập nhật trạng thái thành công!");
       setData((prev) =>
         prev.map((b) =>
@@ -240,8 +244,12 @@ export default function BookingsPage() {
 
     setSubmitting(true);
     try {
-        // ❗ SỬ DỤNG API DELETE VỚI REASON TRONG QUERY DÀNH CHO STAFF/ADMIN
-        await api.delete(`/booking/staff/${bookingId}/cancel?reason=${encodeURIComponent(values.reason)}`);
+      // ❗ SỬ DỤNG API DELETE VỚI REASON TRONG QUERY DÀNH CHO STAFF/ADMIN
+      await api.delete(
+        `/booking/staff/${bookingId}/cancel?reason=${encodeURIComponent(
+          values.reason
+        )}`
+      );
 
       // Cập nhật state local
       setData((prev) =>
@@ -256,7 +264,8 @@ export default function BookingsPage() {
     } catch (err) {
       console.error("Cancel booking error:", err);
       message.error(
-        err.response?.data?.message || "Không thể hủy booking! Vui lòng kiểm tra API."
+        err.response?.data?.message ||
+          "Không thể hủy booking! Vui lòng kiểm tra API."
       );
     } finally {
       setSubmitting(false);
@@ -289,9 +298,10 @@ export default function BookingsPage() {
         } catch (err) {
           console.error("Driver Cancel booking error:", err);
           message.error(
-            err.response?.data?.message || "Không thể hủy đặt lịch sau 2 tiếng kể từ lúc đặt!"
+            err.response?.data?.message ||
+              "Không thể hủy đặt lịch sau 2 tiếng kể từ lúc đặt!"
           );
-                }
+        }
       },
     });
   };
@@ -353,7 +363,7 @@ export default function BookingsPage() {
       ? [
           {
             title: "Mã xác nhận",
-            dataIndex: "confirmationCode",  
+            dataIndex: "confirmationCode",
             key: "confirmationCode",
             render: (code) => <p>{code || "-"}</p>, // Hiển thị mã đổi pin
           },
@@ -364,7 +374,8 @@ export default function BookingsPage() {
       key: "actions",
       fixed: "right",
       render: (_, record) => {
-        const isCancellableStatus = record.status === "PENDING" || record.status === "CONFIRMED";
+        const isCancellableStatus =
+          record.status === "PENDING" || record.status === "CONFIRMED";
         return (
           <Space>
             {/* Nút Hủy */}
@@ -391,17 +402,18 @@ export default function BookingsPage() {
             )}
 
             {/* Nút Xác nhận (Chỉ Admin/Staff) */}
-            {(role === "ADMIN" || role === "STAFF") && record.status === "PENDING" && (
-              <Button
-                type="primary"
-                icon={<CheckOutlined />}
-                onClick={() => handleConfirm(record)}
-              >
-                Xác nhận
-              </Button>
-            )}
+            {(role === "ADMIN" || role === "STAFF") &&
+              record.status === "PENDING" && (
+                <Button
+                  type="primary"
+                  icon={<CheckOutlined />}
+                  onClick={() => handleConfirm(record)}
+                >
+                  Xác nhận
+                </Button>
+              )}
           </Space>
-        )
+        );
       },
     },
   ];
@@ -435,10 +447,10 @@ export default function BookingsPage() {
             dataSource={filteredData}
             columns={columns}
             rowKey="id"
-            pagination={{ 
+            pagination={{
               showTotal: (total, range) =>
                 `${range[0]}-${range[1]} trên ${total} lịch`,
-              }}
+            }}
           />
         </Spin>
       </Card>
@@ -455,15 +467,8 @@ export default function BookingsPage() {
         footer={null}
         width={500}
       >
-        <Form
-          form={cancelForm}
-          layout="vertical"
-          onFinish={handleCancelSubmit}
-        >
-          <Form.Item
-            name="reason"
-            label="Lý do hủy"
-          >
+        <Form form={cancelForm} layout="vertical" onFinish={handleCancelSubmit}>
+          <Form.Item name="reason" label="Lý do hủy">
             <TextArea
               rows={4}
               placeholder="Nhập lý do hủy booking (ví dụ: Khách hàng yêu cầu, Trạm bảo trì, v.v.)"

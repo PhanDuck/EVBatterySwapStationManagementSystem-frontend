@@ -1,6 +1,4 @@
-
 .menu {
-
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Shadow nhẹ đổ xuống */
   z-index: 1000; /* Đảm bảo Navbar luôn ở trên */
   position: sticky; /* Giữ Navbar ở trên cùng khi cuộn */

@@ -164,9 +164,7 @@ export default function BatteryManagement() {
       dataIndex: "stateOfHealth",
       width: 180,
       render: (v) => {
-        return <Tag color={parseFloat(v) >= 70 ? "green" : "orange"}>
-                  {v}
-                </Tag>;
+        return <Tag color={parseFloat(v) >= 70 ? "green" : "orange"}>{v}</Tag>;
       },
     },
     { title: "Trạm hiện tại", dataIndex: "currentStationName", width: 200 },
@@ -288,9 +286,8 @@ export default function BatteryManagement() {
           pagination={{
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} trên tổng ${total} pin`,
-            }}
+          }}
           scroll={{ x: 1200 }}
-          
         />
       </Card>
 
@@ -321,7 +318,9 @@ export default function BatteryManagement() {
           <Form.Item
             name="stateOfHealth"
             label="Tình trạng pin (%)"
-            rules={[{ required: true, message: "Vui lòng nhập tình trạng pin" }]}
+            rules={[
+              { required: true, message: "Vui lòng nhập tình trạng pin" },
+            ]}
           >
             <InputNumber style={{ width: "100%" }} min={0} max={100} />
           </Form.Item>

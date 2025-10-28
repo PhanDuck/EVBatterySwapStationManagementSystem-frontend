@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, message, Spin,} from "antd";
+import {
+  Card,
+  Table,
+  Button,
+  Space,
+  Tag,
+  Modal,
+  Form,
+  Input,
+  Select,
+  message,
+  Spin,
+} from "antd";
 import { EditOutlined, DeleteOutlined, UserOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
 
@@ -13,7 +25,7 @@ export default function AccountPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [form] = Form.useForm();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   // Gọi API thật
   useEffect(() => {
@@ -31,7 +43,12 @@ export default function AccountPage() {
         console.error(err);
         if (err?.response?.status === 401) {
           // token missing/invalid — clear storage and notify
-          try { localStorage.removeItem('authToken'); sessionStorage.removeItem('authToken'); } catch { /* ignore storage errors */ }
+          try {
+            localStorage.removeItem("authToken");
+            sessionStorage.removeItem("authToken");
+          } catch {
+            /* ignore storage errors */
+          }
           message.error("Unauthorized — vui lòng đăng nhập lại");
         } else {
           message.error("Không thể tải danh sách người dùng");
@@ -64,13 +81,18 @@ export default function AccountPage() {
           setAccounts((prev) => prev.filter((u) => (u.id ?? u._id) !== id));
           message.success("Đã xóa thành công!");
         } catch (err) {
-          console.error('Delete user error', err);
-            if (err?.response?.status === 401) {
-              try { localStorage.removeItem('authToken'); sessionStorage.removeItem('authToken'); } catch { /* ignore storage errors */ }
-              message.error('Unauthorized — vui lòng đăng nhập lại');
-            } else {
-              message.error("Không thể xóa người dùng!");
+          console.error("Delete user error", err);
+          if (err?.response?.status === 401) {
+            try {
+              localStorage.removeItem("authToken");
+              sessionStorage.removeItem("authToken");
+            } catch {
+              /* ignore storage errors */
             }
+            message.error("Unauthorized — vui lòng đăng nhập lại");
+          } else {
+            message.error("Không thể xóa người dùng!");
+          }
         } finally {
           setDeletingId(null);
         }
@@ -92,20 +114,25 @@ export default function AccountPage() {
       };
 
       // basic duplicate checks (client-side): email or phone already in table (excluding editing row)
-      const editingId = editingAccount ? (editingAccount.id ?? editingAccount._id) : null;
+      const editingId = editingAccount
+        ? editingAccount.id ?? editingAccount._id
+        : null;
       const dup = accounts.find((a) => {
         const aid = a.id ?? a._id;
         if (editingId && aid === editingId) return false;
-        return (a.email || '').toLowerCase() === payload.email || (a.phoneNumber || '') === payload.phoneNumber;
+        return (
+          (a.email || "").toLowerCase() === payload.email ||
+          (a.phoneNumber || "") === payload.phoneNumber
+        );
       });
       if (dup) {
-        message.error('Email hoặc số điện thoại đã tồn tại.');
+        message.error("Email hoặc số điện thoại đã tồn tại.");
         return;
       }
 
       // creation is disabled — only allow updates
       if (!editingAccount) {
-        message.error('Tạo người dùng mới đã bị vô hiệu hóa.');
+        message.error("Tạo người dùng mới đã bị vô hiệu hóa.");
         return;
       }
 
@@ -113,11 +140,11 @@ export default function AccountPage() {
       const id = editingAccount.id ?? editingAccount._id;
       const res = await api.put(`/admin/user/${id}`, payload);
       const updated = { ...res.data, id: res.data.id ?? res.data._id };
-      setAccounts((prev) => prev.map((a) => ((a.id ?? a._id) === id ? updated : a)));
+      setAccounts((prev) =>
+        prev.map((a) => ((a.id ?? a._id) === id ? updated : a))
+      );
       message.success("Cập nhật thành công!");
       setIsModalVisible(false);
-      
-      
 
       form.resetFields();
       setEditingAccount(null);
@@ -132,12 +159,16 @@ export default function AccountPage() {
         error.response?.data || error.message
       );
       if (error?.response?.status === 401) {
-  try { localStorage.removeItem('authToken'); sessionStorage.removeItem('authToken'); } catch { /* ignore storage errors */ }
-        message.error('Unauthorized — vui lòng đăng nhập lại');
+        try {
+          localStorage.removeItem("authToken");
+          sessionStorage.removeItem("authToken");
+        } catch {
+          /* ignore storage errors */
+        }
+        message.error("Unauthorized — vui lòng đăng nhập lại");
       } else {
         message.error(
-          error.response?.data?.message ||
-            "Không thể cập nhật người dùng"
+          error.response?.data?.message || "Không thể cập nhật người dùng"
         );
       }
     } finally {
@@ -252,9 +283,9 @@ export default function AccountPage() {
             dataSource={accounts.filter((a) => {
               if (!search) return true;
               const q = search.toLowerCase();
-              const name = (a.fullName || '').toLowerCase();
-              const email = (a.email || '').toLowerCase();
-              const phone = (a.phoneNumber || '').toLowerCase();
+              const name = (a.fullName || "").toLowerCase();
+              const email = (a.email || "").toLowerCase();
+              const phone = (a.phoneNumber || "").toLowerCase();
               return name.includes(q) || email.includes(q) || phone.includes(q);
             })}
             rowKey={(record) => record.id ?? record._id}
@@ -327,7 +358,9 @@ export default function AccountPage() {
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit">Cập nhật</Button>
+              <Button type="primary" htmlType="submit">
+                Cập nhật
+              </Button>
               <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
             </Space>
           </Form.Item>

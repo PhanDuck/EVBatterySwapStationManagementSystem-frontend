@@ -1,31 +1,39 @@
-.ant-menu-item a{
+.ant-menu-item a {
   font-size: 18px !important;
-  margin: 12px 0!important;
+  margin: 12px 0 !important;
 }
-.ant-menu-inline-collapsed >.ant-menu-item{
-  padding-inline:calc(30%) !important;
+.ant-menu-inline-collapsed > .ant-menu-item {
+  padding-inline: calc(30%) !important;
   padding-top: 5px;
 }
-.ant-menu-item{
-  margin: 8px 0!important; /* change size */
-  
-  transition: all .5s;
+.ant-menu-item {
+  margin: 8px 0 !important; /* change size */
+
+  transition: all 0.5s;
 }
-.ant-menu-item:hover{
+.ant-menu-item:hover {
   /* brighter, more saturated blue on hover */
-  background-color: rgba(59,130,246,0.65) !important; /* #3b82f6 at 65% */
+  background-color: rgba(59, 130, 246, 0.65) !important; /* #3b82f6 at 65% */
 }
 
 /* Hover for custom RoleSidebar nav links */
-.ev-dashboard aside a, .ev-dashboard aside .ant-menu-item a, .ev-dashboard aside .nav-link {
-  transition: background-color 180ms ease, color 180ms ease, transform 120ms ease;
+.ev-dashboard aside a,
+.ev-dashboard aside .ant-menu-item a,
+.ev-dashboard aside .nav-link {
+  transition: background-color 180ms ease, color 180ms ease,
+    transform 120ms ease;
 }
 
 .ev-dashboard aside a:hover,
 .ev-dashboard aside .ant-menu-item a:hover,
 .ev-dashboard aside .nav-link:hover {
   /* brighter, clearer blue hover */
-  background-color: rgba(59,130,246,0.18) !important; /* #3b82f6 light tint */
+  background-color: rgba(
+    59,
+    130,
+    246,
+    0.18
+  ) !important; /* #3b82f6 light tint */
   color: #fff !important;
   transform: translateX(4px);
 }
@@ -36,7 +44,12 @@
 .ev-dashboard aside .ant-menu-item-active,
 .ev-dashboard aside .nav-link.active {
   /* stronger blue for active state so it persists visually */
-  background-color: rgba(59,130,246,0.28) !important; /* slightly darker than hover tint */
+  background-color: rgba(
+    59,
+    130,
+    246,
+    0.28
+  ) !important; /* slightly darker than hover tint */
   color: #fff !important;
 }
 
@@ -48,7 +61,8 @@
 }
 
 /* Sidebar-only white text */
-.ev-dashboard aside, .ev-dashboard aside * {
+.ev-dashboard aside,
+.ev-dashboard aside * {
   color: #fff !important;
 }
 

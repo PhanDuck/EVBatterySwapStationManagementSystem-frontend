@@ -8,7 +8,7 @@
   border-radius: 4px;
   padding: 5px 10px;
   font-weight: bold;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Biểu tượng vị trí người dùng */
@@ -28,16 +28,16 @@
 
 /* Đảm bảo các nút điều khiển của Leaflet có z-index cao */
 .leaflet-control-container .leaflet-control {
-    z-index: 1000 !important;
+  z-index: 1000 !important;
 }
 
 /* Định vị nút mở sidebar bên dưới nút zoom */
 .leaflet-top.leaflet-left {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Điều chỉnh khoảng cách cho nút mở sidebar */
 .leaflet-top.leaflet-left .leaflet-control:last-child {
-    margin-top: 10px;
+  margin-top: 10px;
 }

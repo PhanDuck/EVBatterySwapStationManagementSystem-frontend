@@ -1,7 +1,28 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Card, Table, Button, Space, Tag, DatePicker, Select, Statistic, Row, Col, Input, Modal, Form, message,} from "antd";
-import { DollarOutlined, SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined,} from "@ant-design/icons";
-import api from "../../config/axios"; 
+import {
+  Card,
+  Table,
+  Button,
+  Space,
+  Tag,
+  DatePicker,
+  Select,
+  Statistic,
+  Row,
+  Col,
+  Input,
+  Modal,
+  Form,
+  message,
+} from "antd";
+import {
+  DollarOutlined,
+  SearchOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from "@ant-design/icons";
+import api from "../../config/axios";
 import MomoLogo from "../../assets/img/MoMoLogo.svg";
 import dayjs from "dayjs"; // Import dayjs
 
@@ -161,15 +182,18 @@ const TransactionsPage = () => {
         </>
       ),
     },
-    { title: "Phương thức thanh toán", dataIndex: "paymentMethod", 
+    {
+      title: "Phương thức thanh toán",
+      dataIndex: "paymentMethod",
       render: (paymentMethod) => (
         <div className=" flex items-center justifiy-center gap-2">
           {paymentMethod}
-          <div className="w-8 h-8"><img src ={MomoLogo} alt="MomoLogo" /></div>
-          
+          <div className="w-8 h-8">
+            <img src={MomoLogo} alt="MomoLogo" />
+          </div>
         </div>
-      )
-     },
+      ),
+    },
     {
       title: "Trạng thái",
       dataIndex: "status",
@@ -187,7 +211,8 @@ const TransactionsPage = () => {
     {
       title: "Thời gian",
       dataIndex: "paymentDate",
-      sorter: (a, b) => dayjs(a.paymentDate).unix() - dayjs(b.paymentDate).unix(),
+      sorter: (a, b) =>
+        dayjs(a.paymentDate).unix() - dayjs(b.paymentDate).unix(),
     },
   ];
 
@@ -204,7 +229,7 @@ const TransactionsPage = () => {
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
-        
+
         <Select
           value={typeFilter}
           onChange={setTypeFilter}
@@ -216,7 +241,11 @@ const TransactionsPage = () => {
           <Option value="Refund">Refund</Option>
           <Option value="Penalty">Penalty</Option>
         </Select>
-        <RangePicker onChange={(vals) => setDateRange(vals?.map((d) => d.format("YYYY-MM-DD")))} />
+        <RangePicker
+          onChange={(vals) =>
+            setDateRange(vals?.map((d) => d.format("YYYY-MM-DD")))
+          }
+        />
       </Space>
 
       <Table
@@ -227,7 +256,7 @@ const TransactionsPage = () => {
         pagination={{
           showTotal: (total, range) =>
             `${range[0]}-${range[1]} trên tổng ${total} giao dịch`,
-          }}
+        }}
       />
 
       {/* Modal thêm/sửa */}

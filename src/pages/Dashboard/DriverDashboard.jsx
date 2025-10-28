@@ -19,7 +19,10 @@ export default function DriverDashboard() {
           <Route path="bookings" element={<Bookings />} />
           <Route path="transactions" element={<Transactions />} />
           <Route path="vehicles" element={<Vehicles />} />
-          <Route path="driver-subscription" element={<DriverSubscriptionManagement />} />
+          <Route
+            path="driver-subscription"
+            element={<DriverSubscriptionManagement />}
+          />
           <Route path="upgrade-plan" element={<PackagesPage />} />
           <Route path="tickets" element={<SupportTickets />} />
           <Route path="*" element={<div>Không tìm thấy trang!</div>} />

@@ -324,7 +324,7 @@ export default function SupportPage() {
           rowKey="id"
           pagination={{
             showTotal: (total, range) =>
-            `${range[0]}-${range[1]} trên tổng ${total} hỗ trợ`,
+              `${range[0]}-${range[1]} trên tổng ${total} hỗ trợ`,
           }}
         />
       </Card>

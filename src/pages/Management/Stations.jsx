@@ -36,7 +36,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
   const [batteries, setBatteries] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Ánh xạ Battery Type ID sang Tên 
+  // Ánh xạ Battery Type ID sang Tên
   const getBatteryTypeName = (id) => {
     const type = batteryTypes.find((t) => t.id === id);
     return type ? type.name : "—";
@@ -48,14 +48,18 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
     try {
       // API: GET /api/station/{id}/batteries (theo hình ảnh Swagger)
       const res = await api.get(`/station/${stationId}/batteries`);
-      
+
       // Dữ liệu API trả về mảng trực tiếp
-      const data = Array.isArray(res.data) 
-        ? res.data 
-        : (res.data?.data && Array.isArray(res.data.data) ? res.data.data : []);
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data && Array.isArray(res.data.data)
+        ? res.data.data
+        : [];
 
       setBatteries(data);
-      message.success(`Tải thành công ${data.length} pin tại trạm ${stationId}.`);
+      message.success(
+        `Tải thành công ${data.length} pin tại trạm ${stationId}.`
+      );
     } catch (err) {
       message.error("Lỗi khi tải danh sách pin tại trạm.");
       console.error("Lỗi API tải pin:", err);
@@ -96,13 +100,17 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
       title: "Mức sạc (%)",
       dataIndex: "chargeLevel",
       key: "chargeLevel",
-      render: (s) => <Tag color={s > 70 ? "green" : s > 20 ? "orange" : "red"}>{s}</Tag>,
+      render: (s) => (
+        <Tag color={s > 70 ? "green" : s > 20 ? "orange" : "red"}>{s}</Tag>
+      ),
     },
     {
       title: "Tình trạng pin (%)",
       dataIndex: "stateOfHealth",
       key: "stateOfHealth",
-      render: (s) => <Tag color={s > 70 ? "green" : s > 20 ? "orange" : "red"}>{s}</Tag>,
+      render: (s) => (
+        <Tag color={s > 70 ? "green" : s > 20 ? "orange" : "red"}>{s}</Tag>
+      ),
     },
     {
       title: "Trạng thái",
@@ -115,13 +123,15 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
           MAINTENANCE: "orange",
         };
         return <Tag color={colorMap[status] || "default"}>{status}</Tag>;
-      }
-    }
+      },
+    },
   ];
 
   return (
     <Modal
-      title={`Danh sách ${batteries.length}/${station?.capacity || 0} pin tại ${station?.name || ''}`}
+      title={`Danh sách ${batteries.length}/${station?.capacity || 0} pin tại ${
+        station?.name || ""
+      }`}
       open={isVisible}
       onCancel={onCancel}
       footer={null}
@@ -133,10 +143,10 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
         dataSource={batteries}
         loading={loading}
         rowKey="id"
-        pagination={{ 
+        pagination={{
           showTotal: (total, range) =>
             `${range[0]}-${range[1]} trên tổng ${total} pin`,
-          }}
+        }}
       />
     </Modal>
   );
@@ -152,7 +162,7 @@ const StationPage = () => {
   const [batteryTypes, setBatteryTypes] = useState([]);
   const [isBatteryModalVisible, setIsBatteryModalVisible] = useState(false);
   const [viewingStation, setViewingStation] = useState(null);
-  const Role = JSON.parse(localStorage.getItem('currentUser'))?.role; // Get role directly
+  const Role = JSON.parse(localStorage.getItem("currentUser"))?.role; // Get role directly
 
   // ---------------------------
   // 🚀 1. FETCH ALL STATIONS & BATTERY TYPES
@@ -163,7 +173,8 @@ const StationPage = () => {
   }, []);
 
   const fetchStations = async () => {
-    let apiPath = Role === "ADMIN" ? "/station" : "/staff-station-assignment/my-stations";
+    let apiPath =
+      Role === "ADMIN" ? "/station" : "/staff-station-assignment/my-stations";
     try {
       const res = await api.get(apiPath);
       setStations(res.data.sort((a, b) => b.id - a.id));
@@ -287,9 +298,9 @@ const StationPage = () => {
       dataIndex: "capacity",
       key: "capacity",
       render: (capacity, record) => (
-        <Space 
-          direction="vertical" 
-          size="small" 
+        <Space
+          direction="vertical"
+          size="small"
           //onClick={() => handleViewBatteries(record)}
           //style={{ cursor: "pointer" }}
         >
@@ -297,7 +308,7 @@ const StationPage = () => {
             <strong>{record.currentBatteryCount || 0}</strong> / {capacity} pin
           </span>
           <div
-            style={{  
+            style={{
               width: "100px",
               height: "6px",
               backgroundColor: "#bec2bf",
@@ -333,7 +344,11 @@ const StationPage = () => {
           INACTIVE: "red",
           "UNDER CONSTRUCTION": "blue",
         };
-        return <Tag color={colorMap[status?.toUpperCase()] || "default"}>{status}</Tag>;
+        return (
+          <Tag color={colorMap[status?.toUpperCase()] || "default"}>
+            {status}
+          </Tag>
+        );
       },
     },
     {
@@ -354,39 +369,39 @@ const StationPage = () => {
       render: (_, record) => (
         <Space size="middle">
           <Button
-            type="default" 
+            type="default"
             icon={<EyeOutlined />}
             size="small"
             onClick={() => handleViewBatteries(record)} // Gọi hàm mở Modal
           >
             Xem
           </Button>
-        {Role === "ADMIN" ? (
-          <Space size="small">
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              size="small"
-              onClick={() => handleEdit(record)}
-            >
-              Sửa
-            </Button>
-            <Button
-              type="primary"
-              danger
-              icon={<DeleteOutlined />}
-              size="small"
-              onClick={() => handleDelete(record.id)}
-            >
-              Xóa
-            </Button>
-          </Space>
-        ) : (
+          {Role === "ADMIN" ? (
+            <Space size="small">
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                size="small"
+                onClick={() => handleEdit(record)}
+              >
+                Sửa
+              </Button>
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+                onClick={() => handleDelete(record.id)}
+              >
+                Xóa
+              </Button>
+            </Space>
+          ) : (
             Role !== "ADMIN" && <Tag color="blue">Staff View</Tag> // Thêm tag Staff View nếu cần
-        )}
+          )}
         </Space>
       ),
-    }, 
+    },
   ];
   // ---------------------------
   // Filters + Summary
@@ -436,7 +451,11 @@ const StationPage = () => {
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card>
-            <Statistic title="Tổng sức chứa" value={totalCapacity} suffix="pin" />
+            <Statistic
+              title="Tổng sức chứa"
+              value={totalCapacity}
+              suffix="pin"
+            />
           </Card>
         </Col>
       </Row>
@@ -465,7 +484,11 @@ const StationPage = () => {
               <Option value="UNDER CONSTRUCTION">UNDER CONSTRUCTION</Option>
             </Select>
             {Role === "ADMIN" && ( // Corrected role check from "Admin" to "ADMIN"
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAdd}
+              >
                 Thêm Trạm
               </Button>
             )}
@@ -480,7 +503,7 @@ const StationPage = () => {
           pagination={{
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} trên tổng ${total} trạm`,
-            }}
+          }}
         />
       </Card>
 
@@ -519,7 +542,9 @@ const StationPage = () => {
               <Form.Item
                 name="city"
                 label="Tỉnh/Thành phố"
-                rules={[{ required: true, message: "Hãy nhập tỉnh/thành phố!" }]}
+                rules={[
+                  { required: true, message: "Hãy nhập tỉnh/thành phố!" },
+                ]}
               >
                 <Input placeholder="Ví dụ TP.HCM" />
               </Form.Item>
@@ -542,7 +567,10 @@ const StationPage = () => {
                 label="Vĩ độ"
                 rules={[{ required: true, message: "Hãy nhập vĩ độ!" }]}
               >
-                <InputNumber style={{ width: "100%" }} placeholder="Ví dụ: 10.7300" />
+                <InputNumber
+                  style={{ width: "100%" }}
+                  placeholder="Ví dụ: 10.7300"
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -551,7 +579,10 @@ const StationPage = () => {
                 label="Kinh độ"
                 rules={[{ required: true, message: "Hãy nhập kinh độ!" }]}
               >
-                <InputNumber style={{ width: "100%" }} placeholder="Ví dụ: 106.7000" />
+                <InputNumber
+                  style={{ width: "100%" }}
+                  placeholder="Ví dụ: 106.7000"
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -576,7 +607,7 @@ const StationPage = () => {
               </Form.Item>
             </Col>
           </Row>
-          
+
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -587,7 +618,8 @@ const StationPage = () => {
                 <Select placeholder="Chọn loại pin">
                   {batteryTypes.map((type) => (
                     <Option key={type.id} value={type.id}>
-                      {type.name} (Voltage: {type.voltage}, Capacity: {type.capacityAh}Ah)
+                      {type.name} (Voltage: {type.voltage}, Capacity:{" "}
+                      {type.capacityAh}Ah)
                     </Option>
                   ))}
                 </Select>
@@ -604,7 +636,9 @@ const StationPage = () => {
                     <Option value="ACTIVE">ACTIVE</Option>
                     <Option value="MAINTENANCE">MAINTENANCE</Option>
                     <Option value="INACTIVE">INACTIVE</Option>
-                    <Option value="UNDER CONSTRUCTION">UNDER CONSTRUCTION</Option>
+                    <Option value="UNDER CONSTRUCTION">
+                      UNDER CONSTRUCTION
+                    </Option>
                   </Select>
                 </Form.Item>
               </Col>

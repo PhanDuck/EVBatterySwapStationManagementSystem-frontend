@@ -1,16 +1,24 @@
 import { NavLink } from "react-router-dom";
-import { FiUsers, FiMap, FiTruck, FiCalendar, FiCreditCard, FiHelpCircle, FiBatteryCharging, FiSettings } from "react-icons/fi";
+import {
+  FiUsers,
+  FiMap,
+  FiTruck,
+  FiCalendar,
+  FiCreditCard,
+  FiHelpCircle,
+  FiBatteryCharging,
+  FiSettings,
+} from "react-icons/fi";
 import { Tooltip } from "antd";
 import { MdOutlinePayments } from "react-icons/md";
 import { TbMessageCircleQuestion } from "react-icons/tb";
-
 
 export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
   const base = role ? role.toLowerCase() : "";
 
   // static sidebar color (revert customization)
-  const roleColor = '#001529';
-  const textColor = '#fff';
+  const roleColor = "#001529";
+  const textColor = "#fff";
 
   const menu = {
     ADMIN: [
@@ -21,38 +29,69 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
       { path: "assignments", label: "Quản lý phân quyền", icon: <FiUsers /> },
       { path: "inventories", label: "Quản lý kho", icon: <FiSettings /> },
       { path: "bookings", label: "Quản lý đặt lịch", icon: <FiCalendar /> },
-      { path: "service-packages", label: "Quản lý gói cước", icon: <FiCreditCard /> },
-      { path: "transactions", label: "Quản lí giao dịch", icon: <MdOutlinePayments /> },
-      { path: "tickets", label: "Quản lý hỗ trợ", icon: <TbMessageCircleQuestion /> },
+      {
+        path: "service-packages",
+        label: "Quản lý gói cước",
+        icon: <FiCreditCard />,
+      },
+      {
+        path: "transactions",
+        label: "Quản lí giao dịch",
+        icon: <MdOutlinePayments />,
+      },
+      {
+        path: "tickets",
+        label: "Quản lý hỗ trợ",
+        icon: <TbMessageCircleQuestion />,
+      },
     ],
     STAFF: [
       { path: "bookings", label: "Quản lý đặt lịch", icon: <FiCalendar /> },
       { path: "stations", label: "Quản lý trạm đổi pin", icon: <FiMap /> },
       { path: "inventories", label: "Quản lý kho", icon: <FiSettings /> },
-      { path: "tickets", label: "Quản lý hỗ trợ", icon: <TbMessageCircleQuestion /> },
+      {
+        path: "tickets",
+        label: "Quản lý hỗ trợ",
+        icon: <TbMessageCircleQuestion />,
+      },
     ],
     DRIVER: [
       { path: "bookings", label: "Lịch đặt của tôi", icon: <FiCalendar /> },
       { path: "vehicles", label: "Xe điện của tôi", icon: <FiTruck /> },
-      { path: "transactions", label: "Giao dịch của tôi", icon: <MdOutlinePayments /> },
-      { path: "driver-subscription", label: "Quản lý đăng ký", icon: <FiHelpCircle /> },
+      {
+        path: "transactions",
+        label: "Giao dịch của tôi",
+        icon: <MdOutlinePayments />,
+      },
+      {
+        path: "driver-subscription",
+        label: "Quản lý đăng ký",
+        icon: <FiHelpCircle />,
+      },
       { path: "tickets", label: "Hỗ trợ", icon: <TbMessageCircleQuestion /> },
     ],
   };
 
-
   return (
     <aside
       className={`${collapsed ? "w-20" : ""} p-4 min-h-screen`}
-      style={{ transition: "width 220ms ease", background: roleColor, color: textColor }}
+      style={{
+        transition: "width 220ms ease",
+        background: roleColor,
+        color: textColor,
+      }}
     >
-      <div className={`mb-6 flex items-baseline gap-3 ${collapsed ? "justify-center" : ""}`}>
+      <div
+        className={`mb-6 flex items-baseline gap-3 ${
+          collapsed ? "justify-center" : ""
+        }`}
+      >
         <div style={{ paddingBottom: 12 }}>
           <div
             className={`w-10 h-10 rounded flex items-center justify-center font-bold ${
               collapsed ? "mx-auto" : ""
             }`}
-            style={{ background: '#f5af19', color: '#111' }}
+            style={{ background: "#f5af19", color: "#111" }}
           >
             EV
           </div>
@@ -68,7 +107,9 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
         >
           {!collapsed && (
             <>
-              <div className="text-lg font-bold" style={{ opacity: 0.85 }}>{role}</div>
+              <div className="text-lg font-bold" style={{ opacity: 0.85 }}>
+                {role}
+              </div>
             </>
           )}
         </div>
@@ -81,7 +122,9 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
             to={`/${base}/${item.path}`}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                isActive ? "active text-white font-semibold" : "text-gray-200 hover:bg-gray-800 hover:text-white"
+                isActive
+                  ? "active text-white font-semibold"
+                  : "text-gray-200 hover:bg-gray-800 hover:text-white"
               }`
             }
           >

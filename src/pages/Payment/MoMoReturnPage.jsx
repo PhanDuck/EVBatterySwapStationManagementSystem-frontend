@@ -29,7 +29,11 @@ export default function MoMoReturnPage() {
           status="success"
           title="Thanh toán thành công!"
           subTitle="Cảm ơn bạn đã sử dụng dịch vụ."
-          extra={<Button type="primary" href="/">Về trang chủ</Button>}
+          extra={
+            <Button type="primary" href="/">
+              Về trang chủ
+            </Button>
+          }
         />
       ) : (
         <Result

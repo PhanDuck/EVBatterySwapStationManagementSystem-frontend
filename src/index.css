@@ -1,5 +1,8 @@
 @import "tailwindcss";
-body { font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+body {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
 
 html,
 body,
@@ -8,8 +11,8 @@ body,
   margin: 0;
   padding: 0;
 }
-p{
-      margin-bottom: 0;
+p {
+  margin-bottom: 0;
 }
 .ev-dashboard {
   height: 100vh !important; /* 👈 đảm bảo layout luôn full màn hình */

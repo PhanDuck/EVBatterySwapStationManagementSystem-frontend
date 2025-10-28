@@ -61,19 +61,19 @@ const LoginPage = () => {
     e.preventDefault();
     if (validateForm()) {
       setIsLoading(true);
-      
+
       try {
         //Call login API
         const res = await api.post("/login", {
           phone: formData.phoneNumber,
           password: formData.password,
         });
-        
-      //  const res = await fetch(`http://103.200.20.190:8080/api/login/auth/login`, {
-      //     method: "POST",
-      //     body: JSON.stringify(data),
-      //     headers: { "Content-Type": "application/json" },
-      //   })
+
+        //  const res = await fetch(`http://103.200.20.190:8080/api/login/auth/login`, {
+        //     method: "POST",
+        //     body: JSON.stringify(data),
+        //     headers: { "Content-Type": "application/json" },
+        //   })
 
         const token =
           res?.data?.token ||
@@ -326,24 +326,24 @@ const LoginPage = () => {
                 Sign up here
               </Link>
             </p> */}
-            <div className="space-y-4 pt-2">
-                <p className="text-sm text-gray-600 text-center">
-                    Don't have an account?
-                </p>
-                <br></br>
-                <Link
-                    to="/register"
-                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                    style={{ color: "white" }}
-                >
-                    Sign up here
-                </Link>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-gray-600 text-center">
+              Don't have an account?
+            </p>
+            <br></br>
+            <Link
+              to="/register"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              style={{ color: "white" }}
+            >
+              Sign up here
+            </Link>
             <div className="mt-4">
               <Link
-                  to="/"
-                  className="group relative w-full flex justify-center py-3 px-4 border-2 border-gray-300 text-sm font-semibold rounded-xl text-gray-800 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                to="/"
+                className="group relative w-full flex justify-center py-3 px-4 border-2 border-gray-300 text-sm font-semibold rounded-xl text-gray-800 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                  Về trang chủ
+                Về trang chủ
               </Link>
             </div>
           </div>
