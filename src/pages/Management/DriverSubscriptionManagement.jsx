@@ -222,7 +222,7 @@ export default function DriverSubscriptionManagement() {
     { title: "Ngày hết hạn", dataIndex: "endDate", key: "endDate", render: (text) => dayjs(text).format('DD/MM/YYYY') },
     { title: "Trạng thái", dataIndex: "status", key: "status", render: (s) => <Tag color={s === "ACTIVE" ? "green" : "red"}>{s}</Tag> },
     { title: "Lần đổi còn lại", dataIndex: "remainingSwaps", key: "remainingSwaps" },
-    ...(role === "DRIVER" ? [{ title: "Thao tác", key: "actions", render: (_, record) => (
+    ...(role === "DRIVER" ? [{ title: "Thao tác", key: "actions", fixed: "right", render: (_, record) => (
         <Space>
           <Button icon={<ArrowUpOutlined />} onClick={() => openUpgradeModal(record)} disabled={record.status !== "ACTIVE"}>Nâng cấp</Button>
           <Button icon={<ArrowDownOutlined />} type="primary" danger onClick={() => openDowngradeModal(record)} disabled={record.status !== "ACTIVE"}>Hạ cấp</Button>

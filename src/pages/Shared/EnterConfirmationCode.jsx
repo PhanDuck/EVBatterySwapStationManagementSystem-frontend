@@ -354,8 +354,8 @@ const EnterConfirmationCode = () => {
               // Đã được căn giữa nhờ container <Space>
             }}
           >
-            <Row gutter={24} style={{ marginBottom: 24 }}>
-              <Col span={12}>
+            <Row gutter={24} style={{ marginBottom: 24 }} align="middle">
+              <Col span={11}>
                 {/* Bảng pin cũ */}
                 {step === 2 && !oldBattery ? (
                   <Card
@@ -383,7 +383,10 @@ const EnterConfirmationCode = () => {
                   />
                 )}
               </Col>
-              <Col span={12}>
+              <Col span={2} style={{ textAlign: "center" }}>
+                <SwapOutlined style={{ fontSize: "24px", color: "#1890ff" }} />
+              </Col>
+              <Col span={11}>
                 {/* Bảng pin mới */}
                 <BatteryInfoCard
                   title="Pin mới (Sẽ lắp vào)"

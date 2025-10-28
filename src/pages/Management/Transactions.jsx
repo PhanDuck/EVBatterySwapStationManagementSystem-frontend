@@ -175,11 +175,11 @@ const TransactionsPage = () => {
       dataIndex: "status",
       render: (status) => {
         const colorMap = {
-          Completed: "green",
-          Pending: "blue",
-          Failed: "red",
-          Processed: "orange",
-          Cancelled: "gray",
+          COMPLETED: "green",
+          PENDING: "blue",
+          FAILED: "red",
+          PROCESSED: "orange",
+          CANCELLED: "gray",
         };
         return <Tag color={colorMap[status]}>{status}</Tag>;
       },

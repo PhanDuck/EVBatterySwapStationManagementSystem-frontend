@@ -362,6 +362,7 @@ export default function BookingsPage() {
     {
       title: "Thao tác",
       key: "actions",
+      fixed: "right",
       render: (_, record) => {
         const isCancellableStatus = record.status === "PENDING" || record.status === "CONFIRMED";
         return (

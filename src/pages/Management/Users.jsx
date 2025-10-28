@@ -201,6 +201,7 @@ export default function AccountPage() {
     {
       title: "Thao tác",
       key: "actions",
+      fixed: "right",
       render: (_, record) => {
         const id = record.id ?? record._id;
         return (
@@ -307,9 +308,9 @@ export default function AccountPage() {
             rules={[{ required: true, message: "Chọn vai trò!" }]}
           >
             <Select placeholder="Chọn vai trò">
-              <Option value="ADMIN">Admin</Option>
-              <Option value="STAFF">Staff</Option>
-              <Option value="DRIVER">Driver</Option>
+              <Option value="ADMIN">ADMIN</Option>
+              <Option value="STAFF">STAFF</Option>
+              <Option value="DRIVER">DRIVER</Option>
             </Select>
           </Form.Item>
 
@@ -319,8 +320,8 @@ export default function AccountPage() {
             rules={[{ required: true, message: "Chọn trạng thái!" }]}
           >
             <Select placeholder="Chọn trạng thái">
-              <Option value="ACTIVE">Active</Option>
-              <Option value="INACTIVE">Inactive</Option>
+              <Option value="ACTIVE">ACTIVE</Option>
+              <Option value="INACTIVE">INACTIVE</Option>
             </Select>
           </Form.Item>
 

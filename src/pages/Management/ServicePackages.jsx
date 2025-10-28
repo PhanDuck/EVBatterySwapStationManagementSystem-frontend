@@ -172,8 +172,9 @@ const ServicePackagesPage = () => {
     },
     { title: "Mô tả", dataIndex: "description", key: "description" },
     {
-      title: "Hành động",
+      title: "Thao tác",
       key: "actions",
+      fixed: "right",
       render: (_, record) => (
         <Space size="middle">
           <Button
@@ -250,6 +251,7 @@ const ServicePackagesPage = () => {
     {
       title: "Thao tác",
       key: "actions",
+      fixed: "right",
       render: (_, record) => (
         <Button
           type="primary"

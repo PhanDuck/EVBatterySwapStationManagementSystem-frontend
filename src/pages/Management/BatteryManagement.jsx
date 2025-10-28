@@ -304,10 +304,10 @@ export default function BatteryManagement() {
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
             name="model"
-            label="Model Pin"
-            rules={[{ required: true, message: "Vui lòng nhập model" }]}
+            label="Mẫu Pin"
+            rules={[{ required: true, message: "Vui lòng nhập mẫu" }]}
           >
-            <Input placeholder="Nhập model pin" />
+            <Input placeholder="Nhập mẫu pin" />
           </Form.Item>
 
           <Form.Item
@@ -321,7 +321,7 @@ export default function BatteryManagement() {
           <Form.Item
             name="stateOfHealth"
             label="Tình trạng pin (%)"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: "Vui lòng nhập tình trạng pin" }]}
           >
             <InputNumber style={{ width: "100%" }} min={0} max={100} />
           </Form.Item>
@@ -329,7 +329,7 @@ export default function BatteryManagement() {
           <Form.Item
             name="status"
             label="Trạng thái"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
           >
             <Select>
               <Option value="AVAILABLE">AVAILABLE</Option>
@@ -340,7 +340,7 @@ export default function BatteryManagement() {
           <Form.Item
             name="batteryTypeId"
             label="Loại pin"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: "Vui lòng chọn loại pin" }]}
           >
             <Select placeholder="Chọn loại pin">
               {batteryTypes.map((t) => (
@@ -364,7 +364,7 @@ export default function BatteryManagement() {
           <Form.Item
             name="manufactureDate"
             label="Ngày sản xuất"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: "Vui lòng chọn ngày sản xuất" }]}
           >
             <DatePicker style={{ width: "100%" }} />
           </Form.Item>

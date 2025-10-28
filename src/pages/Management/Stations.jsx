@@ -21,6 +21,7 @@ import {
   DeleteOutlined,
   EnvironmentOutlined,
   ThunderboltOutlined,
+  EyeOutlined,
   CarOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
@@ -134,7 +135,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
         rowKey="id"
         pagination={{ 
           showTotal: (total, range) =>
-            `${range[0]}-${range[1]} trên tổng ${total} trạm`,
+            `${range[0]}-${range[1]} trên tổng ${total} pin`,
           }}
       />
     </Modal>
@@ -289,11 +290,11 @@ const StationPage = () => {
         <Space 
           direction="vertical" 
           size="small" 
-          onClick={() => handleViewBatteries(record)}
-          style={{ cursor: "pointer" }}
+          //onClick={() => handleViewBatteries(record)}
+          //style={{ cursor: "pointer" }}
         >
           <span>
-            <strong>{record.currentBatteryCount || 0}</strong> / {capacity} slots
+            <strong>{record.currentBatteryCount || 0}</strong> / {capacity} pin
           </span>
           <div
             style={{  
@@ -348,9 +349,20 @@ const StationPage = () => {
     {
       title: "Thao tác",
       key: "actions",
-      render: (_, record) =>
-        Role === "ADMIN" ? ( // Corrected role check from "Admin" to "ADMIN"
-          <Space size="middle">
+      fixed: "right",
+      width: 160,
+      render: (_, record) => (
+        <Space size="middle">
+          <Button
+            type="default" 
+            icon={<EyeOutlined />}
+            size="small"
+            onClick={() => handleViewBatteries(record)} // Gọi hàm mở Modal
+          >
+            Xem
+          </Button>
+        {Role === "ADMIN" ? (
+          <Space size="small">
             <Button
               type="primary"
               icon={<EditOutlined />}
@@ -370,11 +382,12 @@ const StationPage = () => {
             </Button>
           </Space>
         ) : (
-          <Tag color="default">View Only</Tag>
-        ),
-    },
+            Role !== "ADMIN" && <Tag color="blue">Staff View</Tag> // Thêm tag Staff View nếu cần
+        )}
+        </Space>
+      ),
+    }, 
   ];
-
   // ---------------------------
   // Filters + Summary
   // ---------------------------
@@ -423,7 +436,7 @@ const StationPage = () => {
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card>
-            <Statistic title="Tổng sức chứa" value={totalCapacity} suffix="slots" />
+            <Statistic title="Tổng sức chứa" value={totalCapacity} suffix="pin" />
           </Card>
         </Col>
       </Row>
@@ -473,7 +486,7 @@ const StationPage = () => {
 
       {/* Modal Form */}
       <Modal
-        title={editingStation ? "Edit Station" : "Add New Station"}
+        title={editingStation ? "Sửa trạm" : "Thêm trạm mới"}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
@@ -484,19 +497,19 @@ const StationPage = () => {
             <Col span={12}>
               <Form.Item
                 name="name"
-                label="Station Name"
-                rules={[{ required: true, message: "Please input station name!" }]}
+                label="Tên trạm"
+                rules={[{ required: true, message: "Hãy nhập tên trạm!" }]}
               >
-                <Input placeholder="Enter station name" />
+                <Input placeholder="Nhập tên trạm" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 name="location"
-                label="Address"
-                rules={[{ required: true, message: "Please input address!" }]}
+                label="Địa chỉ"
+                rules={[{ required: true, message: "Hãy nhập địa chỉ!" }]}
               >
-                <Input placeholder="Enter station address" />
+                <Input placeholder="Nhập địa chỉ" />
               </Form.Item>
             </Col>
           </Row>
@@ -505,19 +518,19 @@ const StationPage = () => {
             <Col span={12}>
               <Form.Item
                 name="city"
-                label="City"
-                rules={[{ required: true, message: "Please input city!" }]}
+                label="Tỉnh/Thành phố"
+                rules={[{ required: true, message: "Hãy nhập tỉnh/thành phố!" }]}
               >
-                <Input placeholder="e.g. TP.HCM" />
+                <Input placeholder="Ví dụ TP.HCM" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 name="district"
-                label="District"
-                rules={[{ required: true, message: "Please input district!" }]}
+                label="Quận/Huyện"
+                rules={[{ required: true, message: "Hãy nhập quận/huyện!" }]}
               >
-                <Input placeholder="e.g. Quận 7" />
+                <Input placeholder="Ví dụ: Quận 7" />
               </Form.Item>
             </Col>
           </Row>
@@ -526,19 +539,19 @@ const StationPage = () => {
             <Col span={12}>
               <Form.Item
                 name="latitude"
-                label="Latitude"
-                rules={[{ required: true, message: "Please input latitude!" }]}
+                label="Vĩ độ"
+                rules={[{ required: true, message: "Hãy nhập vĩ độ!" }]}
               >
-                <InputNumber style={{ width: "100%" }} placeholder="e.g. 10.7300" />
+                <InputNumber style={{ width: "100%" }} placeholder="Ví dụ: 10.7300" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 name="longitude"
-                label="Longitude"
-                rules={[{ required: true, message: "Please input longitude!" }]}
+                label="Kinh độ"
+                rules={[{ required: true, message: "Hãy nhập kinh độ!" }]}
               >
-                <InputNumber style={{ width: "100%" }} placeholder="e.g. 106.7000" />
+                <InputNumber style={{ width: "100%" }} placeholder="Ví dụ: 106.7000" />
               </Form.Item>
             </Col>
           </Row>
@@ -547,8 +560,8 @@ const StationPage = () => {
             <Col span={12}>
               <Form.Item
                 name="capacity"
-                label="Capacity (slots)"
-                rules={[{ required: true, message: "Please input capacity!" }]}
+                label="Sức chứa"
+                rules={[{ required: true, message: "Hãy nhập sức chứa!" }]}
               >
                 <InputNumber min={1} style={{ width: "100%" }} />
               </Form.Item>
@@ -556,10 +569,10 @@ const StationPage = () => {
             <Col span={12}>
               <Form.Item
                 name="contactInfo"
-                label="Contact Phone"
-                rules={[{ required: true, message: "Please input phone number!" }]}
+                label="Số liên hệ"
+                rules={[{ required: true, message: "Hãy nhập số liên hệ!" }]}
               >
-                <Input placeholder="Enter contact phone" />
+                <Input placeholder="Nhập số liên hệ" />
               </Form.Item>
             </Col>
           </Row>
@@ -568,10 +581,10 @@ const StationPage = () => {
             <Col span={12}>
               <Form.Item
                 name="batteryTypeId"
-                label="Battery Type"
-                rules={[{ required: true, message: "Please select a battery type!" }]}
+                label="Loại pin"
+                rules={[{ required: true, message: "Hãy chọn loại pin!" }]}
               >
-                <Select placeholder="Select a battery type">
+                <Select placeholder="Chọn loại pin">
                   {batteryTypes.map((type) => (
                     <Option key={type.id} value={type.id}>
                       {type.name} (Voltage: {type.voltage}, Capacity: {type.capacityAh}Ah)
@@ -584,14 +597,14 @@ const StationPage = () => {
               <Col span={12}>
                 <Form.Item
                   name="status"
-                  label="Status"
-                  rules={[{ required: true, message: "Please select status!" }]}
+                  label="Trạng thái"
+                  rules={[{ required: true, message: "Hãy chọn trạng thái!" }]}
                 >
                   <Select placeholder="Select status">
-                    <Option value="ACTIVE">Active</Option>
-                    <Option value="MAINTENANCE">Maintenance</Option>
-                    <Option value="INACTIVE">Inactive</Option>
-                    <Option value="UNDER CONSTRUCTION">Under Construction</Option>
+                    <Option value="ACTIVE">ACTIVE</Option>
+                    <Option value="MAINTENANCE">MAINTENANCE</Option>
+                    <Option value="INACTIVE">INACTIVE</Option>
+                    <Option value="UNDER CONSTRUCTION">UNDER CONSTRUCTION</Option>
                   </Select>
                 </Form.Item>
               </Col>

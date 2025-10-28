@@ -417,6 +417,7 @@ export default function InventoryPage() {
     {
       title: "Thao tác",
       key: "actions",
+      fixed: "right",
       width: FIXED_COL_WIDTH.ACTIONS,
       render: (_, record) => (
         <Space>
@@ -518,6 +519,7 @@ export default function InventoryPage() {
     {
       title: "Thao tác",
       key: "actions",
+      fixed: "right",
       width: FIXED_COL_WIDTH.ACTIONS,
       render: (_, record) => (  
         <Space>
@@ -531,7 +533,7 @@ export default function InventoryPage() {
                 size="small"
                 setOpen={true}
               >
-                Cập nhật tình trạng
+                Cập nhật
               </Button>
             </Tooltip>
           )}

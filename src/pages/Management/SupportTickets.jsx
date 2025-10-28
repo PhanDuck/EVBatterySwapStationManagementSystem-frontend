@@ -272,6 +272,7 @@ export default function SupportPage() {
     {
       title: "Thao tác",
       key: "actions",
+      fixed: "right",
       render: (_, record) => (
         <Space>
           <Button

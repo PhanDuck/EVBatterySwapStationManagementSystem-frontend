@@ -376,6 +376,7 @@ export default function AssignmentPage() {
     {
       title: "Thao tác",
       key: "actions",
+      fixed: "right",
       render: (_, record) => (
         <Popconfirm
           title="Xác nhận xóa phân quyền này?"

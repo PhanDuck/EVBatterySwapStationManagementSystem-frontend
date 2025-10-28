@@ -27,6 +27,7 @@ import {
   HeartOutlined, 
   CalendarOutlined, 
   EnvironmentOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 
@@ -489,45 +490,54 @@ const VehicleSwapHistoryModal = ({
       key: "swapCount",
       width: 120,
       sorter: (a, b) => (a.swapCount || 0) - (b.swapCount || 0),
-      render: (swapCount, record) => (
-        <Button
-          type="link"
-          onClick={() => handleViewHistory(record.id)}
-          style={{ padding: 0, height: 'auto', lineHeight: 'normal' }}
-        >
-          <Text style={{ color: '#000000ff' }}>
-            {swapCount === undefined ? <Spin size="small" /> : swapCount}
-          </Text>
-        </Button>
+      render: (swapCount) => (
+        <Text style={{ color: '#000000ff' }}>
+          {swapCount === undefined ? <Spin size="small" /> : swapCount}
+        </Text>
       ),
     },
     {
       title: "Thao tác",
       key: "actions",
+      fixed: "right",
       render: (_, record) => {
         const isDriver = role === "DRIVER";
-        return isDriver ? (
-          <Tag color="blue">View only</Tag>
-        ) : (
+        return (
           <Space>
+            {/* 🆕 Nút Xem lịch sử cho TẤT CẢ các vai trò */}
             <Button
-              type="primary"
-              icon={<EditOutlined />}
+              type="default" // Có thể dùng 'default' hoặc 'dashed'
+              icon={<EyeOutlined />}
               size="small"
-              onClick={() => handleEdit(record)}
+              onClick={() => handleViewHistory(record.id)} // Gọi hàm xem lịch sử
             >
-              Sửa
+              Xem lịch sử
             </Button>
-            <Button
-              type="primary"
-              danger
-              icon={<DeleteOutlined />}
-              size="small"
-              onClick={() => handleDelete(record.id)}
-              disabled={record.status === 'INACTIVE'}
-            >
-              Xóa
-            </Button>
+
+            {isDriver ? (
+              <Tag color="blue">View only</Tag>
+            ) : (
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  size="small"
+                  onClick={() => handleEdit(record)}
+                >
+                  Sửa
+                </Button>
+                <Button
+                  type="primary"
+                  danger
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  onClick={() => handleDelete(record.id)}
+                  disabled={record.status === 'INACTIVE'}
+                >
+                  Xóa
+                </Button>
+              </Space>
+            )}
           </Space>
         );
       },
