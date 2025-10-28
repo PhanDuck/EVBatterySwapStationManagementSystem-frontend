@@ -40,8 +40,6 @@ export default function BookingsPage() {
   const [form] = Form.useForm();
   const [search, setSearch] = useState("");
   const [editingRecord, setEditingRecord] = useState(null);
-  
-  // State mới cho modal hủy booking
   const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
   const [cancellingBooking, setCancellingBooking] = useState(null);
   const [cancelForm] = Form.useForm();
@@ -350,6 +348,17 @@ export default function BookingsPage() {
         return <Tag color={color}>{s}</Tag>;
       },
     },
+    // Mã đổi pin (Chỉ hiển thị cho ADMIN và DRIVER)
+    ...(role === "ADMIN" || role === "DRIVER"
+      ? [
+          {
+            title: "Mã xác nhận",
+            dataIndex: "confirmationCode",  
+            key: "confirmationCode",
+            render: (code) => <p>{code || "-"}</p>, // Hiển thị mã đổi pin
+          },
+        ]
+      : []), // Trả về mảng rỗng nếu là STAFF hoặc vai trò khác
     {
       title: "Thao tác",
       key: "actions",

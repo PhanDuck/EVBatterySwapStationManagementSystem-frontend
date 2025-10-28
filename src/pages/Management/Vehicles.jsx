@@ -64,7 +64,7 @@ const VehicleSwapHistoryModal = ({
   onClose,
   vehicleHistory,
   loading,
-  vehicleId,
+  //vehicleId,
   stations,
 }) => {
   const swapCount = vehicleHistory.length;
@@ -75,17 +75,17 @@ const VehicleSwapHistoryModal = ({
 
     const isSwapIn = type === "new";
     const batteryId = isSwapIn
-      ? batteryData?.swapInBatteryId
-      : batteryData?.swapOutBatteryId;
+      ? batteryData?.swapOutBatteryId
+      : batteryData?.swapInBatteryId;
     const model = isSwapIn
-      ? batteryData?.swapInBatteryModel
-      : batteryData?.swapOutBatteryModel;
+      ? batteryData?.swapOutBatteryModel
+      : batteryData?.swapInBatteryModel;
     const chargeLevel = isSwapIn
-      ? batteryData?.swapInBatteryChargeLevel
-      : batteryData?.swapOutBatteryChargeLevel;
+      ? batteryData?.swapOutBatteryChargeLevel
+      : batteryData?.swapInBatteryChargeLevel;
     const soh = isSwapIn
-      ? batteryData?.swapInBatteryHealth
-      : batteryData?.swapOutBatteryHealth;
+      ? batteryData?.swapOutBatteryHealth
+      : batteryData?.swapInBatteryHealth;
 
     return (
       <Card
@@ -157,7 +157,7 @@ const VehicleSwapHistoryModal = ({
     );
   };
 
-  const HistoryItem = ({ transaction }) => {
+  const HistoryItem = ({ transaction, index, totalSwaps }) => {
     // 💡 Sử dụng JS Date Object để định dạng thay vì moment
     const date = new Date(transaction.endTime);
     const timeString = date.toLocaleTimeString("vi-VN", {
@@ -168,6 +168,7 @@ const VehicleSwapHistoryModal = ({
     const dateTimeFormatted = `${timeString} ${dateString}`;
     const station = stations.find(s => s.id === transaction.stationId);
     const stationName = station ? station.name : "Trạm không rõ";
+    const swapNumber = totalSwaps - index;
 
       return (
         <Card
@@ -186,8 +187,11 @@ const VehicleSwapHistoryModal = ({
           >
             <Col>
               <Title level={5} style={{ margin: 0 }}>
-                ID Giao dịch: <Text code>{transaction.id}</Text>
+                Lần giao dịch {swapNumber}
               </Title>
+              <Text type="secondary" style={{ fontSize: "0.85em" }}>
+                ID: <Text code>{transaction.id}</Text>
+              </Text>
               <Space size="small" style={{ marginTop: 4 }}>
                 <CalendarOutlined style={{ color: "#1890ff" }} />
                 <Text type="secondary" style={{ fontSize: "0.85em" }}>
@@ -200,12 +204,12 @@ const VehicleSwapHistoryModal = ({
                 <EnvironmentOutlined style={{ color: "#52c41a" }} />
                 <Text strong>{stationName}</Text>
               </Space>
-              <Text
+              {/* <Text
                 type="secondary"
                 style={{ display: "block", fontSize: "0.85em" }}
               >
                 NV: {transaction.staffName || "N/A"}
-              </Text>
+              </Text> */}
             </Col>
           </Row>
 
@@ -237,7 +241,7 @@ const VehicleSwapHistoryModal = ({
     <Modal
       title={
         <Title level={3} style={{ margin: 0 }}>
-          Lịch sử <Tag color="blue">{swapCount}</Tag> lần đổi pin cho Xe ID: {vehicleId}
+          Lịch sử đổi pin của xe
         </Title>
       }
       open={open}
@@ -252,8 +256,13 @@ const VehicleSwapHistoryModal = ({
         ) : (
           <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '10px' }}>
             {/* Sắp xếp history theo endTime mới nhất trước */}
-            {vehicleHistory.map((item) => (
-              <HistoryItem transaction={item} key={item.id} />
+            {vehicleHistory.map((item, index) => (
+              <HistoryItem 
+                transaction={item} 
+                key={item.id} 
+                index={index} 
+                totalSwaps={swapCount} // ⬅️ Thêm totalSwaps
+              />
             ))}
           </div>
         )}
@@ -486,7 +495,7 @@ const VehicleSwapHistoryModal = ({
           onClick={() => handleViewHistory(record.id)}
           style={{ padding: 0, height: 'auto', lineHeight: 'normal' }}
         >
-          <Text strong style={{ color: '#000000ff' }}>
+          <Text style={{ color: '#000000ff' }}>
             {swapCount === undefined ? <Spin size="small" /> : swapCount}
           </Text>
         </Button>
