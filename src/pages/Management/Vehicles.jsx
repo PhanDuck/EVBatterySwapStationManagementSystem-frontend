@@ -653,6 +653,7 @@ const VehiclePage = () => {
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 250 }}
             />
+
             {isDriver && (
               <Button
                 type="primary"
@@ -660,6 +661,7 @@ const VehiclePage = () => {
                 onClick={handleAdd}
               >
                 Đăng ký xe mới
+
               </Button>
             )}
           </Space>

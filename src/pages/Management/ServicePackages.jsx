@@ -51,8 +51,10 @@ const ServicePackagesPage = () => {
 
   const fetchDriverSubscriptions = async () => {
     try {
-      const res = await api.get("/driver-subscription");
-      setDriverSubscriptions(res.data.sort((a, b) => b.id - a.id));
+
+      const res = await api.get("/driver-subscription/my-subscriptions");
+      setDriverSubscriptions(res.data.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
+
     } catch (err) {
       message.error("Failed to fetch driver subscriptions");
       console.error(err);
@@ -154,10 +156,12 @@ const ServicePackagesPage = () => {
       render: (price) =>
         price.toLocaleString("vi-VN", { style: "currency", currency: "VND" }),
     },
+    { title: "Max Swaps", dataIndex: "maxSwaps", key: "maxSwaps" },
     {
       title: "Thời hạn",
       dataIndex: "duration",
       key: "duration",
+<<<<<<< Updated upstream
       render: (days) => `${days || 0} ngày`,
     },
     {
@@ -165,6 +169,9 @@ const ServicePackagesPage = () => {
       dataIndex: "maxSwaps",
       key: "maxSwaps",
       render: (swaps) => `${swaps || 0} lần`,
+=======
+      render: (days) => `${days} ngày`,
+>>>>>>> Stashed changes
     },
     { title: "Mô tả", dataIndex: "description", key: "description" },
     {
@@ -195,6 +202,10 @@ const ServicePackagesPage = () => {
     },
   ];
 
+<<<<<<< Updated upstream
+=======
+  // Create maps for quick lookups
+>>>>>>> Stashed changes
   const userMap = useMemo(
     () => new Map(users.map((user) => [user.id, user.fullName])),
     [users]
@@ -297,7 +308,11 @@ const ServicePackagesPage = () => {
         />
       </Card>
 
+<<<<<<< Updated upstream
       <Card title="Quản lý gói cước của tài xế" style={{ marginTop: "24px" }}>
+=======
+      <Card title="Driver Subscriptions" style={{ marginTop: "24px" }}>
+>>>>>>> Stashed changes
         <Table
           columns={subscriptionColumns}
           dataSource={driverSubscriptions}
@@ -368,6 +383,13 @@ const ServicePackagesPage = () => {
             />
           </Form.Item>
 
+          <Form.Item
+            name="maxSwaps"
+            label="Max Swaps"
+            rules={[{ required: true }]}
+          >
+            <InputNumber min={1} style={{ width: "100%" }} />
+          </Form.Item>
           <Form.Item
             name="description"
             label="Mô tả"

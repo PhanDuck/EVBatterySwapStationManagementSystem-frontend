@@ -22,6 +22,8 @@ import {
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
+import { MdOutlineCancel } from "react-icons/md";
+import { FaDeleteLeft } from "react-icons/fa6";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -211,7 +213,7 @@ export default function BookingsPage() {
   // ✅ Xác nhận booking
   const handleConfirm = async (record) => {
     try {
-      const res = await api.patch(`/booking/${record.id}/confirm`);
+      const res = await api.delete(`/booking/staff/${record.id}/cancel`);
       setData((prev) =>
         prev.map((item) =>
           item.id === record.id
@@ -219,10 +221,10 @@ export default function BookingsPage() {
             : item
         )
       );
-      message.success("Xác nhận booking thành công!");
+      message.success("Xóa booking thành công!");
     } catch (err) {
-      console.error("Confirm booking error:", err);
-      message.error("Không thể xác nhận booking!");
+      console.error("Xóa booking không thành công:", err);
+      message.error("Không thể xóa booking!");
     }
   };
 
@@ -351,7 +353,7 @@ export default function BookingsPage() {
           s === "COMPLETED"
             ? "green"
             : s === "CONFIRMED"
-            ? "blue"
+            ? "orange"
             : s === "PENDING"
             ? "orange"
             : "red";
@@ -372,49 +374,31 @@ export default function BookingsPage() {
     {
       title: "Thao tác",
       key: "actions",
-      fixed: "right",
-      render: (_, record) => {
-        const isCancellableStatus =
-          record.status === "PENDING" || record.status === "CONFIRMED";
-        return (
-          <Space>
-            {/* Nút Hủy */}
-            {isCancellableStatus && (role === "ADMIN" || role === "STAFF") && (
+
+      render: (_, record) => (
+        <Space>
+          {(role === "ADMIN" || role === "STAFF") &&
+            record.status === "CONFIRMED" && (
               <Button
-                type="primary"
                 danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => handleAdminCancelBooking(record)} // Dùng hàm cho Admin/Staff
+                icon={<FaDeleteLeft />}
+                onClick={() => handleConfirm(record)}
               >
-                Hủy
+                Cancel
               </Button>
             )}
 
-            {isCancellableStatus && role === "DRIVER" && (
-              <Button
-                type="primary"
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => handleDriverCancelBooking(record)} // Dùng hàm cho Driver
-              >
-                Hủy
-              </Button>
-            )}
-
-            {/* Nút Xác nhận (Chỉ Admin/Staff) */}
-            {(role === "ADMIN" || role === "STAFF") &&
-              record.status === "PENDING" && (
-                <Button
-                  type="primary"
-                  icon={<CheckOutlined />}
-                  onClick={() => handleConfirm(record)}
-                >
-                  Xác nhận
-                </Button>
-              )}
-          </Space>
-        );
-      },
+          {role === "DRIVER" && record.status === "CONFIRMED" && (
+            <Button
+              danger
+              icon={<CloseCircleOutlined />}
+              onClick={() => handleCancelBooking(record)}
+            >
+              Cancel
+            </Button>
+          )}
+        </Space>
+      ),
     },
   ];
 

@@ -21,8 +21,10 @@ import {
 } from "@ant-design/icons";
 import axios from "axios";
 
-const EnterConfirmationCode = () => {
+
+export default function SwapAnimation() {
   const [code, setCode] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Nhập code, 2: Cho pin vào, 3: Sẵn sàng Swap
   const [newBattery, setNewBattery] = useState(null); // Pin mới sắp lắp vào
@@ -463,3 +465,4 @@ export default EnterConfirmationCode;
 //     </Button>
 //   </Card>
 // );
+

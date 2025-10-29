@@ -11,6 +11,7 @@ function PackagesPage() {
     setPackages(res.data || []);
   };
   const handlePayMoMo = async (packageId) => {
+
     try {
       const redirectUrl = "http://evbatteryswapsystem.com/payment/result";
 
@@ -29,6 +30,7 @@ function PackagesPage() {
     } catch (err) {
       console.error("Error:", err);
       message.error("Lỗi khi tạo thanh toán MoMo!");
+
     }
   };
 
@@ -49,6 +51,7 @@ function PackagesPage() {
     }
   };
 
+
   return (
     <div>
       <div className="min w-full  flex items-center justify-center py-16 px-6 ">
@@ -57,6 +60,7 @@ function PackagesPage() {
             <div
               key={i}
               className={`relative bg-white rounded-4xl border border-gray-400 shadow-lg hover:shadow-xl 
+
               hover:ring-2 hover:ring-emerald-500 transition-all duration-300 ease-out p-10 
               flex flex-col items-center ${
                 plan.popular ? "ring-2 ring-emerald-500" : ""

@@ -16,6 +16,7 @@
     "antd": "^5.27.3",
     "axios": "^1.12.1",
     "dayjs": "^1.11.18",
+    "framer-motion": "^12.23.24",
     "leaflet": "^1.9.4",
     "maplibre-gl": "^5.8.0",
     "moment": "^2.30.1",
