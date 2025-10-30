@@ -20,6 +20,7 @@ import {
   EditOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
+import handleApiError from "../../Utils/handleApiError";
 
 const { Option } = Select;
 // === LẤY ROLE NGƯỜI DÙNG TỪ LOCAL STORAGE ===
@@ -61,13 +62,14 @@ export default function InventoryPage() {
       if (data.length > 0) {
         setSelectedStationId(data[0].id);
       }
-    } catch (err) {
-      message.error(
+    } catch (error) {
+      handleApiError(
+        error,
         userRole === "ADMIN"
-          ? "Không thể tải danh sách TẤT CẢ trạm!"
-          : "Không thể tải danh sách trạm quản lý!"
+          ? "Tải danh sách TẤT CẢ trạm!"
+          : "Tải danh sách trạm quản lý!"
       );
-      console.error(err);
+      console.error(error);
       setStations([]);
     }
   }, []); // userRole là biến global/constant nên không cần trong dependency array
@@ -83,8 +85,8 @@ export default function InventoryPage() {
         map[type.id] = `${type.name} (${type.capacity}Ah)`;
       });
       setBatteryTypesMap(map);
-    } catch (err) {
-      console.error("Lỗi tải loại pin:", err);
+    } catch (error) {
+      handleApiError(error, "Tải loại pin!");
     }
   }, []);
 
@@ -101,9 +103,8 @@ export default function InventoryPage() {
         ? res.data.batteries
         : [];
       setStationInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
-    } catch (err) {
-      message.error("Không thể tải tồn kho trạm!");
-      console.error(err);
+    } catch (error) {
+      handleApiError(error, "Tải tồn kho trạm!");
       setStationInventory([]);
     } finally {
       setLoading(false);
@@ -130,9 +131,8 @@ export default function InventoryPage() {
         ? res.data.batteries
         : [];
       setWarehouseInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
-    } catch (err) {
-      message.error("Không thể tải tồn Kho!");
-      console.error("Lỗi API Tồn kho Kho:", err.response?.data || err.message);
+    } catch (error) {
+      handleApiError(error, "Tải tồn kho kho!");
       setWarehouseInventory([]);
     } finally {
       setLoading(false);
@@ -197,8 +197,7 @@ export default function InventoryPage() {
       // Tải lại Pin Kho, sử dụng filter hiện tại nếu có
       fetchWarehouseInventory(filterBatteryTypeId);
     } catch (error) {
-      message.error("❌ Lỗi chuyển pin về kho.");
-      console.error(error);
+      handleApiError(error, "Chuyển pin về kho bảo trì.");
     }
   };
 
@@ -237,9 +236,8 @@ export default function InventoryPage() {
       // Tải lại Pin Kho, sử dụng filter hiện tại nếu có
       fetchStationInventory(selectedStationId);
       fetchWarehouseInventory(filterBatteryTypeId);
-    } catch (err) {
-      message.error("❌ Lỗi chuyển pin ra trạm.");
-      console.error(err);
+    } catch (error) {
+      handleApiError(error, "Chuyển pin ra trạm.");
     }
   };
 
@@ -312,7 +310,7 @@ export default function InventoryPage() {
       // Refresh Kho sau khi cập nhật
       fetchWarehouseInventory(filterBatteryTypeId);
     } catch (error) {
-      message.error("❌ Lỗi cập nhật SOH/Hoàn tất bảo trì.");
+      handleApiError(error, "Lỗi cập nhật SOH/Hoàn tất bảo trì.");
       console.error(
         "Lỗi API Cập nhật SOH:",
         error.response?.data || error.message

@@ -22,10 +22,11 @@ import {
   EnvironmentOutlined,
   ThunderboltOutlined,
   EyeOutlined,
-  CarOutlined,
+
 } from "@ant-design/icons";
 import api from "../../config/axios";
-import { getCurrentRole } from "../../config/auth"; // ✅ import role checker
+import handleApiError from "../../Utils/handleApiError";
+
 
 const { Option } = Select;
 
@@ -61,8 +62,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
         `Tải thành công ${data.length} pin tại trạm ${stationId}.`
       );
     } catch (err) {
-      message.error("Lỗi khi tải danh sách pin tại trạm.");
-      console.error("Lỗi API tải pin:", err);
+      handleApiError(err, "Tải danh sách pin tại trạm");
       setBatteries([]);
     } finally {
       setLoading(false);
@@ -179,8 +179,7 @@ const StationPage = () => {
       const res = await api.get(apiPath);
       setStations(res.data.sort((a, b) => b.id - a.id));
     } catch (err) {
-      message.error("Failed to fetch stations");
-      console.error(err);
+      handleApiError(err, "Tải danh sách trạm");
     }
   };
 
@@ -189,8 +188,7 @@ const StationPage = () => {
       const res = await api.get("/battery-type");
       setBatteryTypes(res.data);
     } catch (err) {
-      message.error("Failed to fetch battery types");
-      console.error(err);
+      handleApiError(err, "Tải loại pin");
     }
   };
 
@@ -210,8 +208,7 @@ const StationPage = () => {
       form.resetFields();
       fetchStations();
     } catch (err) {
-      message.error("Failed to save station");
-      console.error(err);
+      handleApiError(err, "lưu trạm");
     }
   };
 
@@ -233,8 +230,7 @@ const StationPage = () => {
           // Refresh the station list after deletion
           fetchStations();
         } catch (err) {
-          message.error("Thất bại khi xóa trạm");
-          console.error(err);
+          handleApiError(err, "xóa trạm");
         }
       },
     });

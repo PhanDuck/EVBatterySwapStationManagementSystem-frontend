@@ -167,9 +167,9 @@ const LoginPage = () => {
             <div className="w-16 h-16 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center">
               <FaLock className="text-white text-2xl" />
             </div>
-            <h2 className="text-4xl font-bold text-gray-900">Welcome Back</h2>
+            <h2 className="text-4xl font-bold text-gray-900">Đăng Nhập</h2>
             <p className="mt-3 text-gray-600 font-medium">
-              Sign in to your account
+              Đăng nhập vào tài khoản của bạn
             </p>
           </div>
         </div>
@@ -216,7 +216,7 @@ const LoginPage = () => {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Password
+                Mật Khẩu
               </label>
               <div className="relative">
                 <FaLock className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
@@ -231,7 +231,7 @@ const LoginPage = () => {
                       ? "border-red-300 focus:border-red-500"
                       : "border-gray-200 focus:border-blue-500"
                   } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-gray-50 focus:bg-white`}
-                  placeholder="Enter your password"
+                  placeholder="Nhập mật khẩu của bạn"
                   value={formData.password}
                   onChange={handleInputChange}
                 />
@@ -270,9 +270,9 @@ const LoginPage = () => {
               />
               <label
                 htmlFor="remember-me"
-                className="ml-3 block text-sm font-medium text-gray-700"
+                className="ml-2 block text-sm font-medium text-gray-700"
               >
-                Remember me
+                Duy trì đăng nhập
               </label>
             </div>
 
@@ -281,7 +281,7 @@ const LoginPage = () => {
                 href="#"
                 className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
               >
-                Forgot password?
+                Quên mật khẩu?
               </a>
             </div>
           </div>
@@ -312,7 +312,7 @@ const LoginPage = () => {
                 )}
               </span>
               <span style={{ color: "white" }}>
-                {isLoading ? "Signing in..." : "Sign in"}
+                {isLoading ? "Đang đăng nhập..." : "Đăng Nhập"}
               </span>
             </button>
           </div>
@@ -326,28 +326,24 @@ const LoginPage = () => {
                 Sign up here
               </Link>
             </p> */}
-          <div className="space-y-4 pt-2">
-            <p className="text-sm text-gray-600 text-center">
-              Don't have an account?
-            </p>
-            <br></br>
-            <Link
-              to="/register"
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              style={{ color: "white" }}
-            >
-              Sign up here
+          <div className="flex  justify-center mt-4 space-x-2">
+            <p className=" text-gray-600 text-center">Không có tài khoản?</p>
+
+            <Link to="/register">
+              <p className=" text-gray-600 text-center font-bold underline hover:text-blue-600">
+                Đăng ký ngay
+              </p>
             </Link>
-            <div className="mt-4">
-              <Link
-                to="/"
-                className="group relative w-full flex justify-center py-3 px-4 border-2 border-gray-300 text-sm font-semibold rounded-xl text-gray-800 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                Về trang chủ
-              </Link>
-            </div>
           </div>
         </form>
+        <div className="mt-4">
+          <Link
+            to="/"
+            className="group relative w-full flex justify-center py-3 px-4 border-2 border-gray-300 text-sm font-semibold rounded-xl text-gray-800 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            Về trang chủ
+          </Link>
+        </div>
       </div>
     </div>
   );

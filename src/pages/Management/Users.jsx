@@ -14,6 +14,7 @@ import {
 } from "antd";
 import { EditOutlined, DeleteOutlined, UserOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
+import handleApiError from "../../Utils/handleApiError";
 
 const { Option } = Select;
 
@@ -39,21 +40,8 @@ export default function AccountPage() {
           .filter((u) => u.status?.toLowerCase() !== "deleted")
           .sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
         setAccounts(list);
-      } catch (err) {
-        console.error(err);
-        if (err?.response?.status === 401) {
-          // token missing/invalid — clear storage and notify
-          try {
-            localStorage.removeItem("authToken");
-            sessionStorage.removeItem("authToken");
-          } catch {
-            /* ignore storage errors */
-          }
-          message.error("Unauthorized — vui lòng đăng nhập lại");
-        } else {
-          message.error("Không thể tải danh sách người dùng");
-        }
-        setAccounts([]);
+      } catch (error) {
+        handleApiError(error, `Lỗi tải danh sách người dùng:`);
       } finally {
         setLoading(false);
       }
@@ -80,20 +68,9 @@ export default function AccountPage() {
           await api.delete(`/admin/user/${id}`);
           setAccounts((prev) => prev.filter((u) => (u.id ?? u._id) !== id));
           message.success("Đã xóa thành công!");
-        } catch (err) {
-          console.error("Delete user error", err);
-          if (err?.response?.status === 401) {
-            try {
-              localStorage.removeItem("authToken");
-              sessionStorage.removeItem("authToken");
-            } catch {
-              /* ignore storage errors */
-            }
-            message.error("Unauthorized — vui lòng đăng nhập lại");
-          } else {
-            message.error("Không thể xóa người dùng!");
-          }
-        } finally {
+        } catch (error) {
+            handleApiError(error, "xóa người dùng");
+         } finally {
           setDeletingId(null);
         }
       },

@@ -7,41 +7,30 @@ import {
   Modal,
   Form,
   Input,
-  Select,
-  DatePicker,
   Space,
   Tag,
   message,
   Spin,
-  notification,
 } from "antd";
 import {
   PlusOutlined,
-  CheckOutlined,
   CloseCircleOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
-import { MdOutlineCancel } from "react-icons/md";
 import { FaDeleteLeft } from "react-icons/fa6";
+import handleApiError from "../../Utils/handleApiError";
 
-const { Option } = Select;
 const { TextArea } = Input;
-const GET_COMPATIBLE_STATIONS_API_URL = "/booking/compatible-stations";
 
 export default function BookingsPage() {
   const [data, setData] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [stations, setStations] = useState([]);
-  const [compatibleStations, setCompatibleStations] = useState([]);
-  const [isStationLoading, setIsStationLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [form] = Form.useForm();
   const [search, setSearch] = useState("");
-  const [editingRecord, setEditingRecord] = useState(null);
   const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
   const [cancellingBooking, setCancellingBooking] = useState(null);
   const [cancelForm] = Form.useForm();
@@ -51,8 +40,8 @@ export default function BookingsPage() {
   try {
     const raw = localStorage.getItem("currentUser");
     user = raw ? JSON.parse(raw) : {};
-  } catch (e) {
-    console.warn("Failed to parse stored user", e);
+  } catch (error) {
+    handleApiError(error, "");
   }
   const role = user?.role;
   const userId = user?.id;
@@ -92,9 +81,8 @@ export default function BookingsPage() {
           ? [userRes.data]
           : []
       );
-    } catch (err) {
-      console.error("❌ Fetch error:", err);
-      message.error("Không thể tải dữ liệu, vui lòng thử lại!");
+    } catch (error) {
+      handleApiError(error, "");
     } finally {
       setLoading(false);
     }
@@ -103,37 +91,6 @@ export default function BookingsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  // 🚀 Tải danh sách trạm tương thích
-  const fetchCompatibleStations = useCallback(async (vehicleId) => {
-    if (!vehicleId) {
-      setCompatibleStations([]);
-      return;
-    }
-    setIsStationLoading(true);
-    try {
-      const res = await api.get(
-        `${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`
-      );
-      setCompatibleStations(res.data || []);
-    } catch (error) {
-      console.error("Lỗi khi tải trạm tương thích:", error);
-      setCompatibleStations([]);
-      notification.error({
-        message: "Lỗi Tải Danh Sách Trạm",
-        description: "Không thể tải danh sách trạm tương thích cho xe đã chọn.",
-      });
-    } finally {
-      setIsStationLoading(false);
-    }
-  }, []);
-
-  // 🚀 Khi thay đổi xe
-  const handleVehicleChange = (vehicleId) => {
-    form.setFieldsValue({ stationId: null });
-    setCompatibleStations([]);
-    if (vehicleId) fetchCompatibleStations(vehicleId);
-  };
 
   // 📖 Map ID sang tên
   const driverName = (id) =>
@@ -157,59 +114,6 @@ export default function BookingsPage() {
     );
   }, [data, search, users, vehicles, stations]);
 
-  // ➕ Tạo booking mới
-  const handleCreate = async () => {
-    try {
-      const validValues = await form.validateFields();
-      const payload = {
-        driverId: userId,
-        vehicleId: validValues.vehicleId,
-        stationId: validValues.stationId,
-        bookingTime: validValues.bookingTime?.toISOString(),
-        status: "PENDING",
-      };
-
-      setSubmitting(true);
-      const res = await api.post("/booking", payload);
-      setData((prev) => [res.data, ...prev]);
-      message.success("Tạo booking thành công!");
-      setIsModalVisible(false);
-      form.resetFields();
-    } catch (err) {
-      console.error("Submit booking error:", err);
-      message.error("Không thể tạo booking!");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // ✏️ Cập nhật status
-  const handleUpdateStatus = async () => {
-    try {
-      const validValues = await form.validateFields();
-      const bookingId = editingRecord?.id;
-      if (!bookingId) return;
-      setSubmitting(true);
-      await api.patch(
-        `/booking/${bookingId}/status?status=${validValues.status}`
-      );
-      message.success("Cập nhật trạng thái thành công!");
-      setData((prev) =>
-        prev.map((b) =>
-          b.id === bookingId ? { ...b, status: validValues.status } : b
-        )
-      );
-      setIsModalVisible(false);
-      setEditingRecord(null);
-      form.resetFields();
-    } catch (err) {
-      console.error("Update status error:", err);
-      message.error("Không thể cập nhật trạng thái!");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   // ✅ Xác nhận booking
   const handleConfirm = async (record) => {
     try {
@@ -222,21 +126,9 @@ export default function BookingsPage() {
         )
       );
       message.success("Xóa booking thành công!");
-    } catch (err) {
-      console.error("Xóa booking không thành công:", err);
-      message.error("Không thể xóa booking!");
+    } catch (error) {
+      handleApiError(error, "Confirm booking");
     }
-  };
-
-  // ❌ Hủy booking - Dùng cho ADMIN/STAFF: Mở Modal nhập lý do
-  const handleAdminCancelBooking = (record) => {
-    // Chỉ cho phép hủy khi trạng thái là PENDING hoặc CONFIRMED
-    if (record.status !== "PENDING" && record.status !== "CONFIRMED") {
-      return message.error("Booking không thể hủy ở trạng thái này!");
-    }
-    setCancellingBooking(record);
-    setIsCancelModalVisible(true);
-    cancelForm.resetFields();
   };
 
   // ✅ Xử lý xác nhận Hủy Booking cho ADMIN/STAFF
@@ -263,49 +155,11 @@ export default function BookingsPage() {
       message.success("Đã hủy booking thành công!");
       setIsCancelModalVisible(false);
       setCancellingBooking(null);
-    } catch (err) {
-      console.error("Cancel booking error:", err);
-      message.error(
-        err.response?.data?.message ||
-          "Không thể hủy booking! Vui lòng kiểm tra API."
-      );
+    } catch (error) {
+      handleApiError(error, "Cancel booking (Admin/Staff)");
     } finally {
       setSubmitting(false);
     }
-  };
-
-  // ❌ Hủy booking - Dùng cho DRIVER: Dùng Modal Confirm đơn giản
-  const handleDriverCancelBooking = (record) => {
-    // Chỉ cho phép hủy khi trạng thái là PENDING hoặc CONFIRMED
-    if (record.status !== "PENDING" && record.status !== "CONFIRMED") {
-      return message.error("Booking không thể hủy ở trạng thái này!");
-    }
-
-    Modal.confirm({
-      title: "Xác nhận hủy đặt lịch?",
-      content: "Bạn có chắc muốn hủy đặt lịch này không?",
-      okText: "Hủy đặt lịch",
-      cancelText: "Quay lại",
-      okButtonProps: { danger: true },
-      async onOk() {
-        try {
-          // ❗ SỬ DỤNG API PATCH DÀNH CHO DRIVER
-          await api.patch(`/booking/my-bookings/${record.id}/cancel`);
-          setData((prev) =>
-            prev.map((item) =>
-              item.id === record.id ? { ...item, status: "CANCELLED" } : item
-            )
-          );
-          message.success("Đã hủy booking thành công!");
-        } catch (err) {
-          console.error("Driver Cancel booking error:", err);
-          message.error(
-            err.response?.data?.message ||
-              "Không thể hủy đặt lịch sau 2 tiếng kể từ lúc đặt!"
-          );
-        }
-      },
-    });
   };
 
   // 🧾 Cột hiển thị
@@ -392,7 +246,7 @@ export default function BookingsPage() {
             <Button
               danger
               icon={<CloseCircleOutlined />}
-              onClick={() => handleCancelBooking(record)}
+              onClick={() => handleCancelSubmit(record)}
             >
               Cancel
             </Button>

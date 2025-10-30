@@ -16,6 +16,7 @@ import {
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../config/axios";
+import handleApiError from "../../Utils/handleApiError";
 
 const { Option } = Select;
 
@@ -73,9 +74,9 @@ export default function BatteryManagement() {
             "Không xác định",
         }));
         setBatteries(mapped.sort((a, b) => b.id - a.id)); // Sắp xếp theo ID giảm dần
-      } catch (err) {
-        console.error("❌ Lỗi tải dữ liệu:", err);
-        message.error("Không thể tải danh sách pin!");
+      } catch (error) {
+        handleApiError(error, "tải dữ liệu");
+
       } finally {
         setLoading(false);
       }
@@ -109,8 +110,7 @@ export default function BatteryManagement() {
       setIsModalVisible(false);
       form.resetFields();
     } catch (err) {
-      console.error(err);
-      message.error("Không thể lưu thông tin pin!");
+      handleApiError(err, "lưu thông tin pin");
     }
   };
 
@@ -125,8 +125,8 @@ export default function BatteryManagement() {
           await api.delete(`/battery/${record.id}`);
           setBatteries((prev) => prev.filter((b) => b.id !== record.id));
           message.success("Đã xóa thành công!");
-        } catch {
-          message.error("Không thể xóa pin này!");
+        } catch (error) {
+          handleApiError(error, "xóa pin");
         }
       },
     });

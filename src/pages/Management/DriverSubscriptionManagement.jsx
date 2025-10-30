@@ -24,7 +24,7 @@ import {
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
-
+import handleApiError from "../../Utils/handleApiError";
 const { Option } = Select;
 const { Title, Text } = Typography;
 
@@ -84,9 +84,8 @@ export default function DriverSubscriptionManagement() {
       if (userRole !== "DRIVER" && driverRes) {
         setDrivers(Array.isArray(driverRes?.data) ? driverRes.data : []);
       }
-    } catch (err) {
-      console.error(err);
-      message.error("Không thể tải dữ liệu!");
+    } catch (error) {
+      handleApiError(error, "tải dữ liệu");
     } finally {
       setLoading(false);
     }
@@ -140,10 +139,7 @@ export default function DriverSubscriptionManagement() {
       });
       setCalculation(res.data);
     } catch (error) {
-      console.error("Calculation error:", error);
-      message.error(
-        error.response?.data?.message || "Không thể tính toán chi phí nâng cấp!"
-      );
+      handleApiError(error, "tính toán chi phí nâng cấp");
     } finally {
       setIsCalculating(false);
     }
@@ -175,10 +171,7 @@ export default function DriverSubscriptionManagement() {
         fetchData();
       }
     } catch (error) {
-      console.error("Upgrade error:", error);
-      message.error(
-        error.response?.data?.message || "Không thể bắt đầu nâng cấp!"
-      );
+      handleApiError(error, "bắt đầu nâng cấp");
     } finally {
       setSubmitting(false);
     }
@@ -205,10 +198,7 @@ export default function DriverSubscriptionManagement() {
       });
       setCalculation(res.data);
     } catch (error) {
-      console.error("Calculation error:", error);
-      message.error(
-        error.response?.data?.message || "Không thể tính toán chi phí hạ cấp!"
-      );
+      handleApiError(error, "tính toán chi phí hạ cấp");
     } finally {
       setIsCalculating(false);
     }
@@ -233,8 +223,7 @@ export default function DriverSubscriptionManagement() {
       setIsDowngradeModalVisible(false);
       fetchData();
     } catch (error) {
-      console.error("Downgrade error:", error);
-      message.error(error.response?.data?.message || "Không thể hạ cấp!");
+      handleApiError(error, "xác nhận hạ cấp");
     } finally {
       setSubmitting(false);
     }
@@ -259,10 +248,7 @@ export default function DriverSubscriptionManagement() {
       });
       setRenewalCalculation(res.data);
     } catch (error) {
-      console.error("Renewal calculation error:", error);
-      message.error(
-        error.response?.data?.message || "Không thể tính toán chi phí gia hạn!"
-      );
+      handleApiError(error, "tính toán chi phí gia hạn");
     } finally {
       setIsCalculatingRenewal(false);
     }
@@ -291,10 +277,7 @@ export default function DriverSubscriptionManagement() {
         fetchData();
       }
     } catch (error) {
-      console.error("Renewal error:", error);
-      message.error(
-        error.response?.data?.message || "Không thể bắt đầu gia hạn!"
-      );
+      handleApiError(error, "bắt đầu gia hạn");
     } finally {
       setSubmitting(false);
     }

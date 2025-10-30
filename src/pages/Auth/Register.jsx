@@ -119,9 +119,9 @@ const RegisterPage = () => {
       <div className="max-w-lg w-full space-y-8 bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-lg relative z-10 mx-4">
         <div className="text-center">
           <h2 className="mt-2 text-3xl font-extrabold text-gray-900">
-            Create your account
+            Đăng Ký Tài Khoản
           </h2>
-          <p className="mt-2 text-sm text-gray-600">It only takes a minute.</p>
+          <p className="mt-2 text-sm text-gray-600">Chỉ mất một phút.</p>
         </div>
 
         <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
@@ -131,7 +131,7 @@ const RegisterPage = () => {
             <input
               name="fullName"
               type="text"
-              placeholder="Full name"
+              placeholder="Họ và tên"
               value={formData.fullName}
               onChange={handleInputChange}
               className={`appearance-none rounded-lg block w-full pl-10 pr-3 py-2 border ${
@@ -149,7 +149,7 @@ const RegisterPage = () => {
             <input
               name="phone"
               type="tel"
-              placeholder="Phone"
+              placeholder="Số điện thoại"
               value={formData.phone}
               onChange={handleInputChange}
               className={`appearance-none rounded-lg block w-full pl-10 pr-3 py-2 border ${
@@ -167,7 +167,7 @@ const RegisterPage = () => {
             <input
               name="email"
               type="email"
-              placeholder="Email address"
+              placeholder="Địa chỉ email"
               value={formData.email}
               onChange={handleInputChange}
               className={`appearance-none rounded-lg block w-full pl-10 pr-3 py-2 border ${
@@ -185,7 +185,7 @@ const RegisterPage = () => {
             <input
               name="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Password (min 8 chars)"
+              placeholder="Mật khẩu (tối thiểu 8 ký tự)"
               value={formData.password}
               onChange={handleInputChange}
               className={`appearance-none rounded-lg block w-full pl-10 pr-10 py-2 border ${
@@ -210,7 +210,7 @@ const RegisterPage = () => {
             <input
               name="confirmPassword"
               type={showConfirm ? "text" : "password"}
-              placeholder="Confirm password"
+              placeholder="Xác nhận mật khẩu"
               value={formData.confirmPassword}
               onChange={handleInputChange}
               className={`appearance-none rounded-lg block w-full pl-10 pr-10 py-2 border ${
@@ -232,7 +232,7 @@ const RegisterPage = () => {
           </div>
 
           {/* Terms */}
-          <div className="flex items-center">
+          <div className="flex items-center mb-0 !important">
             <input
               name="agree"
               type="checkbox"
@@ -241,30 +241,35 @@ const RegisterPage = () => {
               className="h-4 w-4 text-blue-600 border-gray-300 rounded"
             />
             <label className="ml-2 text-sm text-gray-700">
-              I agree to the{" "}
+              Tôi đồng ý với{" "}
               <a href="#" className="text-blue-600 hover:text-blue-500">
-                Terms & Privacy
+                Điều khoản & Chính sách
               </a>
             </label>
           </div>
           {errors.agree && (
-            <p className="text-sm text-red-600 mt-1">{errors.agree}</p>
+            <p className="text-sm text-red-600">{errors.agree}</p>
           )}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:opacity-70"
-          >
-            {isLoading ? "Creating account..." : "Create account"}
-          </button>
+          <div className="my-4">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl bg-blue-600  font-semibold hover:bg-blue-700 transition disabled:opacity-70"
+            >
+              <p className=" text-white">
+                {isLoading ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
+              </p>
+            </button>
+          </div>
+
           <p className="text-center text-sm text-gray-600">
-            Already have an account?{" "}
+            Đã có tài khoản?{" "}
             <a
               href="/login"
               className="font-semibold text-blue-600 hover:text-blue-700"
             >
-              Sign in
+              Đăng nhập
             </a>
           </p>
         </form>

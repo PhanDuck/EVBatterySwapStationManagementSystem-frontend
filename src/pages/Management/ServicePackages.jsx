@@ -13,6 +13,7 @@ import {
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
+import handleApiError from "../../Utils/handleApiError";
 
 const ServicePackagesPage = () => {
   const [packages, setPackages] = useState([]);
@@ -33,9 +34,8 @@ const ServicePackagesPage = () => {
     try {
       const res = await api.get("/service-package");
       setPackages(res.data.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
-    } catch (err) {
-      message.error("Failed to fetch service packages");
-      console.error(err);
+    } catch (error) {
+      handleApiError(error,"Danh sách gói dịch vụ");
     }
   };
 
@@ -43,9 +43,8 @@ const ServicePackagesPage = () => {
     try {
       const res = await api.get("/admin/user");
       setUsers(res.data);
-    } catch (err) {
-      message.error("Failed to fetch users");
-      console.error(err);
+    } catch (error) {
+      handleApiError(error,"Danh sách người dùng");
     }
   };
 
@@ -55,9 +54,8 @@ const ServicePackagesPage = () => {
       const res = await api.get("/driver-subscription/my-subscriptions");
       setDriverSubscriptions(res.data.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
 
-    } catch (err) {
-      message.error("Failed to fetch driver subscriptions");
-      console.error(err);
+    } catch (error) {
+      handleApiError(error,"Danh sách gói cước tài xế");
     }
   };
 
@@ -82,9 +80,8 @@ const ServicePackagesPage = () => {
       setIsModalVisible(false);
       form.resetFields();
       fetchPackages();
-    } catch (err) {
-      message.error("Failed to save package");
-      console.error(err);
+    } catch (error) {
+      handleApiError(error,"Lưu gói dịch vụ");
     }
   };
 
@@ -99,9 +96,9 @@ const ServicePackagesPage = () => {
           await api.delete(`/service-package/${id}`);
           message.success("Package deleted successfully");
           fetchPackages();
-        } catch (err) {
-          message.error("Failed to delete package");
-          console.error(err);
+        } catch (error) {
+          handleApiError(error,"Xóa gói dịch vụ");
+
         }
       },
     });
@@ -119,9 +116,8 @@ const ServicePackagesPage = () => {
           await api.delete(`/driver-subscription/${id}`);
           message.success("Driver subscription deleted successfully");
           fetchDriverSubscriptions();
-        } catch (err) {
-          message.error("Failed to delete driver subscription");
-          console.error(err);
+        } catch (error) {
+          handleApiError(error,"Xóa gói cước tài xế");
         }
       },
     });
@@ -161,7 +157,7 @@ const ServicePackagesPage = () => {
       title: "Thời hạn",
       dataIndex: "duration",
       key: "duration",
-<<<<<<< Updated upstream
+
       render: (days) => `${days || 0} ngày`,
     },
     {
@@ -169,9 +165,7 @@ const ServicePackagesPage = () => {
       dataIndex: "maxSwaps",
       key: "maxSwaps",
       render: (swaps) => `${swaps || 0} lần`,
-=======
-      render: (days) => `${days} ngày`,
->>>>>>> Stashed changes
+
     },
     { title: "Mô tả", dataIndex: "description", key: "description" },
     {
@@ -202,10 +196,7 @@ const ServicePackagesPage = () => {
     },
   ];
 
-<<<<<<< Updated upstream
-=======
-  // Create maps for quick lookups
->>>>>>> Stashed changes
+
   const userMap = useMemo(
     () => new Map(users.map((user) => [user.id, user.fullName])),
     [users]
@@ -308,11 +299,9 @@ const ServicePackagesPage = () => {
         />
       </Card>
 
-<<<<<<< Updated upstream
+
       <Card title="Quản lý gói cước của tài xế" style={{ marginTop: "24px" }}>
-=======
-      <Card title="Driver Subscriptions" style={{ marginTop: "24px" }}>
->>>>>>> Stashed changes
+
         <Table
           columns={subscriptionColumns}
           dataSource={driverSubscriptions}

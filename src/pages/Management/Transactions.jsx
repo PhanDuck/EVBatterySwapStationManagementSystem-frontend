@@ -25,6 +25,7 @@ import {
 import api from "../../config/axios";
 import MomoLogo from "../../assets/img/MoMoLogo.svg";
 import dayjs from "dayjs"; // Import dayjs
+import handleApiError from "../../Utils/handleApiError";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -34,7 +35,7 @@ const TransactionsPage = () => {
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [dateRange, setDateRange] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -51,9 +52,8 @@ const TransactionsPage = () => {
       const list = (res.data || []).sort((a, b) => b.id - a.id); // Sắp xếp ID giảm dần
       setTransactions(list);
       setFilteredTransactions(list);
-    } catch (err) {
-      console.error("Fetch transactions error:", err);
-      message.error("Không thể tải danh sách giao dịch!");
+    } catch (error) {
+      handleApiError(error, "danh sách giao dịch");
     } finally {
       setLoading(false);
     }
@@ -115,29 +115,9 @@ const TransactionsPage = () => {
       setModalVisible(false);
       setEditing(null);
       fetchTransactions();
-    } catch (err) {
-      console.error("Save transaction error:", err);
-      message.error("Không thể lưu giao dịch!");
+    } catch (error) {
+      handleApiError(error, "lưu giao dịch");
     }
-  };
-
-  // 🔹 Delete transaction
-  const handleDelete = (id) => {
-    Modal.confirm({
-      title: "Xác nhận xóa",
-      content: "Bạn có chắc muốn xóa giao dịch này?",
-      okType: "danger",
-      onOk: async () => {
-        try {
-          await api.delete(`/swap-transaction/${id}`);
-          message.success("Xóa thành công!");
-          fetchTransactions();
-        } catch (err) {
-          console.error("Delete transaction error:", err);
-          message.error("Không thể xóa giao dịch!");
-        }
-      },
-    });
   };
 
   // 🔹 Columns bảng

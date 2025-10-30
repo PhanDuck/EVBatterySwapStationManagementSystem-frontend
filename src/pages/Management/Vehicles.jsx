@@ -30,6 +30,7 @@ import {
   EyeOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
+import handleApiError from "../../Utils/handleApiError";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -51,8 +52,8 @@ const VehiclePage = () => {
   const user = (() => {
     try {
       return JSON.parse(localStorage.getItem("currentUser")) || {};
-    } catch {
-      return {};
+    } catch (error) {
+      handleApiError(error, "");
     }
   })();
 
@@ -280,48 +281,6 @@ const VehiclePage = () => {
     );
   };
 
-  // 🔄 Lấy số lần đổi pin cho tất cả các xe
-  const fetchSwapCountsForAllVehicles = async (initialVehicles) => {
-    if (initialVehicles.length === 0) return;
-
-    try {
-      // Tạo một mảng promises để gọi API cho từng xe
-      const countPromises = initialVehicles.map(async (vehicle) => {
-        try {
-          // Giả định API cho số lần đổi pin của một xe là /swap-transaction/vehicle/{id}/count
-          const res = await api.get(
-            `/swap-transaction/vehicle/${vehicle.id}/count`
-          );
-          // Giả sử API trả về đối tượng { count: N } hoặc chỉ là số N
-          const count =
-            res.data?.count !== undefined
-              ? res.data.count
-              : typeof res.data === "number"
-              ? res.data
-              : 0;
-          return { id: vehicle.id, swapCount: count };
-        } catch (error) {
-          console.error(`Lỗi tải SwapCount cho xe ${vehicle.id}:`, error);
-          return { id: vehicle.id, swapCount: 0 };
-        }
-      });
-
-      // Chờ tất cả promises hoàn thành
-      const results = await Promise.all(countPromises);
-      const countMap = results.reduce((map, item) => {
-        map[item.id] = item.swapCount;
-        return map;
-      }, {});
-
-      // Cập nhật state vehicles với swapCount
-      setVehicles((prev) =>
-        prev.map((v) => ({ ...v, swapCount: countMap[v.id] || 0 }))
-      );
-    } catch (error) {
-      console.error("Lỗi tổng thể khi tải SwapCounts:", error);
-    }
-  };
-
   // 🚗 Lấy danh sách vehicle và tính SwapCount ngay lập tức
   useEffect(() => {
     const fetchVehiclesAndCounts = async () => {
@@ -362,7 +321,7 @@ const VehiclePage = () => {
               return { ...vehicle, swapCount: swapCount };
             } catch (error) {
               // Nếu có lỗi, mặc định số lần đổi pin là 0
-              console.error(`Lỗi tải SwapCount cho xe ${vehicle.id}:`, error);
+              handleApiError(error, `SwapCount cho xe`);
               return { ...vehicle, swapCount: 0 };
             }
           })
@@ -370,9 +329,9 @@ const VehiclePage = () => {
 
         // 3. CẬP NHẬT state vehicles với dữ liệu đầy đủ
         setVehicles(vehiclesWithCounts);
-      } catch (err) {
-        message.error("Không thể tải danh sách phương tiện!");
-        console.error(err);
+      } catch (error) {
+        handleApiError(error, "Danh sách phương tiện");;
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -389,7 +348,7 @@ const VehiclePage = () => {
         const res = await api.get("/station");
         setStations(res.data || []);
       } catch (error) {
-        console.error("Không thể tải danh sách trạm:", error);
+        handleApiError(error, `Tải danh sách trạm:`);      
       }
     };
     fetchStations();
@@ -402,7 +361,7 @@ const VehiclePage = () => {
         const res = await api.get("/battery-type");
         setBatteryTypes(res.data || []);
       } catch (error) {
-        console.error("Không thể tải danh sách loại pin:", error);
+        handleApiError(error, "Tải danh sách loại pin");
       }
     };
     fetchBatteryTypes();
@@ -440,9 +399,7 @@ const VehiclePage = () => {
         )
       );
     } catch (error) {
-      message.error("Không thể tải lịch sử đổi pin.");
-      console.error("❌ Lỗi tải lịch sử đổi pin:", error);
-    } finally {
+      handleApiError(error, "Tải lịch sử đổi pin.");
       setHistoryLoading(false);
     }
   };
@@ -581,9 +538,8 @@ const VehiclePage = () => {
 
       setIsModalVisible(false);
       form.resetFields();
-    } catch (err) {
-      console.error("❌ Vehicle submit error:", err);
-      message.error("Không thể lưu thông tin phương tiện!");
+    } catch (error) {
+      handleApiError(error, "Lưu thông tin phương tiện");
     }
   };
 
@@ -602,9 +558,8 @@ const VehiclePage = () => {
             prev.map((v) => (v.id === id ? { ...v, status: "INACTIVE" } : v))
           );
           message.success("Đã vô hiệu hóa phương tiện!");
-        } catch (err) {
-          console.error(err);
-          message.error("Không thể vô hiệu hóa phương tiện!");
+        } catch (error) {
+          handleApiError(error, "vô hiệu hóa phương tiện");
         }
       },
     });
@@ -661,7 +616,6 @@ const VehiclePage = () => {
                 onClick={handleAdd}
               >
                 Đăng ký xe mới
-
               </Button>
             )}
           </Space>

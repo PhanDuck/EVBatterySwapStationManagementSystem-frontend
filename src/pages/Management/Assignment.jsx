@@ -25,6 +25,7 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
+import handleApiError from "../../Utils/handleApiError";
 
 // === KHAI BÁO CÁC API ===
 const API_ASSIGNMENTS = "/staff-station-assignment";
@@ -61,12 +62,7 @@ const AssignStaffModal = ({
       );
       onSuccess();
     } catch (error) {
-      message.error(
-        `❌ Lỗi không thể phân quyền nhân viên: ${
-          error.response?.data?.message || error.message
-        }`
-      );
-      console.error(error);
+      handleApiError(error,"Phân quyền nhân viên");
     }
   };
 
@@ -182,12 +178,8 @@ export default function AssignmentPage() {
       const data = Array.isArray(res.data) ? res.data : [];
       setAssignments(data);
       message.success(`Tải thành công ${data.length} phân quyền.`);
-    } catch (err) {
-      message.error("Không thể tải danh sách phân quyền!");
-      console.error(
-        "Lỗi API tải Phân quyền:",
-        err.response?.data || err.message
-      );
+    } catch (error) {
+      handleApiError(error,"Danh sách phân quyền nhân viên"); 
       setAssignments([]);
     } finally {
       setLoading(false);
@@ -203,14 +195,8 @@ export default function AssignmentPage() {
       // Giả định API trả về một mảng User object
       const staffsFetched = Array.isArray(staffRes.data) ? staffRes.data : [];
       setAllStaffs(staffsFetched);
-    } catch (err) {
-      message.warning(
-        "Không thể tải danh sách nhân viên (Kiểm tra API /admin/user)."
-      );
-      console.error(
-        "Lỗi API tải nhân viên:",
-        err.response?.data || err.message
-      );
+    } catch (error) {
+      handleApiError(error,"Danh sách nhân viên");
     }
 
     // Tải Trạm
@@ -222,9 +208,8 @@ export default function AssignmentPage() {
         ? stationRes.data
         : [];
       setAllStations(stationsFetched);
-    } catch (err) {
-      message.warning("Không thể tải danh sách trạm (Kiểm tra API /station).");
-      console.error("Lỗi API tải trạm:", err.response?.data || err.message);
+    } catch (error) {
+      handleApiError(error,"Danh sách trạm");
     }
   }, []);
 
@@ -243,8 +228,7 @@ export default function AssignmentPage() {
       );
       await fetchAllAssignments(); // Tải lại danh sách sau khi xóa
     } catch (error) {
-      message.error("❌ Lỗi không thể xóa phân quyền nhân viên này khỏi trạm.");
-      console.error(error);
+      handleApiError(error,"Xóa phân quyền nhân viên");
     }
     setLoading(false);
   };

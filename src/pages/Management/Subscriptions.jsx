@@ -16,6 +16,7 @@ import {
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../config/axios";
+import handleApiError from "../../Utils/handleApiError";
 
 // Local helper that wraps axios and returns normalized result
 async function callApi({
@@ -35,8 +36,7 @@ async function callApi({
     if (err && err.response) {
       status = err.response.status;
       payload = err.response.data;
-      messageText =
-        (err.response.data &&
+      handleApiError(err.response.data &&
           (err.response.data.message || err.response.data.error)) ||
         err.response.statusText ||
         messageText;
@@ -50,9 +50,9 @@ async function callApi({
         }
       }
     } else if (err && err.request) {
-      messageText = "No response from server";
+      handleApiError(err);
     } else if (err && err.message) {
-      messageText = err.message;
+      handleApiError(err);
     }
     return { ok: false, status, message: messageText, payload };
   }

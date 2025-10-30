@@ -409,7 +409,7 @@ export default function SwapAnimation() {
   );
 };
 
-export default EnterConfirmationCode;
+
 
 // const handleConfirm = async () => {
 //   if (!code || code.length !== 6) {

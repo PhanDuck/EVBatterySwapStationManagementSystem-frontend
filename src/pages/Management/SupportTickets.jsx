@@ -18,6 +18,7 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
+import handleApiError from "../../Utils/handleApiError";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -67,9 +68,8 @@ export default function SupportPage() {
         .sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
 
       setData(tickets);
-    } catch (err) {
-      console.error(err);
-      message.error("Không thể tải dữ liệu!");
+    } catch (error) {
+      handleApiError(error, "danh sách hỗ trợ");
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export default function SupportPage() {
       const res = await api.get("/station");
       setStationList(res.data || []);
     } catch (error) {
-      console.error("Error fetching stations:", error);
+      handleApiError(error, "danh sách trạm");
     }
   };
 
@@ -100,7 +100,7 @@ export default function SupportPage() {
       const payload = {
         subject: values.subject,
         description: values.description,
-        stationId: values.stationId, // ✅ gửi stationId
+        stationId: values.stationId, 
       };
 
       await api.post("/support-ticket", payload);
@@ -109,8 +109,7 @@ export default function SupportPage() {
       form.resetFields();
       fetchData(); // ✅ load lại danh sách
     } catch (error) {
-      console.error("Error creating ticket:", error);
-      message.error("❌ Failed to create ticket!");
+      handleApiError(error, "tạo vé hỗ trợ");
     } finally {
       setLoadingCreate(false);
     }
@@ -133,8 +132,7 @@ export default function SupportPage() {
 
       message.success(`Ticket ${ticketId} status updated to ${newStatus}`);
     } catch (error) {
-      console.error("Failed to update ticket status:", error);
-      message.error("Failed to update status. Please try again.");
+      handleApiError(error, "cập nhật trạng thái vé");
     }
   };
 
@@ -162,8 +160,7 @@ export default function SupportPage() {
         setResponses(res.data || []);
       }
     } catch (error) {
-      console.error("Error loading reply history:", error);
-      message.error("Không thể tải phản hồi!");
+      handleApiError(error, "lịch sử phản hồi");
       setResponses([]);
     }
   };
@@ -178,8 +175,7 @@ export default function SupportPage() {
       message.success("✅ Reply sent!");
       fetchResponses(viewingRecord.id); // refresh list
     } catch (error) {
-      message.error("❌ Failed to send reply");
-      console.error(error);
+      handleApiError(error, "gửi phản hồi");
     } finally {
       setLoadingReply(false);
     }
