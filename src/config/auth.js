@@ -71,6 +71,7 @@ export const getCurrentRole = () => {
 };
 
 export const isAuthenticated = () => {
+  const token = getToken();
   const user = localStorage.getItem("currentUser");
-  return !!user; // true nếu currentUser tồn tại
+  return !!(token && user); // true nếu cả token và currentUser đều tồn tại
 };

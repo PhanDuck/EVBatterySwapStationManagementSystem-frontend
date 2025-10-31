@@ -7,9 +7,20 @@ import { MdSpaceDashboard } from "react-icons/md";
 const DashboardButton = () => {
   const navigate = useNavigate();
 
-  // Giả sử role được lưu trong localStorage (thường là vậy trong project của bạn)
-  const role = JSON.parse(localStorage.getItem("currentUser"))?.role;
-  console.log(role);
+  // Lấy role an toàn với error handling
+  const getRole = () => {
+    try {
+      const userStr = localStorage.getItem("currentUser");
+      if (!userStr) return null;
+      const userObject = JSON.parse(userStr);
+      return userObject?.role || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const role = getRole();
+  
   const handleNavigate = () => {
     let path = "/";
 

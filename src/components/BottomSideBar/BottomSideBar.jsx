@@ -19,7 +19,20 @@ const BottomSideBar = ({ collapse }) => {
       return "User";
     }
   }
-  const Role = JSON.parse(localStorage.getItem("currentUser")).role;
+  
+  // Lấy role an toàn với error handling
+  const getRole = () => {
+    try {
+      const userStr = localStorage.getItem("currentUser");
+      if (!userStr) return null;
+      const userObject = JSON.parse(userStr);
+      return userObject?.role || null;
+    } catch {
+      return null;
+    }
+  };
+  
+  const Role = getRole();
 
   const items = [
     {

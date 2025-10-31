@@ -25,6 +25,7 @@ import {
 import api from "../../config/axios";
 import dayjs from "dayjs";
 import handleApiError from "../../Utils/handleApiError";
+import { getCurrentUser } from "../../config/auth";
 const { Option } = Select;
 const { Title, Text } = Typography;
 
@@ -55,14 +56,15 @@ export default function DriverSubscriptionManagement() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const userRes = await api.get("/Current");
-      setCurrentUser(userRes.data);
-      const userRole = userRes.data?.role;
+      // Lấy user từ localStorage thay vì gọi API
+      const user = getCurrentUser();
+      setCurrentUser(user);
+      const userRole = user?.role;
 
       const apiCalls = [
         userRole === "DRIVER"
           ? api.get("/driver-subscription/my-subscriptions")
-          : api.get("/driver-subscription"),
+          : api.get("/subscription/all-subscriptions"),
         api.get("/service-package"),
       ];
 
@@ -74,11 +76,17 @@ export default function DriverSubscriptionManagement() {
         apiCalls
       );
 
-      setData(
-        (Array.isArray(subscriptionRes?.data) ? subscriptionRes.data : []).sort(
-          (a, b) => b.id - a.id
-        )
-      );
+      // Xử lý response data - có thể là array hoặc object với property data
+      let subscriptions = [];
+      if (Array.isArray(subscriptionRes?.data)) {
+        subscriptions = subscriptionRes.data;
+      } else if (subscriptionRes?.data?.data && Array.isArray(subscriptionRes.data.data)) {
+        subscriptions = subscriptionRes.data.data;
+      } else if (subscriptionRes?.data) {
+        subscriptions = [subscriptionRes.data];
+      }
+
+      setData(subscriptions.sort((a, b) => b.id - a.id));
       setPackages(Array.isArray(packageRes?.data) ? packageRes.data : []);
 
       if (userRole !== "DRIVER" && driverRes) {
@@ -229,22 +237,20 @@ export default function DriverSubscriptionManagement() {
     }
   };
 
-  const openRenewalModal = (record) => {
+  const openRenewalModal = async (record) => {
     setSelectedSubscription(record);
     setIsRenewalModalVisible(true);
     setRenewalCalculation(null);
-    setTargetPackageId(null);
-  };
-
-  const handleCalculateRenewal = async (renewalPackageId) => {
-    setTargetPackageId(renewalPackageId);
-    if (!selectedSubscription) return;
-
+    
+    // Tự động set gói hiện tại làm gói gia hạn
+    const currentPackageId = record.packageId;
+    setTargetPackageId(currentPackageId);
+    
+    // Tự động gọi API calculate cho gói hiện tại
     setIsCalculatingRenewal(true);
-    setRenewalCalculation(null);
     try {
       const res = await api.get("/driver-subscription/renewal/calculate", {
-        params: { renewalPackageId },
+        params: { renewalPackageId: currentPackageId },
       });
       setRenewalCalculation(res.data);
     } catch (error) {
@@ -664,25 +670,19 @@ export default function DriverSubscriptionManagement() {
         ]}
         width={700}
       >
+        <Alert
+          message="Thông báo"
+          description="Bạn chỉ có thể gia hạn đúng gói cước hiện tại mà bạn đang sử dụng."
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
         <p>
-          <Text strong>Gói hiện tại:</Text>{" "}
-          {packageName(selectedSubscription?.packageId)}
+          <Text strong>Gói gia hạn:</Text>{" "}
+          <Tag color="blue" style={{ fontSize: "14px", padding: "4px 12px" }}>
+            {packageName(selectedSubscription?.packageId)}
+          </Tag>
         </p>
-        <Form layout="vertical">
-          <Form.Item label="Chọn gói để gia hạn:">
-            <Select
-              placeholder="Chọn một gói"
-              onChange={handleCalculateRenewal}
-              value={targetPackageId}
-            >
-              {packages.map((p) => (
-                <Option key={p.id} value={p.id}>
-                  {p.name} - {p.price.toLocaleString()}đ
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Form>
         {renderRenewalCalculationDetails()}
       </Modal>
     </div>

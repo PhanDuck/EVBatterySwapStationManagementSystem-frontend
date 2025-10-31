@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../../components/Layout/MainLayout";
 import RoleSidebar from "../../components/Layout/RoleSidebar";
 
+import DashboardOverview from "./DashboardOverview";
 import Users from "../Management/Users";
 import Stations from "../Management/Stations";
 import Vehicles from "../Management/Vehicles";
@@ -22,7 +23,8 @@ export default function AdminDashboard() {
       title="Trang quản trị hệ thống"
     >
       <Routes>
-        <Route index element={<Navigate to="users" />} />
+        <Route index element={<Navigate to="overview" />} />
+        <Route path="overview" element={<DashboardOverview />} />
         <Route path="users" element={<Users />} />
         <Route path="stations" element={<Stations />} />
         <Route path="batteries" element={<BatteryManagement />} />

@@ -19,6 +19,7 @@ import {
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
+import { getCurrentUser } from "../../config/auth";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -36,7 +37,7 @@ export default function SupportPage() {
   const [loadingCreate, setLoadingCreate] = useState(false);
   const [stationList, setStationList] = useState([]);
 
-  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+  const currentUser = getCurrentUser() || {};
   const role = currentUser?.role;
 
   // Fetch tickets + users
@@ -45,14 +46,19 @@ export default function SupportPage() {
     try {
       const ticketAPI =
         role === "DRIVER" ? "/support-ticket/my-tickets" : "/support-ticket";
-      const userAPI = role === "DRIVER" ? "/Current" : "/admin/user";
 
-      const [ticketRes, userRes] = await Promise.all([
-        api.get(ticketAPI),
-        api.get(userAPI),
-      ]);
+      // Nếu là DRIVER, không cần gọi API user vì đã có trong localStorage
+      // Nếu là ADMIN/STAFF, gọi API để lấy danh sách users
+      const apiCalls = [api.get(ticketAPI)];
+      if (role !== "DRIVER") {
+        apiCalls.push(api.get("/admin/user"));
+      }
 
-      const users = Array.isArray(userRes.data) ? userRes.data : [userRes.data];
+      const [ticketRes, userRes] = await Promise.all(apiCalls);
+
+      const users = role === "DRIVER" 
+        ? [currentUser] 
+        : Array.isArray(userRes?.data) ? userRes.data : [];
 
       const tickets = (ticketRes.data || [])
         .map((t) => {

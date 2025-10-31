@@ -69,12 +69,6 @@ const LoginPage = () => {
           password: formData.password,
         });
 
-        //  const res = await fetch(`http://103.200.20.190:8080/api/login/auth/login`, {
-        //     method: "POST",
-        //     body: JSON.stringify(data),
-        //     headers: { "Content-Type": "application/json" },
-        //   })
-
         const token =
           res?.data?.token ||
           res?.data?.accessToken ||
@@ -86,44 +80,31 @@ const LoginPage = () => {
         // Store token per rememberMe
         setToken(token, formData.rememberMe);
 
+        // Lấy thông tin user từ response hoặc gọi API /Current
         let user = res?.data?.user || res?.data?.currentUser;
+        
+        // Nếu response không có user, thử gọi API /Current
         if (!user) {
           try {
             const me = await api.get("/Current");
-            if (me?.data) user = me.data;
+            if (me?.data) {
+              user = me.data;
+            }
           } catch {
             try {
               const me2 = await api.get("/current");
-              if (me2?.data) user = me2.data;
+              if (me2?.data) {
+                user = me2.data;
+              }
             } catch {
               console.warn("⚠️ Không lấy được thông tin user hiện tại");
             }
           }
         }
 
-        // Optionally fetch current user
-        // Try to capture user info from login response if present
-        if (res?.data?.user || res?.data?.currentUser) {
-          localStorage.setItem(
-            "currentUser",
-            JSON.stringify(res.data.user || res.data.currentUser)
-          );
-        } else {
-          try {
-            const me = await api.get("/Current"); // common pattern
-            if (me?.data) {
-              localStorage.setItem("currentUser", JSON.stringify(me.data));
-            }
-          } catch {
-            try {
-              const me2 = await api.get("/current");
-              if (me2?.data) {
-                localStorage.setItem("currentUser", JSON.stringify(me2.data));
-              }
-            } catch {
-              // ignore if backend path differs; user will still be logged in
-            }
-          }
+        // Lưu user vào localStorage
+        if (user) {
+          localStorage.setItem("currentUser", JSON.stringify(user));
         }
 
         // Role-based redirect (normalize to Admin/Staff/Driver)

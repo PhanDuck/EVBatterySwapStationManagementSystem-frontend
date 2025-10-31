@@ -399,7 +399,8 @@ const VehiclePage = () => {
         )
       );
     } catch (error) {
-      handleApiError(error, "Tải lịch sử đổi pin.");
+      handleApiError(error, "Tải lịch sử đổi pin");
+    } finally {
       setHistoryLoading(false);
     }
   };

@@ -20,6 +20,7 @@ import api from "../../config/axios";
 import dayjs from "dayjs";
 import { FaDeleteLeft } from "react-icons/fa6";
 import handleApiError from "../../Utils/handleApiError";
+import { getCurrentUser } from "../../config/auth";
 
 const { TextArea } = Input;
 
@@ -35,14 +36,8 @@ export default function BookingsPage() {
   const [cancellingBooking, setCancellingBooking] = useState(null);
   const [cancelForm] = Form.useForm();
 
-  // 🧩 User hiện tại
-  let user = {};
-  try {
-    const raw = localStorage.getItem("currentUser");
-    user = raw ? JSON.parse(raw) : {};
-  } catch (error) {
-    handleApiError(error, "");
-  }
+  // 🧩 User hiện tại - lấy từ localStorage
+  const user = getCurrentUser() || {};
   const role = user?.role;
   const userId = user?.id;
   const navigate = useNavigate();
@@ -63,12 +58,13 @@ export default function BookingsPage() {
           api.get("/admin/user"),
         ]);
       } else {
-        [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
+        // DRIVER: không cần gọi API /Current vì đã có user trong localStorage
+        [bookingRes, vehicleRes, stationRes] = await Promise.all([
           api.get("/booking/my-bookings"),
           api.get("/vehicle/my-vehicles"),
           api.get("/station"),
-          api.get("/Current"),
         ]);
+        userRes = { data: user }; // Sử dụng user từ localStorage
       }
 
       setData(Array.isArray(bookingRes?.data) ? bookingRes.data : []);

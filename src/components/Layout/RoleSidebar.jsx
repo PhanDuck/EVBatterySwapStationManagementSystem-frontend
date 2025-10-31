@@ -9,9 +9,9 @@ import {
   FiBatteryCharging,
   FiSettings,
 } from "react-icons/fi";
-import { Tooltip } from "antd";
-import { MdOutlinePayments } from "react-icons/md";
+import { MdOutlinePayments, MdDashboard } from "react-icons/md";
 import { TbMessageCircleQuestion } from "react-icons/tb";
+import { Tooltip } from "antd";
 
 export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
   const base = role ? role.toLowerCase() : "";
@@ -22,6 +22,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
 
   const menu = {
     ADMIN: [
+      { path: "overview", label: "Dashboard", icon: <MdDashboard /> },
       { path: "users", label: "Quản lý người dùng", icon: <FiUsers /> },
       { path: "stations", label: "Quản lý trạm đổi pin", icon: <FiMap /> },
       { path: "batteries", label: "Quản lý pin", icon: <FiBatteryCharging /> },
