@@ -4,7 +4,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import Login from "../pages/Auth/Login";
+import Login from "../pages/Auth/login";
 import Register from "../pages/Auth/Register";
 import Home from "../pages/Shared/Home";
 import About from "../pages/Shared/About";
@@ -23,6 +23,8 @@ import SupportPage from "../pages/Shared/Support";
 import MoMoReturnPage from "../pages/Payment/MoMoReturnPage";
 import PaymentResult from "../pages/Payment/PaymentResult";
 import EnterConfirmationCode from "../pages/Shared/EnterConfirmationCode";
+import ForgotPassword from "../pages/Auth/ForgotPassword";
+import ResetPassword from "../pages/Auth/ResetPassword";
 
 export default function AppRouter() {
   const authed = isAuthenticated();
@@ -52,6 +54,8 @@ export default function AppRouter() {
           <Route path="/support" element={<SupportPage />} />
           <Route path="/stations/nearby" element={<StationsNearbyPage />} />
           <Route path="/codeConfirm" element={<EnterConfirmationCode />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Protected */}
           <Route element={<PrivateRoute roles={["Driver"]} />}>
