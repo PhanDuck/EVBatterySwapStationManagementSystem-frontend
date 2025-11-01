@@ -80,7 +80,10 @@ export default function DriverSubscriptionManagement() {
       let subscriptions = [];
       if (Array.isArray(subscriptionRes?.data)) {
         subscriptions = subscriptionRes.data;
-      } else if (subscriptionRes?.data?.data && Array.isArray(subscriptionRes.data.data)) {
+      } else if (
+        subscriptionRes?.data?.data &&
+        Array.isArray(subscriptionRes.data.data)
+      ) {
         subscriptions = subscriptionRes.data.data;
       } else if (subscriptionRes?.data) {
         subscriptions = [subscriptionRes.data];
@@ -241,11 +244,11 @@ export default function DriverSubscriptionManagement() {
     setSelectedSubscription(record);
     setIsRenewalModalVisible(true);
     setRenewalCalculation(null);
-    
+
     // Tự động set gói hiện tại làm gói gia hạn
     const currentPackageId = record.packageId;
     setTargetPackageId(currentPackageId);
-    
+
     // Tự động gọi API calculate cho gói hiện tại
     setIsCalculatingRenewal(true);
     try {

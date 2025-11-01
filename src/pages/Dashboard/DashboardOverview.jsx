@@ -171,7 +171,10 @@ export default function DashboardOverview() {
     // Tạo mảng dữ liệu cho biểu đồ
     const dates = [];
     let currentDate = startDate.clone();
-    while (currentDate.isBefore(endDate) || currentDate.isSame(endDate, "day")) {
+    while (
+      currentDate.isBefore(endDate) ||
+      currentDate.isSame(endDate, "day")
+    ) {
       const dateStr = currentDate.format("DD/MM");
       dates.push({
         date: dateStr,
@@ -377,14 +380,22 @@ export default function DashboardOverview() {
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={revenueData}>
                   <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient
+                      id="colorRevenue"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
                       <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
                       <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
-                  <YAxis tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`} />
+                  <YAxis
+                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
+                  />
                   <Tooltip
                     formatter={(value) => [formatCurrency(value), "Doanh thu"]}
                   />
@@ -478,7 +489,12 @@ export default function DashboardOverview() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={stationPerformanceData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" angle={-15} textAnchor="end" height={80} />
+                  <XAxis
+                    dataKey="name"
+                    angle={-15}
+                    textAnchor="end"
+                    height={80}
+                  />
                   <YAxis />
                   <Tooltip />
                   <Legend />

@@ -16,6 +16,7 @@ import {
   EyeOutlined,
   MessageOutlined,
   ReloadOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
@@ -36,6 +37,10 @@ export default function SupportPage() {
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [loadingCreate, setLoadingCreate] = useState(false);
   const [stationList, setStationList] = useState([]);
+  const [isEditStatusModalVisible, setIsEditStatusModalVisible] =
+    useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [editStatusForm] = Form.useForm();
 
   const currentUser = getCurrentUser() || {};
   const role = currentUser?.role;
@@ -56,9 +61,12 @@ export default function SupportPage() {
 
       const [ticketRes, userRes] = await Promise.all(apiCalls);
 
-      const users = role === "DRIVER" 
-        ? [currentUser] 
-        : Array.isArray(userRes?.data) ? userRes.data : [];
+      const users =
+        role === "DRIVER"
+          ? [currentUser]
+          : Array.isArray(userRes?.data)
+          ? userRes.data
+          : [];
 
       const tickets = (ticketRes.data || [])
         .map((t) => {
@@ -106,7 +114,7 @@ export default function SupportPage() {
       const payload = {
         subject: values.subject,
         description: values.description,
-        stationId: values.stationId, 
+        stationId: values.stationId,
       };
 
       await api.post("/support-ticket", payload);
@@ -119,6 +127,12 @@ export default function SupportPage() {
     } finally {
       setLoadingCreate(false);
     }
+  };
+
+  const handleEditStatusClick = (record) => {
+    setEditingRecord(record);
+    editStatusForm.setFieldsValue({ status: record.status });
+    setIsEditStatusModalVisible(true);
   };
 
   // ✨ Hàm mới để xử lý thay đổi status
@@ -137,6 +151,7 @@ export default function SupportPage() {
       );
 
       message.success(`Ticket ${ticketId} status updated to ${newStatus}`);
+      setIsEditStatusModalVisible(false);
     } catch (error) {
       handleApiError(error, "cập nhật trạng thái vé");
     }
@@ -180,11 +195,26 @@ export default function SupportPage() {
       });
       message.success("✅ Reply sent!");
       fetchResponses(viewingRecord.id); // refresh list
+      form.resetFields(["message"]); // Clear the reply box
+      // Optional: Update status to IN_PROGRESS when replying
+      if (viewingRecord.status === "OPEN") {
+        handleStatusChange({ status: "IN_PROGRESS" }, viewingRecord.id);
+      }
     } catch (error) {
       handleApiError(error, "gửi phản hồi");
     } finally {
       setLoadingReply(false);
     }
+  };
+
+  const getStatusTag = (status) => {
+    const color =
+      status === "RESOLVED"
+        ? "green"
+        : status === "IN_PROGRESS"
+        ? "blue"
+        : "orange";
+    return <Tag color={color}>{status}</Tag>;
   };
 
   const columns = [
@@ -231,38 +261,39 @@ export default function SupportPage() {
       dataIndex: "status",
       key: "status",
       width: 220,
-      render: (status, record) => {
-        // Nếu là DRIVER, chỉ hiển thị Tag
-        if (role === "DRIVER") {
-          const color =
-            status === "RESOLVED"
-              ? "green"
-              : status === "IN_PROGRESS"
-              ? "blue"
-              : "orange";
-          return <Tag color={color}>{status}</Tag>;
-        }
+      render: (status) => getStatusTag(status),
+      // render: (status, record) => {
+      //   // Nếu là DRIVER, chỉ hiển thị Tag
+      //   if (role === "DRIVER") {
+      //     const color =
+      //       status === "RESOLVED"
+      //         ? "green"
+      //         : status === "IN_PROGRESS"
+      //         ? "blue"
+      //         : "orange";
+      //     return <Tag color={color}>{status}</Tag>;
+      //   }
 
-        // Nếu là ADMIN/STAFF, hiển thị Select
-        return (
-          <Select
-            defaultValue={status}
-            style={{ width: 120 }}
-            onChange={(newStatus) => handleStatusChange(record.id, newStatus)}
-            bordered={false}
-          >
-            <Option value="OPEN">
-              <Tag color="orange">OPEN</Tag>
-            </Option>
-            <Option value="IN_PROGRESS">
-              <Tag color="blue">IN_PROGRESS</Tag>
-            </Option>
-            <Option value="RESOLVED">
-              <Tag color="green">RESOLVED</Tag>
-            </Option>
-          </Select>
-        );
-      },
+      //   // Nếu là ADMIN/STAFF, hiển thị Select
+      //   return (
+      //     <Select
+      //       defaultValue={status}
+      //       style={{ width: 120 }}
+      //       onChange={(newStatus) => handleStatusChange(record.id, newStatus)}
+      //       bordered={false}
+      //     >
+      //       <Option value="OPEN">
+      //         <Tag color="orange">OPEN</Tag>
+      //       </Option>
+      //       <Option value="IN_PROGRESS">
+      //         <Tag color="blue">IN_PROGRESS</Tag>
+      //       </Option>
+      //       <Option value="RESOLVED">
+      //         <Tag color="green">RESOLVED</Tag>
+      //       </Option>
+      //     </Select>
+      //   );
+      // },
     },
     {
       title: "Trạm",
@@ -277,6 +308,16 @@ export default function SupportPage() {
       fixed: "right",
       render: (_, record) => (
         <Space>
+          {(role === "ADMIN" || role === "STAFF") && (
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              size="small"
+              onClick={() => handleEditStatusClick(record)}
+            >
+              Cập nhật trạng thái
+            </Button>
+          )}
           <Button
             type="primary"
             icon={<EyeOutlined />}
@@ -310,7 +351,7 @@ export default function SupportPage() {
                 icon={<PlusOutlined />}
                 onClick={() => setIsCreateModalVisible(true)}
               >
-                Thêm hỗ trợ
+                Yêu cầu hỗ trợ
               </Button>
             )}
             <Button icon={<ReloadOutlined />} onClick={fetchData}>
@@ -321,7 +362,11 @@ export default function SupportPage() {
       >
         <Table
           columns={columns}
-          dataSource={data}
+          dataSource={data.filter(
+            (t) =>
+              t.subject?.toLowerCase().includes(searchText.toLowerCase()) ||
+              t.driverName?.toLowerCase().includes(searchText.toLowerCase())
+          )}
           loading={loading}
           rowKey="id"
           pagination={{
@@ -429,14 +474,9 @@ export default function SupportPage() {
                 <Form onFinish={handleReply}>
                   <Form.Item
                     name="message"
-                    rules={[
-                      { required: true, message: "Hãy nhập phản hồi!" },
-                    ]}
+                    rules={[{ required: true, message: "Hãy nhập phản hồi!" }]}
                   >
-                    <Input.TextArea
-                      rows={3}
-                      placeholder="Nhập phản hồi..."
-                    />
+                    <Input.TextArea rows={3} placeholder="Nhập phản hồi..." />
                   </Form.Item>
                   <Button
                     type="primary"
@@ -455,7 +495,7 @@ export default function SupportPage() {
       </Modal>
       {/* 🧾 Create Ticket Modal — chỉ dành cho DRIVER */}
       <Modal
-        title="Create Support Ticket"
+        title="Tạo yêu cầu hỗ trợ"
         open={isCreateModalVisible}
         onCancel={() => setIsCreateModalVisible(false)}
         footer={null}
@@ -468,7 +508,7 @@ export default function SupportPage() {
         >
           {/* 🏙️ Thêm chọn trạm */}
           <Form.Item label="Trạm" name="stationId">
-            <Select placeholder="Select your station">
+            <Select placeholder="Chọn trạm">
               {stationList.map((station) => (
                 <Option key={station.id} value={station.id}>
                   {station.name}
@@ -479,23 +519,19 @@ export default function SupportPage() {
           <Form.Item
             label="Tiêu đề"
             name="subject"
-            rules={[
-              { required: true, message: "Please enter the ticket subject!" },
-            ]}
+            rules={[{ required: true, message: "Vui lòng nhập tiêu đề!" }]}
           >
-            <Input placeholder="Enter ticket subject" />
+            <Input placeholder="Nhập tiêu đề yêu cầu" />
           </Form.Item>
 
           <Form.Item
             label="Mô tả"
             name="description"
-            rules={[
-              { required: true, message: "Please enter ticket details!" },
-            ]}
+            rules={[{ required: true, message: "Vui lòng nhập chi tiết!" }]}
           >
             <TextArea
               rows={4}
-              placeholder="Describe your issue or question..."
+              placeholder="Mô tả vấn đề hoặc câu hỏi của bạn..."
             />
           </Form.Item>
 
@@ -508,6 +544,36 @@ export default function SupportPage() {
                 Gửi yêu cầu
               </Button>
             </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        title={`Cập nhật trạng thái - #${editingRecord?.id || ""}`}
+        open={isEditStatusModalVisible}
+        onCancel={() => setIsEditStatusModalVisible(false)}
+        onOk={() => editStatusForm.submit()}
+        okText="Cập nhật"
+        cancelText="Hủy"
+        confirmLoading={loading} // Reuse loading state for simplicity
+      >
+        <Form
+          form={editStatusForm}
+          layout="vertical"
+          onFinish={handleStatusChange}
+          style={{ marginTop: "10px" }}
+        >
+          <Form.Item
+            label="Trạng thái"
+            name="status"
+            rules={[
+              { required: true, message: "Vui lòng chọn trạng thái mới!" },
+            ]}
+          >
+            <Select placeholder="Chọn trạng thái mới">
+              <Option value="OPEN">{getStatusTag("OPEN")}</Option>
+              <Option value="IN_PROGRESS">{getStatusTag("IN_PROGRESS")}</Option>
+              <Option value="RESOLVED">{getStatusTag("RESOLVED")}</Option>
+            </Select>
           </Form.Item>
         </Form>
       </Modal>

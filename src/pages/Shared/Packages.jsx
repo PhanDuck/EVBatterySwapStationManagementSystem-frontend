@@ -11,7 +11,6 @@ function PackagesPage() {
     setPackages(res.data || []);
   };
   const handlePayMoMo = async (packageId) => {
-
     try {
       const redirectUrl = "http://evbatteryswapsystem.com/payment/result";
 
@@ -30,7 +29,6 @@ function PackagesPage() {
     } catch (err) {
       console.error("Error:", err);
       message.error("Lỗi khi tạo thanh toán MoMo!");
-
     }
   };
 
@@ -50,7 +48,6 @@ function PackagesPage() {
       handlePayMoMo(packageId);
     }
   };
-
 
   return (
     <div>

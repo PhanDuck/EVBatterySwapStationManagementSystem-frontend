@@ -36,8 +36,10 @@ async function callApi({
     if (err && err.response) {
       status = err.response.status;
       payload = err.response.data;
-      handleApiError(err.response.data &&
-          (err.response.data.message || err.response.data.error)) ||
+      handleApiError(
+        err.response.data &&
+          (err.response.data.message || err.response.data.error)
+      ) ||
         err.response.statusText ||
         messageText;
       // if unauthorized, clear stored tokens

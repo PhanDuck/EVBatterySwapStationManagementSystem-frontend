@@ -62,7 +62,7 @@ const AssignStaffModal = ({
       );
       onSuccess();
     } catch (error) {
-      handleApiError(error,"Phân quyền nhân viên");
+      handleApiError(error, "Phân quyền nhân viên");
     }
   };
 
@@ -179,7 +179,7 @@ export default function AssignmentPage() {
       setAssignments(data);
       message.success(`Tải thành công ${data.length} phân quyền.`);
     } catch (error) {
-      handleApiError(error,"Danh sách phân quyền nhân viên"); 
+      handleApiError(error, "Danh sách phân quyền nhân viên");
       setAssignments([]);
     } finally {
       setLoading(false);
@@ -196,7 +196,7 @@ export default function AssignmentPage() {
       const staffsFetched = Array.isArray(staffRes.data) ? staffRes.data : [];
       setAllStaffs(staffsFetched);
     } catch (error) {
-      handleApiError(error,"Danh sách nhân viên");
+      handleApiError(error, "Danh sách nhân viên");
     }
 
     // Tải Trạm
@@ -209,7 +209,7 @@ export default function AssignmentPage() {
         : [];
       setAllStations(stationsFetched);
     } catch (error) {
-      handleApiError(error,"Danh sách trạm");
+      handleApiError(error, "Danh sách trạm");
     }
   }, []);
 
@@ -228,7 +228,7 @@ export default function AssignmentPage() {
       );
       await fetchAllAssignments(); // Tải lại danh sách sau khi xóa
     } catch (error) {
-      handleApiError(error,"Xóa phân quyền nhân viên");
+      handleApiError(error, "Xóa phân quyền nhân viên");
     }
     setLoading(false);
   };

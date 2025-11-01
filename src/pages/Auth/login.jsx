@@ -82,7 +82,7 @@ const LoginPage = () => {
 
         // Lấy thông tin user từ response hoặc gọi API /Current
         let user = res?.data?.user || res?.data?.currentUser;
-        
+
         // Nếu response không có user, thử gọi API /Current
         if (!user) {
           try {

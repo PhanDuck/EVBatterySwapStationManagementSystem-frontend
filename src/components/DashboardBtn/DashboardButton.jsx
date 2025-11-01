@@ -20,7 +20,7 @@ const DashboardButton = () => {
   };
 
   const role = getRole();
-  
+
   const handleNavigate = () => {
     let path = "/";
 

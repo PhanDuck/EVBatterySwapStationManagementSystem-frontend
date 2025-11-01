@@ -35,7 +35,7 @@ const ServicePackagesPage = () => {
       const res = await api.get("/service-package");
       setPackages(res.data.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (error) {
-      handleApiError(error,"Danh sách gói dịch vụ");
+      handleApiError(error, "Danh sách gói dịch vụ");
     }
   };
 
@@ -44,7 +44,7 @@ const ServicePackagesPage = () => {
       const res = await api.get("/admin/user");
       setUsers(res.data);
     } catch (error) {
-      handleApiError(error,"Danh sách người dùng");
+      handleApiError(error, "Danh sách người dùng");
     }
   };
 
@@ -83,7 +83,7 @@ const ServicePackagesPage = () => {
       form.resetFields();
       fetchPackages();
     } catch (error) {
-      handleApiError(error,"Lưu gói dịch vụ");
+      handleApiError(error, "Lưu gói dịch vụ");
     }
   };
 
@@ -99,8 +99,7 @@ const ServicePackagesPage = () => {
           message.success("Package deleted successfully");
           fetchPackages();
         } catch (error) {
-          handleApiError(error,"Xóa gói dịch vụ");
-
+          handleApiError(error, "Xóa gói dịch vụ");
         }
       },
     });
@@ -167,7 +166,6 @@ const ServicePackagesPage = () => {
       dataIndex: "maxSwaps",
       key: "maxSwaps",
       render: (swaps) => `${swaps || 0} lần`,
-
     },
     { title: "Mô tả", dataIndex: "description", key: "description" },
     {
@@ -197,7 +195,6 @@ const ServicePackagesPage = () => {
       ),
     },
   ];
-
 
   const userMap = useMemo(
     () => new Map(users.map((user) => [user.id, user.fullName])),
@@ -322,9 +319,7 @@ const ServicePackagesPage = () => {
         />
       </Card>
 
-
       <Card title="Quản lý gói cước của tài xế" style={{ marginTop: "24px" }}>
-
         <Table
           columns={subscriptionColumns}
           dataSource={driverSubscriptions}

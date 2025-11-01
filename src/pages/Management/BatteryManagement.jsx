@@ -19,16 +19,22 @@ import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
 
 const { Option } = Select;
+const { TextArea } = Input;
 
 export default function BatteryManagement() {
   const [batteries, setBatteries] = useState([]);
-  const [batteryTypes, setBatteryTypes] = useState([]);
   const [stations, setStations] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingBattery, setEditingBattery] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
   const [search, setSearch] = useState("");
+  const [batteryTypes, setBatteryTypes] = useState([]);
+  const [isTypeModalVisible, setIsTypeModalVisible] = useState(false);
+  const [editingType, setEditingType] = useState(null);
+  const [loadingTypes, setLoadingTypes] = useState(false);
+  const [typeSearch, setTypeSearch] = useState("");
+  const [form] = Form.useForm();
+  const [typeForm] = Form.useForm();
 
   const user = JSON.parse(
     localStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")
@@ -36,53 +42,56 @@ export default function BatteryManagement() {
   const role = user?.role;
   const stationId = user?.stationId;
 
-  // 🟢 Fetch data
-  useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        let batteryRes;
+  // 🟢 Fetch data (Battery + Type + Station)
+  const fetchAllData = async () => {
+    setLoading(true);
+    setLoadingTypes(true);
+    try {
+      let batteryRes;
 
-        if (role === "ADMIN") {
-          batteryRes = await api.get("/battery");
-        } else if (role === "STAFF" && stationId) {
-          batteryRes = await api.get(`/battery?stationId=${stationId}`);
-        } else {
-          message.warning("Bạn không có quyền xem trang này!");
-          return;
-        }
-
-        const [typeRes, stationRes] = await Promise.all([
-          api.get("/battery-type").catch(() => ({ data: [] })),
-          api.get("/station").catch(() => ({ data: [] })),
-        ]);
-
-        const typeData = typeRes?.data || [];
-        const stationData = stationRes?.data || [];
-
-        setBatteryTypes(typeData);
-        setStations(stationData);
-
-        // 🔁 Map battery type name + station name
-        const mapped = (batteryRes?.data || []).map((b) => ({
-          ...b,
-          batteryTypeName:
-            typeData.find((t) => t.id === b.batteryTypeId)?.name ||
-            "Không xác định",
-          currentStationName:
-            stationData.find((s) => s.id === b.currentStation)?.name ||
-            "Không xác định",
-        }));
-        setBatteries(mapped.sort((a, b) => b.id - a.id)); // Sắp xếp theo ID giảm dần
-      } catch (error) {
-        handleApiError(error, "tải dữ liệu");
-
-      } finally {
-        setLoading(false);
+      if (role === "ADMIN") {
+        batteryRes = await api.get("/battery");
+      } else if (role === "STAFF" && stationId) {
+        batteryRes = await api.get(`/battery?stationId=${stationId}`);
+      } else {
+        message.warning("Bạn không có quyền xem trang này!");
+        return;
       }
-    };
-    fetchAll();
-  }, []);
+
+      const [typeRes, stationRes] = await Promise.all([
+        api.get("/battery-type").catch(() => ({ data: [] })),
+        api.get("/station").catch(() => ({ data: [] })),
+      ]);
+
+      const typeData = typeRes?.data || [];
+      const stationData = stationRes?.data || [];
+
+      setBatteryTypes(typeData.sort((a, b) => b.id - a.id)); // Lưu loại pin
+      setStations(stationData);
+
+      // 🔁 Map battery type name + station name
+      const mapped = (batteryRes?.data || []).map((b) => ({
+        ...b,
+        key: b.id, // Thêm key
+        batteryTypeName:
+          typeData.find((t) => t.id === b.batteryTypeId)?.name ||
+          "Không xác định",
+        currentStationName:
+          stationData.find((s) => s.id === b.currentStation)?.name ||
+          "Không xác định",
+      }));
+      setBatteries(mapped.sort((a, b) => b.id - a.id)); // Sắp xếp theo ID giảm dần
+    } catch (error) {
+      handleApiError(error, "tải dữ liệu");
+    } finally {
+      setLoading(false);
+      setLoadingTypes(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, [role, stationId]);
 
   // 🟡 Submit (Create / Update)
   const handleSubmit = async (values) => {
@@ -98,13 +107,15 @@ export default function BatteryManagement() {
       if (editingBattery) {
         res = await api.put(`/battery/${editingBattery.id}`, data);
         message.success("Cập nhật pin thành công!");
-        setBatteries((prev) =>
-          prev.map((b) => (b.id === editingBattery.id ? { ...b, ...data } : b))
-        );
+        fetchAllData();
+        // setBatteries((prev) =>
+        //   prev.map((b) => (b.id === editingBattery.id ? { ...b, ...data } : b))
+        // );
       } else {
         res = await api.post("/battery", data);
         message.success("Thêm pin mới thành công!");
-        setBatteries((prev) => [...prev, res.data]);
+        fetchAllData();
+        // setBatteries((prev) => [...prev, res.data]);
       }
 
       setIsModalVisible(false);
@@ -144,6 +155,54 @@ export default function BatteryManagement() {
       lastMaintenanceDate: record.lastMaintenanceDate
         ? dayjs(record.lastMaintenanceDate)
         : null,
+    });
+  };
+
+  // 🟡 Submit (Create / Update Type) - POST/PUT /api/battery-type
+  const handleTypeSubmit = async (values) => {
+    const data = {
+      ...values,
+      voltage: parseFloat(values.voltage),
+      capacity: parseFloat(values.capacity),
+      weight: parseFloat(values.weight),
+    };
+
+    try {
+      if (editingType) {
+        // Cập nhật (PUT /api/battery-type/{id})
+        await api.put(`/battery-type/${editingType.id}`, data);
+        message.success("Cập nhật loại pin thành công!");
+        // Cập nhật lại list loại pin
+        setBatteryTypes((prev) =>
+          prev.map((t) => (t.id === editingType.id ? { ...t, ...data } : t))
+        );
+      } else {
+        // Tạo mới (POST /api/battery-type)
+        const res = await api.post("/battery-type", data);
+        message.success("Thêm loại pin mới thành công!");
+        // Thêm bản ghi mới vào đầu danh sách
+        setBatteryTypes((prev) => [res.data, ...prev]);
+      }
+      // Sau khi thêm/sửa, refresh cả bảng Pin thường để cập nhật tên Loại Pin nếu cần
+      fetchAllData();
+      setIsTypeModalVisible(false);
+      typeForm.resetFields();
+    } catch (err) {
+      handleApiError(err, "lưu thông tin loại pin");
+    }
+  };
+
+  // ✏️ Sửa Loại Pin
+  const handleTypeEdit = (record) => {
+    setEditingType(record);
+    setIsTypeModalVisible(true);
+    // Gán giá trị vào form.
+    typeForm.setFieldsValue({
+      ...record,
+      // Chuyển các giá trị số về String để InputNumber hiển thị chính xác
+      voltage: String(record.voltage || 0),
+      capacity: String(record.capacity || 0),
+      weight: String(record.weight || 0),
     });
   };
 
@@ -241,8 +300,104 @@ export default function BatteryManagement() {
     },
   ];
 
+  const batteryTypeColumns = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: "descend",
+    },
+    { title: "Tên loại pin", dataIndex: "name", key: "name", width: 180 },
+    {
+      title: "Mô tả",
+      dataIndex: "description",
+      key: "description",
+      width: 250,
+      render: (text) => (
+        <span
+          style={{
+            display: "block",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          }}
+        >
+          {text}
+        </span>
+      ),
+    },
+    {
+      title: "Điện áp (V)",
+      dataIndex: "voltage",
+      key: "voltage",
+      width: 120,
+    },
+    {
+      title: "Dung lượng (Ah)",
+      dataIndex: "capacity",
+      key: "capacity",
+      width: 150,
+    },
+    {
+      title: "Khối lượng (kg)",
+      dataIndex: "weight",
+      key: "weight",
+      width: 150,
+    },
+    {
+      title: "Kích thước (cm)",
+      dataIndex: "dimensions",
+      key: "dimensions",
+      width: 150,
+    },
+    {
+      title: "Thao tác",
+      key: "actions",
+      fixed: "right",
+      width: 100,
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={() => handleTypeEdit(record)}
+          >
+            Sửa
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  // 🔍 Lọc dữ liệu Pin thường
+  const filteredBatteries = batteries.filter((b) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      b.model?.toLowerCase().includes(q) ||
+      b.batteryTypeName?.toLowerCase().includes(q) ||
+      b.currentStationName?.toLowerCase().includes(q) ||
+      b.status?.toLowerCase().includes(q)
+    );
+  });
+
+  // 🔍 Lọc dữ liệu Loại Pin
+  const filteredTypes = batteryTypes.filter((t) => {
+    if (!typeSearch) return true;
+    const q = typeSearch.toLowerCase();
+    return (
+      t.name?.toLowerCase().includes(q) ||
+      t.description?.toLowerCase().includes(q) ||
+      t.dimensions?.toLowerCase().includes(q) ||
+      t.id.toString().includes(q)
+    );
+  });
+
   return (
     <div style={{ padding: 24 }}>
+      {/* BẢNG QUẢN LÝ PIN */}
       <Card
         title="Quản lý pin"
         extra={
@@ -263,7 +418,7 @@ export default function BatteryManagement() {
                   setIsModalVisible(true);
                 }}
               >
-                Thêm mới
+                Thêm
               </Button>
             )}
           </Space>
@@ -286,6 +441,47 @@ export default function BatteryManagement() {
           pagination={{
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} trên tổng ${total} pin`,
+          }}
+          scroll={{ x: 1200 }}
+        />
+      </Card>
+
+      {/* Khoảng cách giữa hai bảng */}
+      <div style={{ margin: "40px 0" }} />
+
+      {/* BẢNG QUẢN LÝ LOẠI PIN */}
+      <Card
+        title="Quản lý Loại Pin"
+        extra={
+          <Space>
+            <Input
+              placeholder="Tìm theo tên / mô tả / kích thước"
+              value={typeSearch}
+              onChange={(e) => setTypeSearch(e.target.value)}
+              style={{ width: 300 }}
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditingType(null);
+                typeForm.resetFields();
+                setIsTypeModalVisible(true);
+              }}
+            >
+              Tạo mới
+            </Button>
+          </Space>
+        }
+      >
+        <Table
+          columns={batteryTypeColumns}
+          dataSource={filteredTypes}
+          rowKey="id"
+          loading={loadingTypes}
+          pagination={{
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} trên tổng ${total} loại pin`,
           }}
           scroll={{ x: 1200 }}
         />
@@ -381,6 +577,66 @@ export default function BatteryManagement() {
                 {editingBattery ? "Cập nhật" : "Tạo mới"}
               </Button>
               <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={editingType ? "Chỉnh sửa Loại Pin" : "Thêm mới Loại Pin"}
+        open={isTypeModalVisible}
+        onCancel={() => setIsTypeModalVisible(false)}
+        footer={null}
+      >
+        <Form form={typeForm} layout="vertical" onFinish={handleTypeSubmit}>
+          <Form.Item
+            name="name"
+            label="Tên loại pin"
+            rules={[{ required: true, message: "Vui lòng nhập tên loại pin" }]}
+          >
+            <Input placeholder="Ví dụ: Standard 48V-20Ah" />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="Mô tả"
+            rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
+          >
+            <TextArea rows={2} placeholder="Mô tả chi tiết về loại pin" />
+          </Form.Item>
+          <Form.Item
+            name="voltage"
+            label="Điện áp (V)"
+            rules={[{ required: true, message: "Vui lòng nhập điện áp" }]}
+          >
+            <InputNumber style={{ width: "100%" }} min={0} addonAfter="V" />
+          </Form.Item>
+          <Form.Item
+            name="capacity"
+            label="Dung lượng (Ah)"
+            rules={[{ required: true, message: "Vui lòng nhập dung lượng" }]}
+          >
+            <InputNumber style={{ width: "100%" }} min={0} addonAfter="Ah" />
+          </Form.Item>
+          <Form.Item
+            name="weight"
+            label="Khối lượng (kg)"
+            rules={[{ required: true, message: "Vui lòng nhập khối lượng" }]}
+          >
+            <InputNumber style={{ width: "100%" }} min={0} addonAfter="kg" />
+          </Form.Item>
+          <Form.Item
+            name="dimensions"
+            label="Kích thước (cm)"
+            rules={[{ required: true, message: "Vui lòng nhập kích thước" }]}
+          >
+            <Input placeholder="Ví dụ: 30x15x10 cm" />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit">
+                {editingType ? "Cập nhật" : "Tạo mới"}
+              </Button>
+              <Button onClick={() => setIsTypeModalVisible(false)}>Hủy</Button>
             </Space>
           </Form.Item>
         </Form>

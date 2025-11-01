@@ -330,7 +330,7 @@ const VehiclePage = () => {
         // 3. CẬP NHẬT state vehicles với dữ liệu đầy đủ
         setVehicles(vehiclesWithCounts);
       } catch (error) {
-        handleApiError(error, "Danh sách phương tiện");;
+        handleApiError(error, "Danh sách phương tiện");
         console.error(error);
       } finally {
         setLoading(false);
@@ -348,7 +348,7 @@ const VehiclePage = () => {
         const res = await api.get("/station");
         setStations(res.data || []);
       } catch (error) {
-        handleApiError(error, `Tải danh sách trạm:`);      
+        handleApiError(error, `Tải danh sách trạm:`);
       }
     };
     fetchStations();
@@ -471,12 +471,12 @@ const VehiclePage = () => {
           <Space>
             {/* 🆕 Nút Xem lịch sử cho TẤT CẢ các vai trò */}
             <Button
-              type="default" // Có thể dùng 'default' hoặc 'dashed'
+              type="primary" // Có thể dùng 'default' hoặc 'dashed'
               icon={<EyeOutlined />}
               size="small"
               onClick={() => handleViewHistory(record.id)} // Gọi hàm xem lịch sử
             >
-              Xem lịch sử
+              Xem
             </Button>
 
             {!isDriver && (

@@ -19,7 +19,7 @@ const BottomSideBar = ({ collapse }) => {
       return "User";
     }
   }
-  
+
   // Lấy role an toàn với error handling
   const getRole = () => {
     try {
@@ -31,7 +31,7 @@ const BottomSideBar = ({ collapse }) => {
       return null;
     }
   };
-  
+
   const Role = getRole();
 
   const items = [

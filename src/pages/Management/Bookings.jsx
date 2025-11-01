@@ -12,9 +12,9 @@ import {
   message,
   Spin,
 } from "antd";
-import {
-  PlusOutlined,
-  CloseCircleOutlined,
+import { 
+  PlusOutlined, 
+  CloseCircleOutlined 
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";

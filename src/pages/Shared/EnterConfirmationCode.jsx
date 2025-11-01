@@ -21,7 +21,6 @@ import {
 } from "@ant-design/icons";
 import axios from "axios";
 
-
 export default function SwapAnimation() {
   const [code, setCode] = useState("");
 
@@ -409,8 +408,6 @@ export default function SwapAnimation() {
   );
 };
 
-
-
 // const handleConfirm = async () => {
 //   if (!code || code.length !== 6) {
 //     return message.warning("⚠️ Vui lòng nhập đúng mã gồm 6 ký tự.");
@@ -465,4 +462,3 @@ export default function SwapAnimation() {
 //     </Button>
 //   </Card>
 // );
-

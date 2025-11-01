@@ -22,11 +22,9 @@ import {
   EnvironmentOutlined,
   ThunderboltOutlined,
   EyeOutlined,
-
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
-
 
 const { Option } = Select;
 

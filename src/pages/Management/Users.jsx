@@ -69,8 +69,8 @@ export default function AccountPage() {
           setAccounts((prev) => prev.filter((u) => (u.id ?? u._id) !== id));
           message.success("Đã xóa thành công!");
         } catch (error) {
-            handleApiError(error, "xóa người dùng");
-         } finally {
+          handleApiError(error, "xóa người dùng");
+        } finally {
           setDeletingId(null);
         }
       },
