@@ -50,12 +50,14 @@ const ServicePackagesPage = () => {
 
   const fetchDriverSubscriptions = async () => {
     try {
-
-      const res = await api.get("/driver-subscription/my-subscriptions");
-      setDriverSubscriptions(res.data.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
-
+      // Sử dụng API admin để lấy tất cả driver subscriptions
+      const res = await api.get("/driver-subscription");
+      const subscriptions = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data || [];
+      setDriverSubscriptions(subscriptions.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (error) {
-      handleApiError(error,"Danh sách gói cước tài xế");
+      handleApiError(error, "Danh sách gói cước tài xế");
     }
   };
 
@@ -106,18 +108,18 @@ const ServicePackagesPage = () => {
 
   const handleDeleteDriverSubscription = (id) => {
     Modal.confirm({
-      title: "Are you sure you want to delete this subscription?",
-      content: "This will permanently remove the driver's subscription.",
-      okText: "Yes, Delete",
+      title: "Bạn có chắc muốn xóa gói cước này?",
+      content: "Hành động này sẽ xóa vĩnh viễn gói cước của tài xế.",
+      okText: "Có, Xóa",
       okType: "danger",
-      cancelText: "No",
+      cancelText: "Không",
       onOk: async () => {
         try {
           await api.delete(`/driver-subscription/${id}`);
-          message.success("Driver subscription deleted successfully");
+          message.success("Đã xóa gói cước tài xế thành công!");
           fetchDriverSubscriptions();
         } catch (error) {
-          handleApiError(error,"Xóa gói cước tài xế");
+          handleApiError(error, "Xóa gói cước tài xế");
         }
       },
     });
@@ -211,45 +213,66 @@ const ServicePackagesPage = () => {
       title: "ID",
       dataIndex: "id",
       key: "id",
+      width: 80,
       sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: "descend",
     },
     {
       title: "Tài xế",
       dataIndex: "driverId",
       key: "driverName",
-      render: (driverId) => userMap.get(driverId) || "Unknown User",
+      render: (driverId) => userMap.get(driverId) || `ID: ${driverId}`,
     },
     {
-      title: "Gói",
+      title: "Gói dịch vụ",
       dataIndex: "packageId",
       key: "packageName",
-      render: (packageId) => packageMap.get(packageId) || "Unknown Package",
+      render: (packageId) => packageMap.get(packageId) || `ID: ${packageId}`,
     },
     {
-      title: "Ngày đăng kí",
+      title: "Ngày đăng ký",
       dataIndex: "startDate",
       key: "startDate",
-      render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+      render: (date) =>
+        date ? new Date(date).toLocaleDateString("vi-VN") : "—",
     },
     {
       title: "Ngày hết hạn",
       dataIndex: "endDate",
       key: "endDate",
-      render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+      render: (date) =>
+        date ? new Date(date).toLocaleDateString("vi-VN") : "—",
+    },
+    {
+      title: "Số lần đổi còn lại",
+      dataIndex: "remainingSwaps",
+      key: "remainingSwaps",
+      render: (swaps) => (
+        <Tag color={swaps > 0 ? "blue" : "red"}>{swaps || 0} lần</Tag>
+      ),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: (status) => {
-        const color = status === "ACTIVE" ? "green" : "red";
-        return <Tag color={color}>{status}</Tag>;
+        const colorMap = {
+          ACTIVE: "green",
+          EXPIRED: "red",
+          CANCELLED: "orange",
+        };
+        return (
+          <Tag color={colorMap[status] || "default"}>
+            {status || "UNKNOWN"}
+          </Tag>
+        );
       },
     },
     {
       title: "Thao tác",
       key: "actions",
       fixed: "right",
+      width: 100,
       render: (_, record) => (
         <Button
           type="primary"
@@ -372,13 +395,6 @@ const ServicePackagesPage = () => {
             />
           </Form.Item>
 
-          <Form.Item
-            name="maxSwaps"
-            label="Max Swaps"
-            rules={[{ required: true }]}
-          >
-            <InputNumber min={1} style={{ width: "100%" }} />
-          </Form.Item>
           <Form.Item
             name="description"
             label="Mô tả"
