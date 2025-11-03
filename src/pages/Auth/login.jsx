@@ -12,7 +12,7 @@ import {
   FaGithub,
 } from "react-icons/fa";
 
-import bgImage from "../../assets/img/loginBg.png";
+import bgImage from "../../assets/img/backgroundaboutus.png";
 import { Link } from "react-router-dom";
 
 const LoginPage = () => {
@@ -258,12 +258,12 @@ const LoginPage = () => {
             </div>
 
             <div className="text-sm">
-              <a
-                href="#"
+              <Link
+                to="/forgot-password"
                 className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
               >
                 Quên mật khẩu?
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -297,16 +297,6 @@ const LoginPage = () => {
               </span>
             </button>
           </div>
-          {/* <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
-              <Link
-                to="/register"
-                className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                Sign up here
-              </Link>
-            </p> */}
           <div className="flex  justify-center mt-4 space-x-2">
             <p className=" text-gray-600 text-center">Không có tài khoản?</p>
 
