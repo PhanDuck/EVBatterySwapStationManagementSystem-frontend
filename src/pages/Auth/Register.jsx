@@ -82,7 +82,7 @@ const RegisterPage = () => {
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
         phoneNumber: formData.phone.trim(),
-        passwordHash: formData.password, // Tên trường có thể là 'password' tùy vào backend
+        password: formData.password, // Tên trường có thể là 'password' tùy vào backend
         role: "DRIVER", // Đảm bảo role này khớp với yêu cầu của API backend
       };
 

@@ -33,33 +33,23 @@ import handleApiError from "../../Utils/handleApiError";
 
 const { Option } = Select;
 
-/**
- * Component Modal hiển thị danh sách Pin tại một Trạm
- */
+// =================================================================
+// 🔋 1. COMPONENT: BatteryListModal (Modal xem Pin cũ - Giữ nguyên)
+// =================================================================
 const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
   const [batteries, setBatteries] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Ánh xạ Battery Type ID sang Tên
   const getBatteryTypeName = (id) => {
     const type = batteryTypes.find((t) => t.id === id);
     return type ? type.name : "—";
   };
 
-  // 🔋 Hàm tải danh sách pin
   const fetchBatteries = async (stationId) => {
     setLoading(true);
     try {
-      // API: GET /api/station/{id}/batteries (theo hình ảnh Swagger)
       const res = await api.get(`/station/${stationId}/batteries`);
-
-      // Dữ liệu API trả về mảng trực tiếp
-      const data = Array.isArray(res.data)
-        ? res.data
-        : res.data?.data && Array.isArray(res.data.data)
-        ? res.data.data
-        : [];
-
+      const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
       setBatteries(data);
       message.success(
         `Tải thành công ${data.length} pin tại trạm ${stationId}.`
@@ -76,7 +66,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
     if (isVisible && station?.id) {
       fetchBatteries(station.id);
     } else if (!isVisible) {
-      setBatteries([]); // Clear data khi modal đóng
+      setBatteries([]);
     }
   }, [isVisible, station]);
 
@@ -88,11 +78,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
       width: 100,
       render: (text) => <strong>{text}</strong>,
     },
-    {
-      title: "Model",
-      dataIndex: "model",
-      key: "model",
-    },
+    { title: "Model", dataIndex: "model", key: "model" },
     {
       title: "Loại Pin",
       dataIndex: "batteryTypeId",
@@ -139,7 +125,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
       onCancel={onCancel}
       footer={null}
       width={1000}
-      destroyOnClose={true} // Tải lại dữ liệu mỗi lần mở
+      destroyOnClose={true}
     >
       <Table
         columns={batteryColumns}
@@ -154,6 +140,10 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
     </Modal>
   );
 };
+
+// =================================================================
+// 🔄 2. COMPONENT: BatterySwapModal (Modal Đổi Pin mới - Tích hợp)
+// =================================================================
 
 // Định nghĩa trạng thái của luồng đổi pin
 const SWAP_STEP = {
@@ -341,14 +331,14 @@ const BatterySwapModal = ({
         render: (typeId) => batteryTypesMap[typeId] || "—",
       },
       {
-        title: "Tình trạng pin (%)",
+        title: "SOH (%)",
         dataIndex: "stateOfHealth",
         key: "stateOfHealth",
         width: 120,
         render: (soh) => {
           const sohValue = soh ? parseFloat(soh).toFixed(2) : "—";
           return sohValue !== "—" ? (
-            <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
+            <Tag color={parseFloat(sohValue) >= 70 ? "green" : "red"}>
               {sohValue}
             </Tag>
           ) : (
@@ -393,7 +383,9 @@ const BatterySwapModal = ({
     onChange: (selectedKeys) => {
       setSelectedFaultyBatteryIds(selectedKeys);
     },
-    hideSelectAll: true,
+    getCheckboxProps: (record) => ({
+      disabled: record.stationId !== station.id,
+    }),
   };
 
   // BƯỚC 2: Chọn pin tốt (Giới hạn số lượng bằng số pin lỗi đã chọn)
@@ -404,11 +396,10 @@ const BatterySwapModal = ({
         setSelectedGoodBatteryIds(selectedKeys);
       } else {
         message.warning(
-          `Chỉ được chọn ${selectedFaultyBatteryIds.length} pin để thay thế.`
+          `Chỉ được chọn tối đa ${selectedFaultyBatteryIds.length} pin để thay thế.`
         );
       }
     },
-    hideSelectAll: true,
     getCheckboxProps: (record) => ({
       disabled: record.status !== "AVAILABLE",
     }),
@@ -423,12 +414,14 @@ const BatterySwapModal = ({
 
   const currentTitle =
     currentStep === SWAP_STEP.SELECT_FAULTY
-      ? `Bước 1: Chọn ${selectedFaultyBatteryIds.length} pin lỗi từ trạm về kho bảo trì`
-      : `Bước 2: Chọn pin tốt (${selectedGoodBatteryIds.length} pin) từ kho ra trạm (Chọn: ${selectedFaultyBatteryIds.length} pin)`;
+      ? `Bước 1: Chọn pin lỗi (${selectedFaultyBatteryIds.length} pin) về Kho Bảo Trì`
+      : `Bước 2: Chọn pin tốt (${selectedGoodBatteryIds.length} pin) từ Kho ra Trạm (Cần: ${selectedFaultyBatteryIds.length} pin)`;
 
   return (
     <Modal
-      title={`Quy trình đổi pin cho ${station?.name || ""}`}
+      title={`Quy trình Đổi pin cho Trạm: ${station?.name || ""} (ID: ${
+        station?.id
+      })`}
       open={isVisible}
       onCancel={onCancel}
       footer={null}
@@ -464,7 +457,7 @@ const BatterySwapModal = ({
           }
           loading={loading}
           rowKey="id"
-          //pagination={{ pageSize: 5 }}
+          pagination={{ pageSize: 5 }}
         />
         <Space style={{ justifyContent: "space-between", width: "100%" }}>
           {currentStep === SWAP_STEP.SELECT_GOOD && (
@@ -472,7 +465,7 @@ const BatterySwapModal = ({
               onClick={handleBackToFaultySelection}
               icon={<RollbackOutlined />}
             >
-              Quay lại
+              Quay lại (Chọn pin lỗi)
             </Button>
           )}
 
@@ -484,7 +477,7 @@ const BatterySwapModal = ({
                 disabled={isNextButtonDisabled}
                 icon={<SendOutlined />}
               >
-                Tiếp tục (Chọn {selectedFaultyBatteryIds.length} pin ra trạm)
+                Tiếp tục (Chọn {selectedFaultyBatteryIds.length} pin ra Trạm)
               </Button>
             )}
             {currentStep === SWAP_STEP.SELECT_GOOD && (
@@ -504,12 +497,12 @@ const BatterySwapModal = ({
                   icon={<SendOutlined />}
                   danger={!isCompleteButtonDisabled}
                 >
-                  Đổi {selectedGoodBatteryIds.length} Pin
+                  Hoàn tất Đổi {selectedGoodBatteryIds.length} Pin
                 </Button>
               </Tooltip>
             )}
             <Button onClick={onCancel} style={{ marginLeft: 8 }}>
-              Đóng
+              Đóng Modal
             </Button>
           </div>
         </Space>
@@ -518,6 +511,9 @@ const BatterySwapModal = ({
   );
 };
 
+// =================================================================
+// 🏠 3. COMPONENT: StationPage
+// =================================================================
 const StationPage = () => {
   const [stations, setStations] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -526,13 +522,18 @@ const StationPage = () => {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [batteryTypes, setBatteryTypes] = useState([]);
+
+  // State cho Battery Type Map
   const [batteryTypesMap, setBatteryTypesMap] = useState({});
+
+  // State cho Modal Xem Pin (List) và Modal Đổi Pin (Swap)
   const [isBatteryListModalVisible, setIsBatteryListModalVisible] =
     useState(false);
   const [isBatterySwapModalVisible, setIsBatterySwapModalVisible] =
     useState(false);
+
   const [viewingStation, setViewingStation] = useState(null);
-  //const Role = JSON.parse(localStorage.getItem("currentUser"))?.role; // Get role directly
+
   const Role = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("currentUser"))?.role;
@@ -542,7 +543,7 @@ const StationPage = () => {
   }, []);
 
   // ---------------------------
-  // 🚀 1. FETCH ALL STATIONS & BATTERY TYPES
+  // 🚀 FETCH DATA
   // ---------------------------
   useEffect(() => {
     fetchStations();
@@ -566,9 +567,11 @@ const StationPage = () => {
       const res = await api.get("/battery-type");
       const data = Array.isArray(res.data) ? res.data : [];
       setBatteryTypes(data);
+
+      // Tạo Map cho Modal Swap
       const map = {};
       data.forEach((type) => {
-        map[type.id] = `${type.name}`;
+        map[type.id] = `${type.name} (Ah: ${type.capacityAh})`;
       });
       setBatteryTypesMap(map);
     } catch (err) {
@@ -576,21 +579,23 @@ const StationPage = () => {
     }
   };
 
+  // Hàm tải lại trạm khi Swap Pin thành công
   const handleSwapSuccess = () => {
     fetchStations();
   };
 
   // ---------------------------
-  // 🚀 2. CREATE / UPDATE STATION
+  // Handlers
   // ---------------------------
   const handleSubmit = async (values) => {
+    // ... (Logic Create/Update)
     try {
       if (editingStation) {
         await api.put(`/station/${editingStation.id}`, values);
-        message.success("Trạm cập nhật thành công");
+        message.success("Station updated successfully");
       } else {
         await api.post("/station", values);
-        message.success("Trạm được tạo thành công");
+        message.success("Station created successfully");
       }
       setIsModalVisible(false);
       form.resetFields();
@@ -600,22 +605,18 @@ const StationPage = () => {
     }
   };
 
-  // ---------------------------
-  // 🚀 3. DELETE STATION (Hard Delete)
-  // ---------------------------
   const handleDelete = (id) => {
+    // ... (Logic Delete)
     Modal.confirm({
       title: "Bạn có chắc là xóa trạm này?",
-      content: "Hành động này sẽ xóa vĩnh viễn trạm.",
+      content: "Hành động này sẽ xóa vỉnh viễn trạm.",
       okText: "Có, Xóa",
       okType: "danger",
       cancelText: "Không",
       onOk: async () => {
         try {
-          // Calling the correct DELETE API endpoint
           await api.delete(`/station/${id}`);
           message.success("Trạm được xóa thành công");
-          // Refresh the station list after deletion
           fetchStations();
         } catch (err) {
           handleApiError(err, "xóa trạm");
@@ -624,9 +625,6 @@ const StationPage = () => {
     });
   };
 
-  // ---------------------------
-  // Handlers
-  // ---------------------------
   const handleAdd = () => {
     setEditingStation(null);
     setIsModalVisible(true);
@@ -639,20 +637,20 @@ const StationPage = () => {
     form.setFieldsValue(station);
   };
 
-  // 🆕 Handler để mở Modal Pin
+  // Handler để mở Modal Xem Pin (List Modal)
   const handleViewBatteries = (station) => {
     setViewingStation(station);
     setIsBatteryListModalVisible(true);
   };
 
-  // Handler để mở Modal Đổi Pin
+  // Handler để mở Modal Đổi Pin (Swap Modal)
   const handleOpenSwapModal = (station) => {
     setViewingStation(station);
     setIsBatterySwapModalVisible(true);
   };
 
   // ---------------------------
-  // Columns
+  // Columns (Đã cập nhật nút)
   // ---------------------------
   const columns = [
     {
@@ -667,11 +665,7 @@ const StationPage = () => {
         </Space>
       ),
     },
-    {
-      title: "Trạm",
-      dataIndex: "name",
-      key: "name",
-    },
+    { title: "Trạm", dataIndex: "name", key: "name" },
     {
       title: "Địa chỉ",
       dataIndex: "location",
@@ -688,12 +682,7 @@ const StationPage = () => {
       dataIndex: "capacity",
       key: "capacity",
       render: (capacity, record) => (
-        <Space
-          direction="vertical"
-          size="small"
-          //onClick={() => handleViewBatteries(record)}
-          //style={{ cursor: "pointer" }}
-        >
+        <Space direction="vertical" size="small">
           <span>
             <strong>{record.currentBatteryCount || 0}</strong> / {capacity} pin
           </span>
@@ -708,7 +697,9 @@ const StationPage = () => {
           >
             <div
               style={{
-                width: `${(record.currentBatteryCount / capacity) * 100}%`,
+                width: `${
+                  ((record.currentBatteryCount || 0) / capacity) * 100
+                }%`,
                 height: "100%",
                 backgroundColor:
                   record.currentBatteryCount > capacity * 0.5
@@ -741,40 +732,38 @@ const StationPage = () => {
         );
       },
     },
-    {
-      title: "Số điện thoại",
-      dataIndex: "contactInfo",
-      key: "contactInfo",
-    },
-    {
-      title: "Tỉnh/Thành phố",
-      dataIndex: "city",
-      key: "city",
-    },
+    { title: "Số điện thoại", dataIndex: "contactInfo", key: "contactInfo" },
+    { title: "Tỉnh/Thành phố", dataIndex: "city", key: "city" },
     {
       title: "Thao tác",
       key: "actions",
       fixed: "right",
       width: 250,
       render: (_, record) => (
-        <Space size="middle">
+        <Space size="small">
+          {/* 1. Nút Xem Pin (List Modal) */}
           <Button
             type="default"
             icon={<EyeOutlined />}
             size="small"
-            onClick={() => handleViewBatteries(record)} // Gọi hàm mở Modal
+            onClick={() => handleViewBatteries(record)}
           >
-            Xem
+            Xem Pin
           </Button>
 
-          <Button
-            type="primary"
-            icon={<SwapOutlined />}
-            size="small"
-            onClick={() => handleOpenSwapModal(record)}
-          >
-            Đổi Pin
-          </Button>
+          {/* 2. Nút Đổi Pin (Swap Modal) - Chỉ hiện cho Staff */}
+          {Role === "STAFF" && (
+            <Button
+              type="primary"
+              icon={<SwapOutlined />}
+              size="small"
+              onClick={() => handleOpenSwapModal(record)}
+            >
+              Đổi Pin
+            </Button>
+          )}
+
+          {/* Các nút Sửa/Xóa chỉ cho ADMIN */}
           {Role === "ADMIN" && (
             <Space size="small">
               <Button
@@ -800,6 +789,7 @@ const StationPage = () => {
       ),
     },
   ];
+
   // ---------------------------
   // Filters + Summary
   // ---------------------------
@@ -880,7 +870,7 @@ const StationPage = () => {
               <Option value="INACTIVE">INACTIVE</Option>
               <Option value="UNDER CONSTRUCTION">UNDER CONSTRUCTION</Option>
             </Select>
-            {Role === "ADMIN" && ( // Corrected role check from "Admin" to "ADMIN"
+            {Role === "ADMIN" && (
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -933,7 +923,6 @@ const StationPage = () => {
               </Form.Item>
             </Col>
           </Row>
-
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -956,7 +945,6 @@ const StationPage = () => {
               </Form.Item>
             </Col>
           </Row>
-
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -983,7 +971,6 @@ const StationPage = () => {
               </Form.Item>
             </Col>
           </Row>
-
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -1004,7 +991,6 @@ const StationPage = () => {
               </Form.Item>
             </Col>
           </Row>
-
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -1041,7 +1027,6 @@ const StationPage = () => {
               </Col>
             )}
           </Row>
-
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
@@ -1052,7 +1037,8 @@ const StationPage = () => {
           </Form.Item>
         </Form>
       </Modal>
-      {/* 🆕 MODAL HIỂN THỊ DANH SÁCH PIN */}
+
+      {/* 1. Modal Hiển thị danh sách Pin (Giữ lại của bạn) */}
       <BatteryListModal
         station={viewingStation}
         isVisible={isBatteryListModalVisible}
@@ -1060,6 +1046,7 @@ const StationPage = () => {
         batteryTypes={batteryTypes}
       />
 
+      {/* 2. Modal Thực hiện Quy trình Đổi Pin (Tích hợp) */}
       <BatterySwapModal
         station={viewingStation}
         isVisible={isBatterySwapModalVisible}
