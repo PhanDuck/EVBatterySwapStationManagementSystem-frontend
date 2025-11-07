@@ -177,7 +177,6 @@ export default function AssignmentPage() {
       const res = await api.get(API_ASSIGNMENTS);
       const data = Array.isArray(res.data) ? res.data : [];
       setAssignments(data);
-      message.success(`Tải thành công ${data.length} phân quyền.`);
     } catch (error) {
       handleApiError(error, "Danh sách phân quyền nhân viên");
       setAssignments([]);

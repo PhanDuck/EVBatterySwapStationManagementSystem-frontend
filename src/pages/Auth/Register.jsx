@@ -1,7 +1,8 @@
 import { useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 import { useNavigate } from "react-router-dom";
-import { message } from "antd"; // Import thư viện thông báo
-import api from "../../config/axios"; // 👈 API Client của bạn đã được cấu hình
+import { message } from "antd";
+import api from "../../config/axios";
 import {
   FaUser,
   FaEnvelope,
@@ -26,6 +27,8 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
+
   const navigate = useNavigate();
 
   const validateEmail = (email) => /\S+@\S+\.\S+/.test(email);
@@ -33,25 +36,31 @@ const RegisterPage = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
-    if (!formData.email) newErrors.email = "Email is required";
+    if (!formData.fullName.trim())
+      newErrors.fullName = "Vui lòng nhập họ và tên";
+    if (!formData.email) newErrors.email = "Vui lòng nhập email";
     else if (!validateEmail(formData.email))
-      newErrors.email = "Please enter a valid email";
+      newErrors.email = "Vui lòng nhập email hợp lệ";
 
-    if (!formData.phone) newErrors.phone = "Phone is required";
+    if (!formData.phone) newErrors.phone = "Vui lòng nhập số điện thoại";
     else if (!validatePhone(formData.phone))
-      newErrors.phone = "Phone must start with 0 and be 10–11 digits";
+      newErrors.phone = "Vui lòng điền số điện thoại hợp lệ";
 
-    if (!formData.password) newErrors.password = "Password is required";
+    if (!formData.password) newErrors.password = "Vui lòng nhập mật khẩu";
     else if (formData.password.length < 8)
-      newErrors.password = "Password must be at least 8 characters";
+      newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
 
     if (!formData.confirmPassword)
-      newErrors.confirmPassword = "Please confirm your password";
+      newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu";
     else if (formData.confirmPassword !== formData.password)
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = "Mật khẩu không khớp";
 
-    if (!formData.agree) newErrors.agree = "You must accept the Terms";
+    if (!formData.agree)
+      newErrors.agree = "Bạn phải chấp nhận Điều khoản & Chính sách";
+
+    if (!captchaToken) {
+      newErrors.captcha = "Vui lòng xác minh CAPTCHA trước khi đăng ký!";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -82,8 +91,9 @@ const RegisterPage = () => {
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
         phoneNumber: formData.phone.trim(),
-        password: formData.password, // Tên trường có thể là 'password' tùy vào backend
+        password: formData.password,
         role: "DRIVER", // Đảm bảo role này khớp với yêu cầu của API backend
+        recaptchaToken: captchaToken, // Gửi token reCAPTCHA lên server để xác thực
       };
 
       // 2. Gọi API POST đến endpoint đăng ký
@@ -250,6 +260,26 @@ const RegisterPage = () => {
           {errors.agree && (
             <p className="text-sm text-red-600">{errors.agree}</p>
           )}
+
+          {/* Google reCAPTCHA */}
+          <div className="my-4">
+            <ReCAPTCHA
+              sitekey="6LerjAUsAAAAALS0R-HInUGVlx_th2Oriy7LMA8p"
+              onChange={(token) => {
+                setCaptchaToken(token);
+                if (token) {
+                  setErrors((prev) => ({ ...prev, captcha: "" })); 
+                }
+              }}
+              onExpired={() => {
+                setCaptchaToken(null);
+                setErrors((prev) => ({...prev, captcha: "Captcha đã hết hạn, vui lòng xác minh lại!",}));
+              }}
+            />
+            {errors.captcha && (
+              <p className="mt-1 text-sm text-red-600">{errors.captcha}</p>
+            )}
+          </div>
 
           <div className="my-4">
             <button

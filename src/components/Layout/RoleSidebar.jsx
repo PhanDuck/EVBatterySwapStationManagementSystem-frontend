@@ -37,7 +37,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
       },
       {
         path: "transactions",
-        label: "Quản lí giao dịch",
+        label: "Quản lý giao dịch",
         icon: <MdOutlinePayments />,
       },
       {
