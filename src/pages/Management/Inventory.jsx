@@ -21,36 +21,48 @@ import {
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
+import { getCurrentRole } from "../../config/auth";
 
 const { Option } = Select;
-// === LẤY ROLE NGƯỜI DÙNG TỪ LOCAL STORAGE ===
-const userRole = JSON.parse(localStorage.getItem("currentUser"))?.role;
 
 export default function InventoryPage() {
-  // === STATE QUẢN LÝ DỮ LIỆU ===
   const [loading, setLoading] = useState(false);
-  const [stations, setStations] = useState([]); // Trạm Staff quản lý
-  const [warehouseInventory, setWarehouseInventory] = useState([]); // Pin trong Kho
-  const [stationInventory, setStationInventory] = useState([]); // Pin cần bảo dưỡng tại Trạm
-  const [batteryTypesMap, setBatteryTypesMap] = useState({}); // Map TypeID -> Tên
-
-  // === STATE QUẢN LÝ THAO TÁC (MODAL) ===
+  const [stations, setStations] = useState([]);
+  const [warehouseInventory, setWarehouseInventory] = useState([]);
+  const [stationInventory, setStationInventory] = useState([]);
+  const [batteryTypesMap, setBatteryTypesMap] = useState({});
   const [selectedStationId, setSelectedStationId] = useState(null);
   const [filterBatteryTypeId, setFilterBatteryTypeId] = useState(null);
   const [isEditSOHModalVisible, setIsEditSOHModalVisible] = useState(false);
   const [currentBatteryToEdit, setCurrentBatteryToEdit] = useState(null);
-  const [form] = Form.useForm(); // Khởi tạo Form instance
+  const [form] = Form.useForm();  
+  const role = getCurrentRole();
+  const upperRole = role ? role.toUpperCase() : null;
+  const isAdmin = upperRole === "ADMIN";
 
   // --- 1. FUNCTIONS TẢI DỮ LIỆU ---
 
   // Tải danh sách trạm Staff quản lý
   const fetchManagedStations = useCallback(async () => {
+    
+    // 💡 KHẮC PHỤC LỖI: Lấy vai trò mới nhất và chuẩn hóa từ auth.js
+    const currentRole = getCurrentRole(); // Lấy lại role trong hàm callback
+        const currentUpperRole = currentRole ? currentRole.toUpperCase() : null;
+    
+    // Nếu không tìm thấy vai trò, dừng lại (Thêm kiểm tra an toàn)
+    if (!upperRole) {
+      message.error("Không xác định được quyền người dùng. Vui lòng thử đăng nhập lại.");
+      setStations([]);
+      return;
+    }
+
     try {
       let res;
+      let isRoleAdmin = currentUpperRole === "ADMIN";
 
-      // Logic MỚI: Admin lấy tất cả các trạm, Staff lấy trạm được gán
-      if (userRole === "ADMIN") {
-        res = await api.get("/station"); // API giả định lấy TẤT CẢ trạm
+      // Logic: Admin lấy tất cả các trạm, Staff lấy trạm được gán
+      if (isRoleAdmin) {
+        res = await api.get("/station");
       } else {
         res = await api.get("/staff-station-assignment/my-stations");
       }
@@ -65,14 +77,14 @@ export default function InventoryPage() {
     } catch (error) {
       handleApiError(
         error,
-        userRole === "ADMIN"
-          ? "Tải danh sách TẤT CẢ trạm!"
+        upperRole === "ADMIN"
+          ? "Tải danh sách tất cả trạm!"
           : "Tải danh sách trạm quản lý!"
       );
       console.error(error);
       setStations([]);
     }
-  }, []); // userRole là biến global/constant nên không cần trong dependency array
+  }, []);
 
   // Tải Map Loại Pin (Tên, Dung lượng)
   const fetchBatteryTypes = useCallback(async () => {
@@ -99,9 +111,14 @@ export default function InventoryPage() {
       const res = await api.get(
         `/station/${stationId}/batteries/needs-maintenance`
       );
-      const inventory = Array.isArray(res.data.batteries)
-        ? res.data.batteries
-        : [];
+      // Xử lý response - có thể là mảng trực tiếp hoặc object có key batteries
+      let inventory = [];
+      if (Array.isArray(res.data)) {
+        inventory = res.data;
+      } else if (res.data?.batteries && Array.isArray(res.data.batteries)) {
+        inventory = res.data.batteries;
+      }
+
       setStationInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (error) {
       handleApiError(error, "Tải tồn kho trạm!");
@@ -126,10 +143,14 @@ export default function InventoryPage() {
         res = await api.get("/station-inventory");
       }
 
-      // Sửa lỗi truy cập key: .batteries
-      const inventory = Array.isArray(res.data.batteries)
-        ? res.data.batteries
-        : [];
+      // Xử lý response - có thể là mảng trực tiếp hoặc object có key batteries
+      let inventory = [];
+      if (Array.isArray(res.data)) {
+        inventory = res.data;
+      } else if (res.data?.batteries && Array.isArray(res.data.batteries)) {
+        inventory = res.data.batteries;
+      }
+
       setWarehouseInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (error) {
       handleApiError(error, "Tải tồn kho kho!");
@@ -274,16 +295,15 @@ export default function InventoryPage() {
   //   }
   // };
   const handleEditSOH = (record) => {
-    if (userRole !== "ADMIN") return; // Đảm bảo chỉ Admin mới có thể mở
+    if (!isAdmin) return; // Đảm bảo chỉ Admin mới có thể mở
 
     setCurrentBatteryToEdit(record);
-    // Reset form và set giá trị SOH hiện tại (nếu có)
-    form.resetFields();
-    form.setFieldsValue({
-      newSOH: record.stateOfHealth ? parseFloat(record.stateOfHealth) : null,
-    });
-    setIsEditSOHModalVisible(true);
-  };
+        form.resetFields();
+        form.setFieldsValue({
+            newSOH: record.stateOfHealth ? parseFloat(record.stateOfHealth) : null,
+        });
+        setIsEditSOHModalVisible(true);
+    };
 
   // --- Xử lý Sửa SOH (Submit Form) ---
   const handleSOHSubmit = async (values) => {
@@ -357,23 +377,6 @@ export default function InventoryPage() {
       render: (typeId) => batteryTypesMap[typeId] || "—",
     },
     {
-      title: "Tình trạng pin (%)",
-      dataIndex: "stateOfHealth",
-      key: "stateOfHealth",
-      width: FIXED_COL_WIDTH.SOH,
-      // ĐIỀU CHỈNH: Format SOH (Làm tròn 2 chữ số thập phân)
-      render: (soh) => {
-        const sohValue = soh ? parseFloat(soh).toFixed(2) : "—";
-        return sohValue !== "—" ? (
-          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
-            {sohValue}
-          </Tag>
-        ) : (
-          "N—"
-        );
-      },
-    },
-    {
       title: "Mức sạc (%)",
       dataIndex: "chargeLevel",
       key: "chargeLevel",
@@ -397,7 +400,23 @@ export default function InventoryPage() {
         return <Tag color={color}>{chargeValue}</Tag>;
       },
     },
-
+    {
+      title: "Tình trạng pin (%)",
+      dataIndex: "stateOfHealth",
+      key: "stateOfHealth",
+      width: FIXED_COL_WIDTH.SOH,
+      // ĐIỀU CHỈNH: Format SOH (Làm tròn 2 chữ số thập phân)
+      render: (soh) => {
+        const sohValue = soh ? parseFloat(soh).toFixed(2) : "—";
+        return sohValue !== "—" ? (
+          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
+            {sohValue}
+          </Tag>
+        ) : (
+          "N—"
+        );
+      },
+    },
     {
       title: "Trạng thái",
       dataIndex: "status",
@@ -462,23 +481,6 @@ export default function InventoryPage() {
       render: (typeId) => batteryTypesMap[typeId] || "—",
     },
     {
-      title: "Tình trạng pin (%)",
-      dataIndex: "stateOfHealth",
-      key: "stateOfHealth",
-      width: FIXED_COL_WIDTH.SOH,
-      // ĐIỀU CHỈNH: Format SOH (Làm tròn 2 chữ số thập phân)
-      render: (soh) => {
-        const sohValue = soh ? parseFloat(soh).toFixed(2) : "—";
-        return sohValue !== "—" ? (
-          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
-            {sohValue}
-          </Tag>
-        ) : (
-          "—"
-        );
-      },
-    },
-    {
       title: "Mức sạc (%)",
       dataIndex: "chargeLevel",
       key: "chargeLevel",
@@ -500,6 +502,23 @@ export default function InventoryPage() {
         }
 
         return <Tag color={color}>{chargeValue}</Tag>;
+      },
+    },
+    {
+      title: "Tình trạng pin (%)",
+      dataIndex: "stateOfHealth",
+      key: "stateOfHealth",
+      width: FIXED_COL_WIDTH.SOH,
+      // ĐIỀU CHỈNH: Format SOH (Làm tròn 2 chữ số thập phân)
+      render: (soh) => {
+        const sohValue = soh ? parseFloat(soh).toFixed(2) : "—";
+        return sohValue !== "—" ? (
+          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
+            {sohValue}
+          </Tag>
+        ) : (
+          "—"
+        );
       },
     },
     {
@@ -526,14 +545,14 @@ export default function InventoryPage() {
       render: (_, record) => (
         <Space>
           {/* Nút "Sửa SOH" (Chỉ hiện cho ADMIN và pin MAINTENANCE) */}
-          {userRole === "ADMIN" && record.status === "MAINTENANCE" && (
+          {isAdmin && record.status === "MAINTENANCE" && (
             <Tooltip title="Hoàn tất bảo trì và cập nhật SOH">
               <Button
                 onClick={() => handleEditSOH(record)}
                 type="primary"
                 icon={<EditOutlined />}
                 size="small"
-                setOpen={true}
+                //setOpen={true}
               >
                 Cập nhật
               </Button>

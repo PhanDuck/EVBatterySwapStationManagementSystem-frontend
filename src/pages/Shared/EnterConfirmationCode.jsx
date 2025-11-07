@@ -346,13 +346,12 @@ export default function SwapAnimation() {
           <Card
             title={
               <Title level={4} style={{ margin: 0, textAlign: "center" }}>
-                <SwapOutlined /> Thông tin giao dịch đổi pin
+                Thông tin giao dịch đổi pin
               </Title>
             }
             style={{
               boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               borderRadius: "8px",
-              // Đã được căn giữa nhờ container <Space>
             }}
           >
             <Row gutter={24} style={{ marginBottom: 24 }} align="middle">

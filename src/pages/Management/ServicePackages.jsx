@@ -270,17 +270,21 @@ const ServicePackagesPage = () => {
       key: "actions",
       fixed: "right",
       width: 100,
-      render: (_, record) => (
-        <Button
-          type="primary"
-          danger
-          icon={<DeleteOutlined />}
-          size="small"
-          onClick={() => handleDeleteDriverSubscription(record.id)}
-        >
-          Xóa
-        </Button>
-      ),
+      render: (_, record) => {
+        if (record.status !== "CANCELLED") {
+          return (
+            <Button
+              type="primary"
+              danger
+              icon={<DeleteOutlined />}
+              size="small"
+              onClick={() => handleDeleteDriverSubscription(record.id)}
+            >
+              Xóa
+            </Button>
+          );
+        };
+      },
     },
   ];
 

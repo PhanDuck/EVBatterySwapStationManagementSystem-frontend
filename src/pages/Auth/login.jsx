@@ -86,19 +86,12 @@ const LoginPage = () => {
         // Nếu response không có user, thử gọi API /Current
         if (!user) {
           try {
-            const me = await api.get("/Current");
+            const me = await api.get("/current");
             if (me?.data) {
               user = me.data;
             }
           } catch {
-            try {
-              const me2 = await api.get("/current");
-              if (me2?.data) {
-                user = me2.data;
-              }
-            } catch {
               console.warn("⚠️ Không lấy được thông tin user hiện tại");
-            }
           }
         }
 

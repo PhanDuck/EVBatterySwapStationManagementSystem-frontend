@@ -150,7 +150,7 @@ export default function SupportPage() {
         )
       );
 
-      message.success(`Ticket ${ticketId} status updated to ${newStatus}`);
+      message.success(`Trạng thái của yêu cầu ${ticketId} cập nhật thành ${newStatus}`);
       setIsEditStatusModalVisible(false);
     } catch (error) {
       handleApiError(error, "cập nhật trạng thái vé");
@@ -162,6 +162,7 @@ export default function SupportPage() {
     setIsViewModalVisible(true);
     fetchResponses(record.id);
   };
+
   const fetchResponses = async (ticketId) => {
     try {
       if (role === "DRIVER") {
@@ -198,13 +199,23 @@ export default function SupportPage() {
       form.resetFields(["message"]); // Clear the reply box
       // Optional: Update status to IN_PROGRESS when replying
       if (viewingRecord.status === "OPEN") {
-        handleStatusChange({ status: "IN_PROGRESS" }, viewingRecord.id);
+        await handleStatusChange(viewingRecord.id, "IN_PROGRESS");
       }
     } catch (error) {
       handleApiError(error, "gửi phản hồi");
     } finally {
       setLoadingReply(false);
     }
+  };
+
+  const handleEditStatusSubmit = async (values) => {
+    if (!editingRecord) return; // Kiểm tra an toàn
+
+    const { status: newStatus } = values;
+    const ticketId = editingRecord.id; // Lấy ID từ state
+
+    // Gọi hàm lõi với đủ 2 tham số
+    await handleStatusChange(ticketId, newStatus);
   };
 
   const getStatusTag = (status) => {
@@ -554,12 +565,12 @@ export default function SupportPage() {
         onOk={() => editStatusForm.submit()}
         okText="Cập nhật"
         cancelText="Hủy"
-        confirmLoading={loading} // Reuse loading state for simplicity
+        confirmLoading={loadingReply} // Reuse loading state for simplicity
       >
         <Form
           form={editStatusForm}
           layout="vertical"
-          onFinish={handleStatusChange}
+          onFinish={handleEditStatusSubmit}
           style={{ marginTop: "10px" }}
         >
           <Form.Item

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -18,7 +18,6 @@ import {
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
-import { FaDeleteLeft } from "react-icons/fa6";
 import handleApiError from "../../Utils/handleApiError";
 import { getCurrentUser } from "../../config/auth";
 
@@ -41,6 +40,7 @@ export default function BookingsPage() {
   const role = user?.role;
   const userId = user?.id;
   const navigate = useNavigate();
+  const initialized = useRef(false);
 
   // 🟢 Fetch dữ liệu ban đầu
   const fetchData = useCallback(async () => {
@@ -58,7 +58,6 @@ export default function BookingsPage() {
           api.get("/admin/user"),
         ]);
       } else {
-        // DRIVER: không cần gọi API /Current vì đã có user trong localStorage
         [bookingRes, vehicleRes, stationRes] = await Promise.all([
           api.get("/booking/my-bookings"),
           api.get("/vehicle/my-vehicles"),
@@ -82,10 +81,13 @@ export default function BookingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [role]);
+  }, [role, user]);
 
   useEffect(() => {
-    fetchData();
+    if (initialized.current === false) {
+        initialized.current = true;
+        fetchData();
+    }
   }, [fetchData]);
 
   // 📖 Map ID sang tên
@@ -110,24 +112,14 @@ export default function BookingsPage() {
     );
   }, [data, search, users, vehicles, stations]);
 
-  // ✅ Xác nhận booking
-  const handleConfirm = async (record) => {
-    try {
-      const res = await api.delete(`/booking/staff/${record.id}/cancel`);
-      setData((prev) =>
-        prev.map((item) =>
-          item.id === record.id
-            ? { ...item, status: res.data?.status || "CONFIRMED" }
-            : item
-        )
-      );
-      message.success("Xóa booking thành công!");
-    } catch (error) {
-      handleApiError(error, "Confirm booking");
-    }
+  // 1. Xử lý Hủy Booking cho ADMIN/STAFF 
+  const handleOpenCancelModal = (record) => {
+    setCancellingBooking(record);
+    setIsCancelModalVisible(true);
+    cancelForm.resetFields();
   };
 
-  // ✅ Xử lý xác nhận Hủy Booking cho ADMIN/STAFF
+  // 2. Xử lý xác nhận Hủy Booking cho ADMIN/STAFF
   const handleCancelSubmit = async (values) => {
     const bookingId = cancellingBooking?.id;
     if (!bookingId) return;
@@ -156,6 +148,31 @@ export default function BookingsPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+    // 3. ✅ Xử lý Hủy Booking cho DRIVER (Gửi API trực tiếp)
+  const handleDriverCancel = (record) => {
+    Modal.confirm({
+        title: "Xác nhận hủy đặt lịch",
+        content: "Bạn có chắc chắn muốn hủy đặt lịch này không?",
+        okText: "Hủy",
+        okType: "danger",
+        cancelText: "Không",
+        onOk: async () => {
+            try {
+                await api.patch(`/booking/my-bookings/${record.id}/cancel`);
+
+                // Cập nhật state local
+                setData((prev) =>
+                    prev.map((item) =>
+                        item.id === record.id ? { ...item, status: "CANCELLED" } : item
+                    )
+                );
+                message.success("Đã hủy đặt lịch thành công!");
+            } catch (error) {
+                handleApiError(error, "Hủy đặt lịch (Driver)");
+            }
+        },
+    });
   };
 
   // 🧾 Cột hiển thị
@@ -230,21 +247,23 @@ export default function BookingsPage() {
           {(role === "ADMIN" || role === "STAFF") &&
             record.status === "CONFIRMED" && (
               <Button
+                type="primary"
                 danger
-                icon={<FaDeleteLeft />}
-                onClick={() => handleConfirm(record)}
+                icon={<CloseCircleOutlined />}
+                onClick={() => handleOpenCancelModal(record)}
               >
-                Cancel
+                Hủy
               </Button>
             )}
 
           {role === "DRIVER" && record.status === "CONFIRMED" && (
             <Button
+              type="primary"
               danger
               icon={<CloseCircleOutlined />}
-              onClick={() => handleCancelSubmit(record)}
+              onClick={() => handleDriverCancel(record)}
             >
-              Cancel
+              Hủy
             </Button>
           )}
         </Space>
@@ -338,3 +357,4 @@ export default function BookingsPage() {
     </div>
   );
 }
+//driver dùng api: PATCH/api/booking/my-bookings/{id}/cancel để hủy booking, staff/admin dùng api: DELETE/api/booking/staff/{id}/cancel. driver bấm nút hủy
