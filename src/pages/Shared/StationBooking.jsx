@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Form,
   Button,
@@ -43,6 +44,22 @@ function StationBookingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingDetails, setBookingDetails] = useState(null);
+  const [searchParams] = useSearchParams();
+
+  // 🆕 Lấy vehicleId và stationId từ URL params
+  const vehicleIdFromUrl = searchParams.get("vehicleId");
+  const stationIdFromUrl = searchParams.get("stationId");
+
+  // 🆕 Tự động điền form nếu có URL params
+  useEffect(() => {
+    if (vehicleIdFromUrl && stationIdFromUrl) {
+      form.setFieldsValue({
+        vehicleId: parseInt(vehicleIdFromUrl),
+        stationId: parseInt(stationIdFromUrl),
+      });
+      setCurrentStep(2);
+    }
+  }, [vehicleIdFromUrl, stationIdFromUrl, form]);
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -85,6 +102,11 @@ function StationBookingPage() {
     } else {
       setCurrentStep(0);
     }
+  };
+
+  // 🆕 Hàm để truyền vehicleId từ URL xuống component con
+  const getPreselectedVehicleId = () => {
+    return vehicleIdFromUrl ? parseInt(vehicleIdFromUrl) : null;
   };
 
   const resetBookingForm = () => {
@@ -165,6 +187,8 @@ function StationBookingPage() {
                   <BookingFormFields
                     form={form}
                     onVehicleChange={handleValuesChange}
+                    preselectedVehicleId={getPreselectedVehicleId()}
+                    preselectedStationId={stationIdFromUrl ? parseInt(stationIdFromUrl) : null}
                   />
 
                   <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>

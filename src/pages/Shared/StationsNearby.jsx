@@ -1,4 +1,5 @@
 import React, { Fragment, useEffect, useState, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 // 🆕 Thêm Tooltip và Button
 import {
   MapContainer,
@@ -9,9 +10,10 @@ import {
   Polyline,
   Tooltip,
 } from "react-leaflet";
-import { Select, Card, Spin, Button } from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons"; // Import icons
+import { Select, Card, Spin, Button, Space } from "antd";
+import { MenuFoldOutlined, MenuUnfoldOutlined, CalendarOutlined } from "@ant-design/icons"; // Import icons
 import api from "../../config/axios";
+import { getCurrentUser } from "../../config/auth";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./StationsNearby.css"; // Import CSS
@@ -62,10 +64,12 @@ const formatTime = (seconds) => {
 
 const StationsNearby = () => {
   const [stations, setStations] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [selectedStation, setSelectedStation] = useState(null);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [userGeoPosition, setUserGeoPosition] = useState(null);
   const [mapCenter, setMapCenter] = useState([10.762622, 106.660172]);
   const [routeCoordinates, setRouteCoordinates] = useState(null);
@@ -73,6 +77,25 @@ const StationsNearby = () => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true); // State cho sidebar
 
   const markerRefs = useRef({});
+  const navigate = useNavigate();
+  const currentUser = getCurrentUser();
+
+  // 🆕 Fetch vehicles của driver
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        const res = await api.get("/vehicle/my-vehicles");
+        setVehicles(res.data || []);
+        // Tự động chọn xe đầu tiên nếu có
+        if (res.data && res.data.length > 0) {
+          setSelectedVehicle(res.data[0].id);
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải danh sách xe:", err);
+      }
+    };
+    fetchVehicles();
+  }, []);
 
   // ... (fetchStations useEffect giữ nguyên)
   useEffect(() => {
@@ -178,30 +201,50 @@ const StationsNearby = () => {
     setSelectedStation(null);
   };
 
+  // 🆕 Hàm chuyển sang trang booking với xe và trạm đã chọn
+  const handleBookingClick = (station) => {
+    if (!selectedVehicle) {
+      alert("Vui lòng chọn xe trước!");
+      return;
+    }
+    navigate(`/stations/booking?vehicleId=${selectedVehicle}&stationId=${station.id}`);
+  };
+
+  // 🆕 Lấy thông tin xe được chọn
+  const selectedVehicleData = useMemo(() => {
+    return vehicles.find((v) => v.id === selectedVehicle);
+  }, [vehicles, selectedVehicle]);
+
+  // 🆕 Lọc trạm phù hợp với loại pin của xe
+  const compatibleStations = useMemo(() => {
+    if (!selectedVehicleData) return [];
+    return stations.filter((s) => s.batteryTypeId === selectedVehicleData.batteryTypeId);
+  }, [stations, selectedVehicleData]);
+
   // ... (useMemo cho cities, districts, filteredStations giữ nguyên)
   const cities = useMemo(() => {
-    return [...new Set(stations.map((s) => s.city))];
-  }, [stations]);
+    return [...new Set(compatibleStations.map((s) => s.city))];
+  }, [compatibleStations]);
 
   const districts = useMemo(() => {
     return selectedCity
       ? [
           ...new Set(
-            stations
+            compatibleStations
               .filter((s) => s.city === selectedCity)
               .map((s) => s.district)
           ),
         ]
       : [];
-  }, [stations, selectedCity]);
+  }, [compatibleStations, selectedCity]);
 
   const filteredStations = useMemo(() => {
-    return stations.filter(
+    return compatibleStations.filter(
       (s) =>
         (!selectedCity || s.city === selectedCity) &&
         (!selectedDistrict || s.district === selectedDistrict)
     );
-  }, [stations, selectedCity, selectedDistrict]);
+  }, [compatibleStations, selectedCity, selectedDistrict]);
 
   if (loading) return <Spin tip="Đang tải dữ liệu trạm..." />;
 
@@ -241,6 +284,45 @@ const StationsNearby = () => {
               zIndex: 999,
             }}
           >
+            {/* 🆕 Chọn xe */}
+            <p>
+              <strong>Chọn xe của bạn:</strong>
+            </p>
+            <Select
+              style={{ width: "100%", marginBottom: 16 }}
+              placeholder="Chọn xe"
+              value={selectedVehicle}
+              onChange={(v) => {
+                setSelectedVehicle(v);
+                clearRoute();
+              }}
+            >
+              {vehicles.map((vehicle) => (
+                <Option key={vehicle.id} value={vehicle.id}>
+                  {vehicle.model} ({vehicle.plateNumber})
+                </Option>
+              ))}
+            </Select>
+
+            {/* 🆕 Hiển thị thông tin xe được chọn */}
+            {selectedVehicleData && (
+              <Card
+                size="small"
+                style={{ marginBottom: 16, backgroundColor: "#f0f5ff" }}
+              >
+                <p style={{ margin: 0, fontSize: "12px" }}>
+                  <strong>Loại pin:</strong> {selectedVehicleData.model}
+                </p>
+              </Card>
+            )}
+
+            {/* 🆕 Hiển thị "Trạm phù hợp cho xe của bạn" */}
+            <p style={{ marginBottom: 8 }}>
+              <strong style={{ color: "#52c41a" }}>
+                ✓ Trạm phù hợp cho xe của bạn ({compatibleStations.length})
+              </strong>
+            </p>
+
             <p>
               <strong>Thành phố:</strong>
             </p>
@@ -283,7 +365,7 @@ const StationsNearby = () => {
             </Select>
 
             <p style={{ marginTop: 16 }}>
-              <strong>Trạm hiện có:</strong> ({filteredStations.length})
+              <strong>Danh sách trạm:</strong> ({filteredStations.length})
             </p>
             <ul
               style={{
@@ -416,16 +498,29 @@ const StationsNearby = () => {
                       paddingTop: "8px",
                     }}
                   >
-                    <Button
-                      type="primary"
-                      size="small"
-                      onClick={() => handleDirectionsClick(s)}
-                      disabled={!userGeoPosition}
-                    >
-                      {userGeoPosition
-                        ? "Chỉ Đường Đến Đây"
-                        : "Đang chờ vị trí..."}
-                    </Button>
+                    <Space direction="vertical" style={{ width: "100%" }}>
+                      <Button
+                        type="primary"
+                        size="small"
+                        onClick={() => handleDirectionsClick(s)}
+                        disabled={!userGeoPosition}
+                        style={{ width: "100%" }}
+                      >
+                        {userGeoPosition
+                          ? "Chỉ Đường Đến Đây"
+                          : "Đang chờ vị trí..."}
+                      </Button>
+                      <Button
+                        type="primary"
+                        icon={<CalendarOutlined />}
+                        size="small"
+                        onClick={() => handleBookingClick(s)}
+                        disabled={!selectedVehicle}
+                        style={{ width: "100%" }}
+                      >
+                        Đặt Lịch Đổi Pin
+                      </Button>
+                    </Space>
                   </div>
                 </Popup>
               </Marker>

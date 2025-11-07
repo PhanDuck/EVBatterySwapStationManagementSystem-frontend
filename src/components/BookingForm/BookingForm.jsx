@@ -8,8 +8,8 @@ const { Option } = Select;
 const GET_VEHICLES_API_URL = "/vehicle/my-vehicles";
 const GET_COMPATIBLE_STATIONS_API_URL = "/booking/compatible-stations";
 
-// Component giờ đây sẽ nhận thêm prop `form` và `onVehicleChange`
-const BookingFormFields = ({ form, onVehicleChange }) => {
+// Component giờ đây sẽ nhận thêm prop `form`, `onVehicleChange`, `preselectedVehicleId`, `preselectedStationId`
+const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, preselectedStationId }) => {
   const [vehicles, setVehicles] = useState([]);
   const [compatibleStations, setCompatibleStations] = useState([]);
   const [isStationLoading, setIsStationLoading] = useState(false);
@@ -43,6 +43,11 @@ const BookingFormFields = ({ form, onVehicleChange }) => {
       try {
         const res = await api.get(GET_VEHICLES_API_URL);
         setVehicles(res.data || []);
+        
+        // 🆕 Nếu có preselectedVehicleId, tự động tải trạm tương thích
+        if (preselectedVehicleId) {
+          await fetchCompatibleStations(preselectedVehicleId);
+        }
       } catch (error) {
         console.error("Lỗi khi tải danh sách xe:", error);
         notification.error({
@@ -54,7 +59,7 @@ const BookingFormFields = ({ form, onVehicleChange }) => {
       }
     };
     fetchVehicles();
-  }, []);
+  }, [preselectedVehicleId]);
 
   const handleVehicleChange = (vehicleId) => {
     form.setFieldsValue({ stationId: undefined }); // Reset station selection

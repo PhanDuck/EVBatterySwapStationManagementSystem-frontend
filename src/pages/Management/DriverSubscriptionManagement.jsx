@@ -39,7 +39,6 @@ export default function DriverSubscriptionManagement() {
   const [currentUser, setCurrentUser] = useState(null);
 
   const [isUpgradeModalVisible, setIsUpgradeModalVisible] = useState(false);
-  const [isDowngradeModalVisible, setIsDowngradeModalVisible] = useState(false);
   const [isRenewalModalVisible, setIsRenewalModalVisible] = useState(false);
 
   const [selectedSubscription, setSelectedSubscription] = useState(null);
@@ -188,57 +187,6 @@ export default function DriverSubscriptionManagement() {
     }
   };
 
-  const openDowngradeModal = (record) => {
-    setSelectedSubscription(record);
-    setIsDowngradeModalVisible(true);
-    setCalculation(null);
-    setTargetPackageId(null);
-  };
-
-  const handleDowngradePackageSelect = async (newPackageId) => {
-    setTargetPackageId(newPackageId);
-    if (!selectedSubscription) return;
-    setIsCalculating(true);
-    setCalculation(null);
-    try {
-      const res = await api.get("/driver-subscription/downgrade/calculate", {
-        params: {
-          currentSubscriptionId: selectedSubscription.id,
-          newPackageId,
-        },
-      });
-      setCalculation(res.data);
-    } catch (error) {
-      handleApiError(error, "tính toán chi phí hạ cấp");
-    } finally {
-      setIsCalculating(false);
-    }
-  };
-
-  const handleConfirmDowngrade = async () => {
-    if (calculation && !calculation.canDowngrade) {
-      message.error("Không thể hạ cấp. Vui lòng kiểm tra lại các điều kiện.");
-      return;
-    }
-    if (!targetPackageId) {
-      message.warning("Vui lòng chọn một gói để hạ cấp.");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await api.post(
-        `/driver-subscription/downgrade/confirm?newPackageId=${targetPackageId}`
-      );
-
-      message.success("Hạ cấp gói thành công!");
-      setIsDowngradeModalVisible(false);
-      fetchData();
-    } catch (error) {
-      handleApiError(error, "xác nhận hạ cấp");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const openRenewalModal = async (record) => {
     setSelectedSubscription(record);
@@ -355,15 +303,6 @@ export default function DriverSubscriptionManagement() {
                   Nâng cấp
                 </Button>
                 <Button
-                  icon={<ArrowDownOutlined />}
-                  type="primary"
-                  danger
-                  onClick={() => openDowngradeModal(record)}
-                  disabled={record.status !== "ACTIVE"}
-                >
-                  Hạ cấp
-                </Button>
-                <Button
                   icon={<ReloadOutlined />}
                   type="primary"
                   onClick={() => openRenewalModal(record)}
@@ -378,7 +317,7 @@ export default function DriverSubscriptionManagement() {
       : []),
   ];
 
-  const renderCalculationDetails = (isDowngrade = false) => {
+  const renderCalculationDetails = () => {
     const formatCurrency = (value) => {
       if (typeof value !== "number") return "—";
       return `${value.toLocaleString()} đ`;
@@ -389,24 +328,12 @@ export default function DriverSubscriptionManagement() {
       return value;
     };
 
-    const alertType = isDowngrade
-      ? calculation?.canDowngrade
-        ? "success"
-        : "error"
-      : calculation?.canUpgrade
-      ? "success"
-      : "error";
+    const alertType = calculation?.canUpgrade ? "success" : "error";
 
     const alertMessage = () => {
-      if (isDowngrade) {
-        return calculation?.canDowngrade
-          ? "Bạn đủ điều kiện để hạ cấp."
-          : "KHÔNG THỂ HẠ CẤP";
-      }
-      if (calculation?.canUpgrade) {
-        return `Phí nâng cấp: ${formatCurrency(calculation?.upgradeFee)}`;
-      }
-      return "KHÔNG THỂ NÂNG CẤP";
+      return calculation?.canUpgrade
+        ? "Bạn đủ điều kiện để nâng cấp"
+        : "KHÔNG THỂ NÂNG CẤP";
     };
 
     return (
@@ -433,14 +360,31 @@ export default function DriverSubscriptionManagement() {
                   description={formatSwaps(calculation.remainingSwaps)}
                 />
               </List.Item>
-              <List.Item>
-                <List.Item.Meta
-                  title="Tổng tiền thanh toán"
-                  description={formatCurrency(calculation.totalPaymentRequired)}
-                />
-              </List.Item>
             </List>
             <Divider />
+            <div
+              style={{
+                backgroundColor: "#e6f7ff",
+                border: "2px solid #1890ff",
+                borderRadius: "6px",
+                padding: "16px",
+                marginBottom: "16px",
+              }}
+            >
+              <Text strong style={{ fontSize: "1.1em", color: "#0050b3" }}>
+                Tổng tiền thanh toán:{" "}
+              </Text>
+              <Text
+                strong
+                style={{
+                  fontSize: "1.3em",
+                  color: "#0050b3",
+                  marginLeft: "8px",
+                }}
+              >
+                {formatCurrency(calculation.totalPaymentRequired)}
+              </Text>
+            </div>
             <Alert
               message={
                 <Text strong style={{ fontSize: "1.1em" }}>
@@ -448,11 +392,7 @@ export default function DriverSubscriptionManagement() {
                 </Text>
               }
               description={
-                !calculation?.canDowngrade && isDowngrade
-                  ? calculation.reason
-                  : !calculation?.canUpgrade && !isDowngrade
-                  ? calculation.message
-                  : null
+                !calculation?.canUpgrade ? calculation.message : null
               }
               type={alertType}
               showIcon
@@ -501,24 +441,31 @@ export default function DriverSubscriptionManagement() {
                   description={formatCurrency(renewalCalculation.totalDiscount)}
                 />
               </List.Item>
-              <List.Item>
-                <List.Item.Meta
-                  title="Phí phạt (nếu có)"
-                  description={formatCurrency(renewalCalculation.penaltyFee)}
-                />
-              </List.Item>
-              <List.Item>
-                <List.Item.Meta
-                  title="Tổng tiền thanh toán"
-                  description={
-                    <Text strong color="green">
-                      {formatCurrency(renewalCalculation.finalPrice)}
-                    </Text>
-                  }
-                />
-              </List.Item>
             </List>
             <Divider />
+            <div
+              style={{
+                backgroundColor: "#f6ffed",
+                border: "2px solid #52c41a",
+                borderRadius: "6px",
+                padding: "16px",
+                marginBottom: "16px",
+              }}
+            >
+              <Text strong style={{ fontSize: "1.1em", color: "#274e0f" }}>
+                Tổng tiền thanh toán:{" "}
+              </Text>
+              <Text
+                strong
+                style={{
+                  fontSize: "1.3em",
+                  color: "#52c41a",
+                  marginLeft: "8px",
+                }}
+              >
+                {formatCurrency(renewalCalculation.finalPrice)}
+              </Text>
+            </div>
             <Alert
               message={
                 <Text strong style={{ fontSize: "1.1em" }}>
@@ -603,55 +550,9 @@ export default function DriverSubscriptionManagement() {
             </Select>
           </Form.Item>
         </Form>
-        {renderCalculationDetails(false)}
+        {renderCalculationDetails()}
       </Modal>
 
-      <Modal
-        title="Hạ cấp gói cước"
-        visible={isDowngradeModalVisible}
-        onCancel={() => setIsDowngradeModalVisible(false)}
-        footer={[
-          <Button key="back" onClick={() => setIsDowngradeModalVisible(false)}>
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            danger
-            loading={submitting}
-            onClick={handleConfirmDowngrade}
-            disabled={
-              !targetPackageId || isCalculating || !calculation?.canDowngrade
-            }
-          >
-            Xác nhận Hạ cấp
-          </Button>,
-        ]}
-        width={700}
-      >
-        <p>
-          <Text strong>Gói hiện tại:</Text>{" "}
-          {packageName(selectedSubscription?.packageId)}
-        </p>
-        <Form layout="vertical">
-          <Form.Item label="Chọn gói mới để hạ cấp:">
-            <Select
-              placeholder="Chọn gói thấp hơn"
-              onChange={handleDowngradePackageSelect}
-              value={targetPackageId}
-            >
-              {packages
-                .filter((p) => currentPackage && p.price < currentPackage.price)
-                .map((p) => (
-                  <Option key={p.id} value={p.id}>
-                    {p.name} - {p.price.toLocaleString()}đ
-                  </Option>
-                ))}
-            </Select>
-          </Form.Item>
-        </Form>
-        {renderCalculationDetails(true)}
-      </Modal>
 
       <Modal
         title="Gia hạn gói cước"

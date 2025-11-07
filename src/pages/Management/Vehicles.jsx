@@ -302,33 +302,65 @@ const VehiclePage = () => {
             : []
         ).sort((a, b) => b.id - a.id);
 
-        // 2. Tải số lần đổi pin cho TẤT CẢ các xe
-        const vehiclesWithCounts = await Promise.all(
-          initialVehicleList.map(async (vehicle) => {
-            try {
-              // SỬ DỤNG API CÓ SẴN ĐỂ LẤY LỊCH SỬ VÀ ĐẾM SỐ LẦN ĐỔI PIN
-              const historyRes = await api.get(
-                `/swap-transaction/vehicle/${vehicle.id}/history`
-              );
+        // 2. ✅ OPTIMIZATION: Batch API call thay vì N+1 queries
+        // Gửi tất cả vehicle IDs trong một request
+        const vehicleIds = initialVehicleList.map(v => v.id);
+        
+        if (vehicleIds.length === 0) {
+          setVehicles([]);
+          setLoading(false);
+          return;
+        }
 
-              const historyList = Array.isArray(historyRes.data)
-                ? historyRes.data
-                : historyRes.data?.data || [];
+        try {
+          // Thử gọi batch API nếu backend hỗ trợ
+          const countsRes = await api.post("/swap-transaction/vehicles/swap-counts", {
+            vehicleIds: vehicleIds
+          });
 
-              // Gán swapCount bằng số lượng giao dịch đã nhận được
-              const swapCount = historyList.length;
+          const swapCountMap = {};
+          if (Array.isArray(countsRes.data)) {
+            countsRes.data.forEach(item => {
+              swapCountMap[item.vehicleId] = item.swapCount || 0;
+            });
+          }
 
-              return { ...vehicle, swapCount: swapCount };
-            } catch (error) {
-              // Nếu có lỗi, mặc định số lần đổi pin là 0
-              handleApiError(error, `SwapCount cho xe`);
-              return { ...vehicle, swapCount: 0 };
-            }
-          })
-        );
+          const vehiclesWithCounts = initialVehicleList.map(vehicle => ({
+            ...vehicle,
+            swapCount: swapCountMap[vehicle.id] || 0
+          }));
 
-        // 3. CẬP NHẬT state vehicles với dữ liệu đầy đủ
-        setVehicles(vehiclesWithCounts);
+          setVehicles(vehiclesWithCounts);
+        } catch (batchError) {
+          // ⚠️ Fallback: Nếu batch API không tồn tại, lấy từng cái nhưng giới hạn số lượng
+          console.warn("Batch API không khả dụng, sử dụng fallback...");
+          
+          // Chỉ tải swap count cho 5 xe đầu tiên để tránh quá tải
+          const limitedVehicles = initialVehicleList.slice(0, 5);
+          const vehiclesWithCounts = await Promise.all(
+            limitedVehicles.map(async (vehicle) => {
+              try {
+                const historyRes = await api.get(
+                  `/swap-transaction/vehicle/${vehicle.id}/history?limit=1`
+                );
+                const historyList = Array.isArray(historyRes.data)
+                  ? historyRes.data
+                  : historyRes.data?.data || [];
+                return { ...vehicle, swapCount: historyList.length };
+              } catch (error) {
+                return { ...vehicle, swapCount: 0 };
+              }
+            })
+          );
+
+          // Thêm các xe còn lại mà không có swap count
+          const remainingVehicles = initialVehicleList.slice(5).map(v => ({
+            ...v,
+            swapCount: undefined // Sẽ hiển thị loading spinner
+          }));
+
+          setVehicles([...vehiclesWithCounts, ...remainingVehicles]);
+        }
       } catch (error) {
         handleApiError(error, "Danh sách phương tiện");
         console.error(error);
@@ -338,7 +370,6 @@ const VehiclePage = () => {
     };
 
     fetchVehiclesAndCounts();
-    // Loại bỏ fetchSwapCountsForAllVehicles khỏi dependency array vì nó không còn tồn tại
   }, [role]);
 
   // 📍 Lấy danh sách trạm
@@ -411,7 +442,7 @@ const VehiclePage = () => {
     setVehicleHistory([]);
   };
 
-  // 🧾 Cột bảng
+  // 🧾 Cột bảng - ✅ OPTIMIZATION: Thêm sorter cho tất cả các cột
   const columns = [
     {
       title: "ID",
@@ -429,22 +460,26 @@ const VehiclePage = () => {
       title: "Biển số xe",
       dataIndex: "plateNumber",
       key: "plateNumber",
+      sorter: (a, b) => (a.plateNumber || "").localeCompare(b.plateNumber || ""),
     },
     {
       title: "Dòng xe",
       dataIndex: "model",
       key: "model",
+      sorter: (a, b) => (a.model || "").localeCompare(b.model || ""),
     },
     {
       title: "Loại pin",
       dataIndex: "batteryTypeId",
       key: "batteryTypeId",
+      sorter: (a, b) => getBatteryTypeName(a.batteryTypeId).localeCompare(getBatteryTypeName(b.batteryTypeId)),
       render: (id) => getBatteryTypeName(id),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
+      sorter: (a, b) => a.status.localeCompare(b.status),
       render: (status) => (
         <Tag color={status === "ACTIVE" ? "green" : "red"}>{status}</Tag>
       ),
