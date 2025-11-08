@@ -61,6 +61,7 @@ const VehiclePage = () => {
     .trim()
     .toUpperCase();
   const isDriver = role === "DRIVER";
+  const isAdminOrStaff = role === "ADMIN" || role === "STAFF";
 
   // --- Component Modal Lịch sử Đổi Pin ---
   const VehicleSwapHistoryModal = ({
@@ -68,10 +69,11 @@ const VehiclePage = () => {
     onClose,
     vehicleHistory,
     loading,
-    //vehicleId,
     stations,
+    userRole,
   }) => {
     const swapCount = vehicleHistory.length;
+    const canViewTransactionId = userRole === "ADMIN" || userRole === "STAFF";
 
     // ⚙️ Component con hiển thị thông tin pin
     const BatteryInfoCard = ({ title, batteryData, type }) => {
@@ -107,15 +109,15 @@ const VehiclePage = () => {
         >
           <Space direction="vertical" style={{ width: "100%" }}>
             {/* 1. ID Pin */}
-            <Row justify="space-between" style={{ paddingBottom: 5 }}>
-              <Col>
-                <Text strong>ID Pin:</Text>
-              </Col>
-              <Col>
-                <Text>{batteryId || "—"}</Text>
-              </Col>
-            </Row>
-            <Divider style={{ margin: "5px 0" }} />
+              <Row justify="space-between" style={{ paddingBottom: 5 }}>
+                <Col>
+                  <Text strong>ID Pin:</Text>
+                </Col>
+                <Col>
+                  <Text>{batteryId || "—"}</Text>
+                </Col>
+              </Row>
+              <Divider style={{ margin: "5px 0" }} />
 
             {/* 2. Loại Pin (Model) */}
             <Row justify="space-between" style={{ paddingBottom: 5 }}>
@@ -193,9 +195,11 @@ const VehiclePage = () => {
               <Title level={5} style={{ margin: 0 }}>
                 Lần giao dịch {swapNumber}
               </Title>
-              <Text type="secondary" style={{ fontSize: "0.85em" }}>
-                ID: <Text code>{transaction.id}</Text>
-              </Text>
+              {canViewTransactionId && (
+                <Text type="secondary" style={{ fontSize: "0.85em" }}>
+                  ID: <Text code>{transaction.id}</Text>
+                </Text>
+              )}
               <Space size="small" style={{ marginTop: 4 }}>
                 <CalendarOutlined style={{ color: "#1890ff" }} />
                 <Text type="secondary" style={{ fontSize: "0.85em" }}>
@@ -208,12 +212,6 @@ const VehiclePage = () => {
                 <EnvironmentOutlined style={{ color: "#52c41a" }} />
                 <Text strong>{stationName}</Text>
               </Space>
-              {/* <Text
-                type="secondary"
-                style={{ display: "block", fontSize: "0.85em" }}
-              >
-                NV: {transaction.staffName || "N/A"}
-              </Text> */}
             </Col>
           </Row>
 
@@ -271,7 +269,7 @@ const VehiclePage = () => {
                   transaction={item}
                   key={item.id}
                   index={index}
-                  totalSwaps={swapCount} // ⬅️ Thêm totalSwaps
+                  totalSwaps={swapCount} 
                 />
               ))}
             </div>
@@ -302,65 +300,41 @@ const VehiclePage = () => {
             : []
         ).sort((a, b) => b.id - a.id);
 
-        // 2. ✅ OPTIMIZATION: Batch API call thay vì N+1 queries
-        // Gửi tất cả vehicle IDs trong một request
-        const vehicleIds = initialVehicleList.map(v => v.id);
-        
-        if (vehicleIds.length === 0) {
+        if (initialVehicleList.length === 0) {
           setVehicles([]);
-          setLoading(false);
           return;
         }
 
-        try {
-          // Thử gọi batch API nếu backend hỗ trợ
-          const countsRes = await api.post("/swap-transaction/vehicles/swap-counts", {
-            vehicleIds: vehicleIds
-          });
-
-          const swapCountMap = {};
-          if (Array.isArray(countsRes.data)) {
-            countsRes.data.forEach(item => {
-              swapCountMap[item.vehicleId] = item.swapCount || 0;
-            });
+        // 2. ✅ SỬA LỖI: Lấy swap count cho từng xe (N queries)
+        // Dùng Promise.all để gọi tất cả request một lần
+        const vehiclePromises = initialVehicleList.map(async (vehicle) => {
+          try {
+            // Lấy chỉ 1 item để xác định có lịch sử (hoặc dùng count API nếu có)
+            const historyRes = await api.get(
+              `/swap-transaction/vehicle/${vehicle.id}/history?limit=1`
+            );
+            const historyList = Array.isArray(historyRes.data)
+              ? historyRes.data
+              : historyRes.data?.data || [];
+            
+            // Nếu API không trả về count mà trả về list, số lần đổi pin chính là độ dài của list.
+            // *Lưu ý: Nếu backend chỉ trả về 1 item (do limit=1), thì swapCount sẽ luôn là 1 nếu có lịch sử, 0 nếu không.
+            // Để lấy số đếm chính xác, API cần trả về một field 'totalCount' hoặc không dùng limit=1.
+            // Tạm thời, tôi sẽ KHÔNG dùng limit=1 để tính count chính xác hơn, chấp nhận tải nhiều dữ liệu hơn.
+            const fullHistoryRes = await api.get(`/swap-transaction/vehicle/${vehicle.id}/history`);
+            const fullHistoryList = Array.isArray(fullHistoryRes.data)
+              ? fullHistoryRes.data
+              : fullHistoryRes.data?.data || [];
+            
+            return { ...vehicle, swapCount: fullHistoryList.length };
+          } catch (error) {
+            // console.error(`Lỗi khi tải swapCount cho xe ${vehicle.id}:`, error);
+            return { ...vehicle, swapCount: 0 };
           }
+        });
 
-          const vehiclesWithCounts = initialVehicleList.map(vehicle => ({
-            ...vehicle,
-            swapCount: swapCountMap[vehicle.id] || 0
-          }));
-
-          setVehicles(vehiclesWithCounts);
-        } catch (batchError) {
-          // ⚠️ Fallback: Nếu batch API không tồn tại, lấy từng cái nhưng giới hạn số lượng
-          console.warn("Batch API không khả dụng, sử dụng fallback...");
-          
-          // Chỉ tải swap count cho 5 xe đầu tiên để tránh quá tải
-          const limitedVehicles = initialVehicleList.slice(0, 5);
-          const vehiclesWithCounts = await Promise.all(
-            limitedVehicles.map(async (vehicle) => {
-              try {
-                const historyRes = await api.get(
-                  `/swap-transaction/vehicle/${vehicle.id}/history?limit=1`
-                );
-                const historyList = Array.isArray(historyRes.data)
-                  ? historyRes.data
-                  : historyRes.data?.data || [];
-                return { ...vehicle, swapCount: historyList.length };
-              } catch (error) {
-                return { ...vehicle, swapCount: 0 };
-              }
-            })
-          );
-
-          // Thêm các xe còn lại mà không có swap count
-          const remainingVehicles = initialVehicleList.slice(5).map(v => ({
-            ...v,
-            swapCount: undefined // Sẽ hiển thị loading spinner
-          }));
-
-          setVehicles([...vehiclesWithCounts, ...remainingVehicles]);
-        }
+        const vehiclesWithCounts = await Promise.all(vehiclePromises);
+        setVehicles(vehiclesWithCounts);
       } catch (error) {
         handleApiError(error, "Danh sách phương tiện");
         console.error(error);
@@ -744,6 +718,7 @@ const VehiclePage = () => {
         loading={historyLoading}
         vehicleId={selectedVehicleId}
         stations={stations}
+        userRole={role}
       />
     </div>
   );

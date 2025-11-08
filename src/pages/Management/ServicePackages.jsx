@@ -271,7 +271,7 @@ const ServicePackagesPage = () => {
       fixed: "right",
       width: 100,
       render: (_, record) => {
-        if (record.status !== "CANCELLED") {
+        if (record.status !== "CANCELLED" && record.status !== "EXPIRED") {
           return (
             <Button
               type="primary"

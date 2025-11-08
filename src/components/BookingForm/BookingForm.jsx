@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Form, Select, DatePicker, Spin, notification } from "antd";
+import { Form, Select, DatePicker, Spin, notification, Typography } from "antd";
 import api from "../../config/axios";
 //import dayjs from "dayjs";
 
 const { Option } = Select;
+const { Text } = Typography;
 
 const GET_VEHICLES_API_URL = "/vehicle/my-vehicles";
 const GET_COMPATIBLE_STATIONS_API_URL = "/booking/compatible-stations";
@@ -14,6 +15,7 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
   const [compatibleStations, setCompatibleStations] = useState([]);
   const [isStationLoading, setIsStationLoading] = useState(false);
   const [isVehicleLoading, setIsVehicleLoading] = useState(true);
+  const [selectedVehicleDetails, setSelectedVehicleDetails] = useState(null);
 
   const fetchCompatibleStations = useCallback(async (vehicleId) => {
     if (!vehicleId) {
@@ -25,7 +27,12 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
       const res = await api.get(
         `${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`
       );
-      setCompatibleStations(res.data || []);
+      const stationsData = res.data.map(s => ({
+          ...s,
+          // Lấy currentBatteryCount từ API, hoặc 0 nếu không có (để phòng hờ)
+          availableBatteriesCount: s.currentBatteryCount ?? 0, 
+      }));
+      setCompatibleStations(stationsData || []);
     } catch (error) {
       console.error("Lỗi khi tải trạm tương thích:", error);
       setCompatibleStations([]);
@@ -42,11 +49,13 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
     const fetchVehicles = async () => {
       try {
         const res = await api.get(GET_VEHICLES_API_URL);
+        const fetchedVehicles = res.data || [];
         setVehicles(res.data || []);
         
         // 🆕 Nếu có preselectedVehicleId, tự động tải trạm tương thích
         if (preselectedVehicleId) {
-          await fetchCompatibleStations(preselectedVehicleId);
+            const preselectedVehicle = fetchedVehicles.find(v => v.id === preselectedVehicleId);
+            setSelectedVehicleDetails(preselectedVehicle);
         }
       } catch (error) {
         console.error("Lỗi khi tải danh sách xe:", error);
@@ -63,6 +72,8 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
 
   const handleVehicleChange = (vehicleId) => {
     form.setFieldsValue({ stationId: undefined }); // Reset station selection
+    const selected = vehicles.find(v => v.id === vehicleId);
+        setSelectedVehicleDetails(selected);
     if (vehicleId) {
       fetchCompatibleStations(vehicleId);
     } else {
@@ -97,7 +108,7 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
         rules={[{ required: true, message: "Vui lòng chọn xe của bạn!" }]}
       >
         <Select
-          placeholder="Chọn một chiếc xe (Tên xe, Biển số)"
+          placeholder="Chọn một chiếc xe"
           onChange={handleVehicleChange}
         >
           {vehicles.map((v) => (
@@ -107,6 +118,13 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
           ))}
         </Select>
       </Form.Item>
+
+      {selectedVehicleDetails && selectedVehicleDetails.plateNumber && (
+        <div style={{ marginBottom: 16, marginTop: -10 }}>
+            <Text strong>Biển số xe: </Text>
+            <Text type="secondary">{selectedVehicleDetails.plateNumber}</Text>
+        </div>
+      )}
 
       <Form.Item
         name="stationId"
@@ -132,6 +150,7 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
           {compatibleStations.map((s) => (
             <Option key={s.id} value={s.id}>
               {s.name} - {s.district}, {s.city}
+              {` (còn ${s.availableBatteriesCount} pin)`}
             </Option>
           ))}
         </Select>

@@ -601,7 +601,7 @@ const StationPage = () => {
   };
 
   // ---------------------------
-  // 🚀 3. DELETE STATION (Hard Delete)
+  // 🚀 3. DELETE STATION
   // ---------------------------
   const handleDelete = (id) => {
     Modal.confirm({
@@ -639,7 +639,7 @@ const StationPage = () => {
     form.setFieldsValue(station);
   };
 
-  // 🆕 Handler để mở Modal Pin
+  // Handler để mở Modal Pin
   const handleViewBatteries = (station) => {
     setViewingStation(station);
     setIsBatteryListModalVisible(true);
@@ -819,6 +819,10 @@ const StationPage = () => {
   const totalStations = stations.length;
   const activeStations = stations.filter((s) => s.status === "ACTIVE").length;
   const totalCapacity = stations.reduce((sum, s) => sum + (s.capacity || 0), 0);
+  const totalCurrentBatteries = stations.reduce(
+        (sum, s) => sum + (s.currentBatteryCount || 0),
+        0
+    );
 
   // ---------------------------
   // JSX Render
@@ -854,6 +858,15 @@ const StationPage = () => {
               suffix="pin"
             />
           </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} lg={6}>
+            <Card>
+                <Statistic
+                    title="Tổng số pin tại trạm"
+                    value={totalCurrentBatteries}
+                    suffix="pin"
+                />
+            </Card>
         </Col>
       </Row>
 
@@ -1052,7 +1065,7 @@ const StationPage = () => {
           </Form.Item>
         </Form>
       </Modal>
-      {/* 🆕 MODAL HIỂN THỊ DANH SÁCH PIN */}
+      {/* MODAL HIỂN THỊ DANH SÁCH PIN */}
       <BatteryListModal
         station={viewingStation}
         isVisible={isBatteryListModalVisible}

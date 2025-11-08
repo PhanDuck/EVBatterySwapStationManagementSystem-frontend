@@ -23,7 +23,6 @@ import axios from "axios";
 
 export default function SwapAnimation() {
   const [code, setCode] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Nhập code, 2: Cho pin vào, 3: Sẵn sàng Swap
   const [newBattery, setNewBattery] = useState(null); // Pin mới sắp lắp vào
@@ -45,9 +44,8 @@ export default function SwapAnimation() {
     batteryData,
     loading,
     type,
-    backgroundColor,
   }) => {
-    const color = type === "new" ? "green" : "yellow";
+    const color = type === "new" ? "#52c41a" : "#faad14";
 
     if (loading) {
       return (
@@ -57,7 +55,6 @@ export default function SwapAnimation() {
           style={{
             height: 250,
             textAlign: "center",
-            backgroundColor: backgroundColor || "#ffffffff",
           }}
         >
           <Spin tip="Đang tải thông tin pin..." />
@@ -76,7 +73,6 @@ export default function SwapAnimation() {
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            backgroundColor: backgroundColor || "#ffffffff",
           }}
         >
           <Text type="secondary">Chưa có thông tin pin</Text>
@@ -87,15 +83,30 @@ export default function SwapAnimation() {
     return (
       <Card
         bordered
-        title={title}
+        title={
+          <Text strong style={{ color: color }}>
+            {title}
+          </Text>
+        }
         style={{
           minHeight: 250,
           borderColor: color,
-          backgroundColor: backgroundColor || "#ffffffff",
         }}
+        headStyle={{ backgroundColor: "#fafafa" }}
       >
         <Space direction="vertical" style={{ width: "100%" }}>
-          {/* 1. Loại Pin */}
+          {/* 1. ID Pin */}
+          <Row justify="space-between">
+            <Col>           
+              <Text strong>ID Pin:</Text>
+            </Col>
+            <Col>
+              <Text>{batteryData.batteryId || "—"}</Text>
+            </Col>
+          </Row>
+          <Divider style={{ margin: "8px 0" }} />
+
+          {/* 2. Loại Pin */}
           <Row justify="space-between">
             <Col>
               <Text strong>Loại Pin:</Text>
@@ -106,7 +117,7 @@ export default function SwapAnimation() {
           </Row>
           <Divider style={{ margin: "8px 0" }} />
 
-          {/* 2. Mức sạc (Charge Level) */}
+          {/* 3. Mức sạc (Charge Level) */}
           <Row justify="space-between">
             <Col>
               <Text strong>
@@ -122,7 +133,7 @@ export default function SwapAnimation() {
           </Row>
           <Divider style={{ margin: "8px 0" }} />
 
-          {/* 3. Tình trạng pin (State of Health) */}
+          {/* 4. Tình trạng pin (State of Health) */}
           <Row justify="space-between">
             <Col>
               <Text strong>

@@ -112,17 +112,16 @@ export default function InventoryPage() {
         `/station/${stationId}/batteries/needs-maintenance`
       );
       // Xử lý response - có thể là mảng trực tiếp hoặc object có key batteries
-      let inventory = [];
-      if (Array.isArray(res.data)) {
-        inventory = res.data;
-      } else if (res.data?.batteries && Array.isArray(res.data.batteries)) {
-        inventory = res.data.batteries;
-      }
+      let inventory = Array.isArray(res.data) 
+         ? res.data 
+         : (res.data?.batteries && Array.isArray(res.data.batteries) ? res.data.batteries : []);
 
       setStationInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
+      return inventory.length > 0 ? inventory[0].batteryTypeId : null;
     } catch (error) {
       handleApiError(error, "Tải tồn kho trạm!");
       setStationInventory([]);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -133,32 +132,51 @@ export default function InventoryPage() {
     setLoading(true);
     try {
       let res;
-      if (typeIdToFilter) {
-        // API LỌC: GET /api/station-inventory/available-by-type/{batteryTypeId}
-        res = await api.get(
-          `/station-inventory/available-by-type/${typeIdToFilter}`
-        );
-      } else {
-        // API TOÀN BỘ: GET /api/station-inventory
-        res = await api.get("/station-inventory");
-      }
-
-      // Xử lý response - có thể là mảng trực tiếp hoặc object có key batteries
       let inventory = [];
+      
+      // --- Logic API ---
+        if (!isAdmin) {
+            // STAFF: Chỉ tải pin AVAILABLE và bắt buộc phải có typeIdToFilter
+            if (!typeIdToFilter) {
+                // Nếu là Staff VÀ không có typeId để lọc -> Không tải, trả về rỗng
+                setWarehouseInventory([]);
+                message.warning("Staff cần có Pin tại Trạm để xác định loại pin kho cần tải.");
+                return;
+            }
+            // Staff tải pin AVAILABLE theo loại
+            res = await api.get(
+                `/station-inventory/available-by-type/${typeIdToFilter}`
+            );
+        } else {
+            // ADMIN: Luôn tải TOÀN BỘ kho (AVAILABLE & MAINTENANCE)
+            // Lọc sẽ được xử lý sau trên Client
+            res = await api.get("/station-inventory");
+        }
+
+      // Xử lý response 
       if (Array.isArray(res.data)) {
         inventory = res.data;
       } else if (res.data?.batteries && Array.isArray(res.data.batteries)) {
         inventory = res.data.batteries;
       }
 
-      setWarehouseInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
+      // --- Logic Lọc trên Client (Chỉ áp dụng cho ADMIN) ---
+        let filteredInventory = inventory;
+        if (isAdmin && typeIdToFilter) {
+            // Admin áp dụng lọc theo loại pin trên dữ liệu toàn bộ đã tải
+            filteredInventory = inventory.filter(
+                (item) => item.batteryTypeId === typeIdToFilter
+            );
+        }
+
+      setWarehouseInventory(filteredInventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (error) {
       handleApiError(error, "Tải tồn kho kho!");
       setWarehouseInventory([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   // Effect chạy lần đầu
   useEffect(() => {
@@ -170,11 +188,27 @@ export default function InventoryPage() {
   // Effect chạy khi trạm được chọn thay đổi
   useEffect(() => {
     if (selectedStationId) {
-      fetchStationInventory(selectedStationId);
-      setFilterBatteryTypeId(null);
-      fetchWarehouseInventory(null);
+      const loadData = async () => {
+        // 1. Tải pin trạm và lấy loại pin của trạm
+        const stationTypeId = await fetchStationInventory(selectedStationId);
+
+        // 2. Tải kho tổng
+        if (!isAdmin) {
+          setFilterBatteryTypeId(stationTypeId);
+          if (!stationTypeId) {
+            setWarehouseInventory([]); 
+            return; // Dừng việc tải kho tổng
+          }
+          fetchWarehouseInventory(stationTypeId);
+        } else {
+          // ADMIN: Luôn thấy toàn bộ kho tổng
+          setFilterBatteryTypeId(null);
+          fetchWarehouseInventory(null);
+        }
+      };
+      loadData();
     }
-  }, [selectedStationId, fetchStationInventory, fetchWarehouseInventory]);
+    }, [selectedStationId, fetchStationInventory, fetchWarehouseInventory, isAdmin]);
 
   // --- 2. HÀM XỬ LÝ THAO TÁC MOVE VÀ LỌC ---
 
@@ -635,17 +669,19 @@ export default function InventoryPage() {
         title="Quản lý tồn kho pin trong kho bảo trì"
         extra={
           <Space>
-            {/* NÚT LỌC PIN THEO LOẠI */}
-            <Button
-              onClick={handleFilterByStationType}
-              type={filterBatteryTypeId ? "primary" : "default"} // Đổi màu nếu đang lọc
-              icon={<SearchOutlined />}
-              disabled={stationInventory.length === 0} // Vô hiệu hóa nếu không có pin ở trạm
-            >
-              {filterBatteryTypeId
-                ? `Lọc theo: ${batteryTypesMap[filterBatteryTypeId]}`
-                : "Lọc pin theo loại"}
-            </Button>
+            {isAdmin && (
+              <Space>
+                {/* NÚT LỌC PIN THEO LOẠI */}
+                  <Button
+                    onClick={handleFilterByStationType}
+                    type={filterBatteryTypeId ? "primary" : "default"} // Đổi màu nếu đang lọc
+                    icon={<SearchOutlined />}
+                    disabled={stationInventory.length === 0} // Vô hiệu hóa nếu không có pin ở trạm
+                  >
+                    {filterBatteryTypeId
+                      ? `Lọc theo: ${batteryTypesMap[filterBatteryTypeId]}`
+                      : "Lọc pin theo loại"}
+                  </Button>
 
             {/* NÚT BỎ LỌC (Chỉ hiện khi đang lọc) */}
             {filterBatteryTypeId && (
@@ -659,6 +695,8 @@ export default function InventoryPage() {
                 Bỏ lọc
               </Button>
             )}
+          </Space>
+        )}
             {/* NÚT TẢI LẠI KHO BÌNH THƯỜNG */}
             <Button
               icon={<ReloadOutlined />}
@@ -673,7 +711,9 @@ export default function InventoryPage() {
         }
       >
         <h4>
-          Danh sách pin sẵn sàng (AVAILABLE) và pin đang bảo trì (MAINTENANCE):
+          {isAdmin
+            ? "Danh sách pin trong kho:"
+            : "Danh sách pin sẵn sàng (AVAILABLE) trong kho:"}
         </h4>
         <Table
           columns={warehouseColumns}
@@ -755,9 +795,6 @@ export default function InventoryPage() {
           </Form.Item>
         </Form>
       </Modal>
-
-      {/* MODAL CHUYỂN PIN TỐT RA TRẠM (Dành cho chức năng nâng cao) */}
-      {/* Đã tích hợp trực tiếp vào bảng Warehouse để Staff tiện thao tác */}
     </div>
   );
 }

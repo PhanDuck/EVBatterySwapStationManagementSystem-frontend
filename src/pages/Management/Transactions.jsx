@@ -130,19 +130,19 @@ const TransactionsPage = () => {
       sorter: (a, b) => a.id - b.id,
       defaultSortOrder: "descend",
     },
-    {
-      title: "Loại",
-      dataIndex: "type",
-      render: (type) => {
-        const colors = {
-          "Battery Swap": "blue",
-          Subscription: "green",
-          Refund: "orange",
-          Penalty: "red",
-        };
-        return <Tag color={colors[type] || "default"}>{type}</Tag>;
-      },
-    },
+    // {
+    //   title: "Loại",
+    //   dataIndex: "type",
+    //   render: (type) => {
+    //     const colors = {
+    //       "Battery Swap": "blue",
+    //       Subscription: "green",
+    //       Refund: "orange",
+    //       Penalty: "red",
+    //     };
+    //     return <Tag color={colors[type] || "default"}>{type}</Tag>;
+    //   },
+    // },
     {
       title: "Số tiền",
       dataIndex: "amount",
