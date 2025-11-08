@@ -10,14 +10,17 @@ export default function handleApiError(error, context = "") {
 
   const response = error.response;
   if (!response) {
-    return showToast("error", "Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng của bạn.");
+    return showToast(
+      "error",
+      "Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng của bạn."
+    );
   }
 
   const status = response.status;
   const backendMessage = response.data?.message || response.data?.error || "";
   const message =
     backendMessage ||
-    ({
+    {
       400: `Dữ liệu không hợp lệ${context ? ` khi ${context}` : ""}.`,
       401: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
       403: "Bạn không có quyền thực hiện hành động này.",
@@ -25,7 +28,8 @@ export default function handleApiError(error, context = "") {
       409: "Xung đột dữ liệu. Vui lòng thử lại.",
       422: "Dữ liệu nhập vào không hợp lệ.",
       500: "Lỗi hệ thống. Vui lòng thử lại sau.",
-    }[status] || "Đã xảy ra lỗi không mong muốn.");
+    }[status] ||
+    "Đã xảy ra lỗi không mong muốn.";
 
   // ⚠️ Chống hiển thị trùng lặp
   const now = Date.now();

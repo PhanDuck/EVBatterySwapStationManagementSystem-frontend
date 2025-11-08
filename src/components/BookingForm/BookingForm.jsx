@@ -10,7 +10,12 @@ const GET_VEHICLES_API_URL = "/vehicle/my-vehicles";
 const GET_COMPATIBLE_STATIONS_API_URL = "/booking/compatible-stations";
 
 // Component giờ đây sẽ nhận thêm prop `form`, `onVehicleChange`, `preselectedVehicleId`, `preselectedStationId`
-const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, preselectedStationId }) => {
+const BookingFormFields = ({
+  form,
+  onVehicleChange,
+  preselectedVehicleId,
+  preselectedStationId,
+}) => {
   const [vehicles, setVehicles] = useState([]);
   const [compatibleStations, setCompatibleStations] = useState([]);
   const [isStationLoading, setIsStationLoading] = useState(false);
@@ -27,10 +32,10 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
       const res = await api.get(
         `${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`
       );
-      const stationsData = res.data.map(s => ({
-          ...s,
-          // Lấy currentBatteryCount từ API, hoặc 0 nếu không có (để phòng hờ)
-          availableBatteriesCount: s.currentBatteryCount ?? 0, 
+      const stationsData = res.data.map((s) => ({
+        ...s,
+        // Lấy currentBatteryCount từ API, hoặc 0 nếu không có (để phòng hờ)
+        availableBatteriesCount: s.currentBatteryCount ?? 0,
       }));
       setCompatibleStations(stationsData || []);
     } catch (error) {
@@ -51,11 +56,13 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
         const res = await api.get(GET_VEHICLES_API_URL);
         const fetchedVehicles = res.data || [];
         setVehicles(res.data || []);
-        
+
         // 🆕 Nếu có preselectedVehicleId, tự động tải trạm tương thích
         if (preselectedVehicleId) {
-            const preselectedVehicle = fetchedVehicles.find(v => v.id === preselectedVehicleId);
-            setSelectedVehicleDetails(preselectedVehicle);
+          const preselectedVehicle = fetchedVehicles.find(
+            (v) => v.id === preselectedVehicleId
+          );
+          setSelectedVehicleDetails(preselectedVehicle);
         }
       } catch (error) {
         console.error("Lỗi khi tải danh sách xe:", error);
@@ -72,8 +79,8 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
 
   const handleVehicleChange = (vehicleId) => {
     form.setFieldsValue({ stationId: undefined }); // Reset station selection
-    const selected = vehicles.find(v => v.id === vehicleId);
-        setSelectedVehicleDetails(selected);
+    const selected = vehicles.find((v) => v.id === vehicleId);
+    setSelectedVehicleDetails(selected);
     if (vehicleId) {
       fetchCompatibleStations(vehicleId);
     } else {
@@ -107,10 +114,7 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
         label="1. Chọn xe của bạn"
         rules={[{ required: true, message: "Vui lòng chọn xe của bạn!" }]}
       >
-        <Select
-          placeholder="Chọn một chiếc xe"
-          onChange={handleVehicleChange}
-        >
+        <Select placeholder="Chọn một chiếc xe" onChange={handleVehicleChange}>
           {vehicles.map((v) => (
             <Option key={v.id} value={v.id}>
               {v.model} ({v.plateNumber || "Chưa có biển số"})
@@ -121,8 +125,8 @@ const BookingFormFields = ({ form, onVehicleChange, preselectedVehicleId, presel
 
       {selectedVehicleDetails && selectedVehicleDetails.plateNumber && (
         <div style={{ marginBottom: 16, marginTop: -10 }}>
-            <Text strong>Biển số xe: </Text>
-            <Text type="secondary">{selectedVehicleDetails.plateNumber}</Text>
+          <Text strong>Biển số xe: </Text>
+          <Text type="secondary">{selectedVehicleDetails.plateNumber}</Text>
         </div>
       )}
 

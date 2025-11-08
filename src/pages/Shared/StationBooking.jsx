@@ -188,7 +188,9 @@ function StationBookingPage() {
                     form={form}
                     onVehicleChange={handleValuesChange}
                     preselectedVehicleId={getPreselectedVehicleId()}
-                    preselectedStationId={stationIdFromUrl ? parseInt(stationIdFromUrl) : null}
+                    preselectedStationId={
+                      stationIdFromUrl ? parseInt(stationIdFromUrl) : null
+                    }
                   />
 
                   <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>

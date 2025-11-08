@@ -11,7 +11,11 @@ import {
   Tooltip,
 } from "react-leaflet";
 import { Select, Card, Spin, Button, Space } from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined, CalendarOutlined } from "@ant-design/icons"; // Import icons
+import {
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  CalendarOutlined,
+} from "@ant-design/icons"; // Import icons
 import api from "../../config/axios";
 import { getCurrentUser } from "../../config/auth";
 import L from "leaflet";
@@ -207,7 +211,9 @@ const StationsNearby = () => {
       alert("Vui lòng chọn xe trước!");
       return;
     }
-    navigate(`/stations/booking?vehicleId=${selectedVehicle}&stationId=${station.id}`);
+    navigate(
+      `/stations/booking?vehicleId=${selectedVehicle}&stationId=${station.id}`
+    );
   };
 
   // 🆕 Lấy thông tin xe được chọn
@@ -223,6 +229,7 @@ const StationsNearby = () => {
     }
     // Nếu có xe, chỉ hiển thị trạm phù hợp
     return stations.filter((s) => s.batteryTypeId === selectedVehicleData.batteryTypeId);
+
   }, [stations, selectedVehicleData]);
 
   // ... (useMemo cho cities, districts, filteredStations giữ nguyên)

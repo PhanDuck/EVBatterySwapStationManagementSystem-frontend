@@ -39,12 +39,7 @@ export default function SwapAnimation() {
   const POST_SWAP_API_URL = "/api/swap-transaction/swap-by-code";
 
   // ⚙️ Component con hiển thị thông tin pin (dùng lại cho cả pin cũ và pin mới)
-  const BatteryInfoCard = ({
-    title,
-    batteryData,
-    loading,
-    type,
-  }) => {
+  const BatteryInfoCard = ({ title, batteryData, loading, type }) => {
     const color = type === "new" ? "#52c41a" : "#faad14";
 
     if (loading) {
@@ -97,7 +92,7 @@ export default function SwapAnimation() {
         <Space direction="vertical" style={{ width: "100%" }}>
           {/* 1. ID Pin */}
           <Row justify="space-between">
-            <Col>           
+            <Col>
               <Text strong>ID Pin:</Text>
             </Col>
             <Col>
@@ -416,7 +411,7 @@ export default function SwapAnimation() {
       </Space>
     </div>
   );
-};
+}
 
 // const handleConfirm = async () => {
 //   if (!code || code.length !== 6) {

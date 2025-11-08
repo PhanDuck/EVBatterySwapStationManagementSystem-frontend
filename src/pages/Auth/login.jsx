@@ -91,7 +91,7 @@ const LoginPage = () => {
               user = me.data;
             }
           } catch {
-              console.warn("⚠️ Không lấy được thông tin user hiện tại");
+            console.warn("⚠️ Không lấy được thông tin user hiện tại");
           }
         }
 

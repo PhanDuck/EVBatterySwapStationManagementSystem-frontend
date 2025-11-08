@@ -268,12 +268,15 @@ const RegisterPage = () => {
               onChange={(token) => {
                 setCaptchaToken(token);
                 if (token) {
-                  setErrors((prev) => ({ ...prev, captcha: "" })); 
+                  setErrors((prev) => ({ ...prev, captcha: "" }));
                 }
               }}
               onExpired={() => {
                 setCaptchaToken(null);
-                setErrors((prev) => ({...prev, captcha: "Captcha đã hết hạn, vui lòng xác minh lại!",}));
+                setErrors((prev) => ({
+                  ...prev,
+                  captcha: "Captcha đã hết hạn, vui lòng xác minh lại!",
+                }));
               }}
             />
             {errors.captcha && (

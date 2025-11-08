@@ -52,35 +52,6 @@ export default function BookingsPage() {
       let bookingRes;
 
       if (role === "ADMIN" || role === "STAFF") {
-<<<<<<< HEAD
-        [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
-          role === "ADMIN"
-            ? api.get("/booking")
-            : api.get("/booking/my-stations"),
-          api.get("/vehicle"),
-          api.get("/station"),
-          api.get("/admin/user"),
-        ]);
-      } else {
-        [bookingRes, vehicleRes, stationRes] = await Promise.all([
-          api.get("/booking/my-bookings"),
-          api.get("/vehicle/my-vehicles"),
-          api.get("/station"),
-        ]);
-        userRes = { data: user }; // Sử dụng user từ localStorage
-      }
-
-      setData(Array.isArray(bookingRes?.data) ? bookingRes.data : []);
-      setVehicles(Array.isArray(vehicleRes?.data) ? vehicleRes.data : []);
-      setStations(Array.isArray(stationRes?.data) ? stationRes.data : []);
-      setUsers(
-        Array.isArray(userRes?.data)
-          ? userRes.data
-          : userRes?.data
-          ? [userRes.data]
-          : []
-      );
-=======
         // ADMIN & STAFF: lấy tất cả booking hoặc booking của trạm phụ trách
         const url = role === "ADMIN" ? "/booking" : "/booking/my-stations";
         bookingRes = await Promise.race([
@@ -115,7 +86,6 @@ export default function BookingsPage() {
 
       const bookings = processData(bookingRes);
       setData(bookings);
->>>>>>> d9d6f98 (sua api booking)
     } catch (error) {
       handleApiError(error, "");
     } finally {
@@ -130,18 +100,7 @@ export default function BookingsPage() {
     }
   }, [fetchData]);
 
-<<<<<<< HEAD
-  // 📖 Map ID sang tên
-  const driverName = (id) =>
-    users.find((u) => u.id === id)?.fullName || `${id}`;
-  const vehicleName = (id) =>
-    vehicles.find((v) => v.id === id)?.model || `${id}`;
-  const stationName = (id) =>
-    stations.find((s) => s.id === id)?.name || `${id}`;
 
-  // 🔍 Tìm kiếm
-  const filteredData = useMemo(() => {
-=======
   // 📖 Map ID sang tên - ✅ OPTIMIZATION: Sử dụng Map thay vì find() để tăng tốc độ
   const userMap = useMemo(() => {
     const map = new Map();
@@ -170,7 +129,6 @@ export default function BookingsPage() {
     if (!search) return data;
 
     const searchLower = search.toLowerCase();
->>>>>>> d9d6f98 (sua api booking)
     return data.filter(
       (item) =>
         driverName(item.driverId)
@@ -223,16 +181,21 @@ export default function BookingsPage() {
   // 3. ✅ Xử lý Hủy Booking cho DRIVER (Gửi API trực tiếp)
   const handleDriverCancel = (record) => {
     Modal.confirm({
-
       title: "Xác nhận hủy đặt lịch",
-      content: "Bạn có chắc chắn muốn hủy đặt lịch này không?",
+      content: (
+        <div>
+          <p>Bạn có chắc chắn muốn hủy đặt lịch này không?</p>
+          <p style={{ color: "red", fontWeight: "bold" }}>
+            Lưu ý! Bạn không thể hủy sau 2 tiếng kể từ khi đặt lịch.
+          </p>
+        </div>
+      ),
       okText: "Hủy",
       okType: "danger",
       cancelText: "Không",
       onOk: async () => {
         try {
           await api.patch(`/booking/my-bookings/${record.id}/cancel`);
-
           // Cập nhật state local
           setData((prev) =>
             prev.map((item) =>
@@ -432,6 +395,4 @@ export default function BookingsPage() {
       </Modal>
     </div>
   );
-
 }
-//driver dùng api: PATCH/api/booking/my-bookings/{id}/cancel để hủy booking, staff/admin dùng api: DELETE/api/booking/staff/{id}/cancel. driver bấm nút hủy

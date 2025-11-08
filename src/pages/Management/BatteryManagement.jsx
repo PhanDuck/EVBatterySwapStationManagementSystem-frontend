@@ -23,7 +23,6 @@ const { TextArea } = Input;
 
 export default function BatteryManagement() {
   const [batteries, setBatteries] = useState([]);
-  const [stations, setStations] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingBattery, setEditingBattery] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -58,27 +57,16 @@ export default function BatteryManagement() {
         return;
       }
 
-      const [typeRes, stationRes] = await Promise.all([
-        api.get("/battery-type").catch(() => ({ data: [] })),
-        api.get("/station").catch(() => ({ data: [] })),
-      ]);
-
+      const typeRes = await api
+        .get("/battery-type")
+        .catch(() => ({ data: [] }));
       const typeData = typeRes?.data || [];
-      const stationData = stationRes?.data || [];
-
       setBatteryTypes(typeData.sort((a, b) => b.id - a.id)); // Lưu loại pin
-      setStations(stationData);
 
       // 🔁 Map battery type name + station name
       const mapped = (batteryRes?.data || []).map((b) => ({
         ...b,
         key: b.id, // Thêm key
-        batteryTypeName:
-          typeData.find((t) => t.id === b.batteryTypeId)?.name ||
-          "Không xác định",
-        currentStationName:
-          stationData.find((s) => s.id === b.currentStation)?.name ||
-          "Không xác định",
       }));
       setBatteries(mapped.sort((a, b) => b.id - a.id)); // Sắp xếp theo ID giảm dần
     } catch (error) {
@@ -103,20 +91,14 @@ export default function BatteryManagement() {
     };
 
     try {
-      let res;
       if (editingBattery) {
-        res = await api.put(`/battery/${editingBattery.id}`, data);
+        await api.put(`/battery/${editingBattery.id}`, data);
         message.success("Cập nhật pin thành công!");
-        fetchAllData();
-        // setBatteries((prev) =>
-        //   prev.map((b) => (b.id === editingBattery.id ? { ...b, ...data } : b))
-        // );
       } else {
-        res = await api.post("/battery", data);
+        await api.post("/battery", data);
         message.success("Thêm pin mới thành công!");
-        fetchAllData();
-        // setBatteries((prev) => [...prev, res.data]);
       }
+      fetchAllData();
 
       setIsModalVisible(false);
       form.resetFields();
@@ -172,15 +154,12 @@ export default function BatteryManagement() {
         // Cập nhật (PUT /api/battery-type/{id})
         await api.put(`/battery-type/${editingType.id}`, data);
         message.success("Cập nhật loại pin thành công!");
-        // Cập nhật lại list loại pin
         setBatteryTypes((prev) =>
           prev.map((t) => (t.id === editingType.id ? { ...t, ...data } : t))
         );
       } else {
-        // Tạo mới (POST /api/battery-type)
         const res = await api.post("/battery-type", data);
         message.success("Thêm loại pin mới thành công!");
-        // Thêm bản ghi mới vào đầu danh sách
         setBatteryTypes((prev) => [res.data, ...prev]);
       }
       // Sau khi thêm/sửa, refresh cả bảng Pin thường để cập nhật tên Loại Pin nếu cần
@@ -226,7 +205,7 @@ export default function BatteryManagement() {
         return <Tag color={parseFloat(v) >= 70 ? "green" : "orange"}>{v}</Tag>;
       },
     },
-    { title: "Trạm hiện tại", dataIndex: "currentStationName", width: 200 },
+    { title: "Trạm hiện tại", dataIndex: "stationName", width: 200 },
     {
       title: "Trạng thái",
       dataIndex: "status",
@@ -378,7 +357,7 @@ export default function BatteryManagement() {
     return (
       b.model?.toLowerCase().includes(q) ||
       b.batteryTypeName?.toLowerCase().includes(q) ||
-      b.currentStationName?.toLowerCase().includes(q) ||
+      b.stationName?.toLowerCase().includes(q) ||
       b.status?.toLowerCase().includes(q)
     );
   });
@@ -545,16 +524,6 @@ export default function BatteryManagement() {
               ))}
             </Select>
           </Form.Item>
-
-          {/* <Form.Item name="currentStation" label="Trạm hiện tại">
-            <Select placeholder="Chọn trạm">
-              {stations.map((s) => (
-                <Option key={s.id} value={s.id}>
-                  {s.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item> */}
 
           <Form.Item
             name="manufactureDate"

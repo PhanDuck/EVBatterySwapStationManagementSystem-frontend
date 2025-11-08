@@ -42,8 +42,8 @@ const VehiclePage = () => {
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [form] = Form.useForm();
   const [searchText, setSearchText] = useState("");
+  const [drivers, setDrivers] = useState([]);
   const [batteryTypes, setBatteryTypes] = useState([]);
-  const [stations, setStations] = useState([]);
   const [isHistoryModalVisible, setIsHistoryModalVisible] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
   const [vehicleHistory, setVehicleHistory] = useState([]);
@@ -51,9 +51,11 @@ const VehiclePage = () => {
 
   const user = (() => {
     try {
-      return JSON.parse(localStorage.getItem("currentUser")) || {};
+      const userString = localStorage.getItem("currentUser");
+      return userString ? JSON.parse(userString) : {};
     } catch (error) {
-      handleApiError(error, "");
+      handleApiError(error, "Lỗi đọc thông tin người dùng");
+      return {};
     }
   })();
 
@@ -64,13 +66,13 @@ const VehiclePage = () => {
   const isAdminOrStaff = role === "ADMIN" || role === "STAFF";
 
   // --- Component Modal Lịch sử Đổi Pin ---
-  const VehicleSwapHistoryModal = ({
+  const VehicleSwapHistoryModal = React.memo(
+  ({
     open,
     onClose,
     vehicleHistory,
     loading,
-    stations,
-    userRole,
+    userRole
   }) => {
     const swapCount = vehicleHistory.length;
     const canViewTransactionId = userRole === "ADMIN" || userRole === "STAFF";
@@ -109,15 +111,15 @@ const VehiclePage = () => {
         >
           <Space direction="vertical" style={{ width: "100%" }}>
             {/* 1. ID Pin */}
-              <Row justify="space-between" style={{ paddingBottom: 5 }}>
-                <Col>
-                  <Text strong>ID Pin:</Text>
-                </Col>
-                <Col>
-                  <Text>{batteryId || "—"}</Text>
-                </Col>
-              </Row>
-              <Divider style={{ margin: "5px 0" }} />
+            <Row justify="space-between" style={{ paddingBottom: 5 }}>
+              <Col>
+                <Text strong>ID Pin:</Text>
+              </Col>
+              <Col>
+                <Text>{batteryId || "—"}</Text>
+              </Col>
+            </Row>
+            <Divider style={{ margin: "5px 0" }} />
 
             {/* 2. Loại Pin (Model) */}
             <Row justify="space-between" style={{ paddingBottom: 5 }}>
@@ -172,8 +174,7 @@ const VehiclePage = () => {
       });
       const dateString = date.toLocaleDateString("vi-VN");
       const dateTimeFormatted = `${timeString} ${dateString}`;
-      const station = stations.find((s) => s.id === transaction.stationId);
-      const stationName = station ? station.name : "Trạm không rõ";
+      const stationName = transaction.stationName || "Trạm không rõ";
       const swapNumber = totalSwaps - index;
 
       return (
@@ -269,7 +270,7 @@ const VehiclePage = () => {
                   transaction={item}
                   key={item.id}
                   index={index}
-                  totalSwaps={swapCount} 
+                  totalSwaps={swapCount}
                 />
               ))}
             </div>
@@ -277,22 +278,23 @@ const VehiclePage = () => {
         </Spin>
       </Modal>
     );
-  };
+  }
+);
 
-  // 🚗 Lấy danh sách vehicle và tính SwapCount ngay lập tức
+  // 🚗 Lấy danh sách vehicle
   useEffect(() => {
-    const fetchVehiclesAndCounts = async () => {
+    const fetchVehicles = async () => {
       setLoading(true);
-      let initialVehicleList = [];
 
       try {
         // 1. Tải danh sách xe
-        const res =
+        const endpoint =
           role === "ADMIN" || role === "STAFF"
-            ? await api.get("/vehicle")
-            : await api.get("/vehicle/my-vehicles");
+            ? "/vehicle"
+            : "/vehicle/my-vehicles";
+        const res = await api.get(endpoint);
 
-        initialVehicleList = (
+        const initialVehicleList = (
           Array.isArray(res.data)
             ? res.data
             : res.data?.data && Array.isArray(res.data.data)
@@ -300,41 +302,7 @@ const VehiclePage = () => {
             : []
         ).sort((a, b) => b.id - a.id);
 
-        if (initialVehicleList.length === 0) {
-          setVehicles([]);
-          return;
-        }
-
-        // 2. ✅ SỬA LỖI: Lấy swap count cho từng xe (N queries)
-        // Dùng Promise.all để gọi tất cả request một lần
-        const vehiclePromises = initialVehicleList.map(async (vehicle) => {
-          try {
-            // Lấy chỉ 1 item để xác định có lịch sử (hoặc dùng count API nếu có)
-            const historyRes = await api.get(
-              `/swap-transaction/vehicle/${vehicle.id}/history?limit=1`
-            );
-            const historyList = Array.isArray(historyRes.data)
-              ? historyRes.data
-              : historyRes.data?.data || [];
-            
-            // Nếu API không trả về count mà trả về list, số lần đổi pin chính là độ dài của list.
-            // *Lưu ý: Nếu backend chỉ trả về 1 item (do limit=1), thì swapCount sẽ luôn là 1 nếu có lịch sử, 0 nếu không.
-            // Để lấy số đếm chính xác, API cần trả về một field 'totalCount' hoặc không dùng limit=1.
-            // Tạm thời, tôi sẽ KHÔNG dùng limit=1 để tính count chính xác hơn, chấp nhận tải nhiều dữ liệu hơn.
-            const fullHistoryRes = await api.get(`/swap-transaction/vehicle/${vehicle.id}/history`);
-            const fullHistoryList = Array.isArray(fullHistoryRes.data)
-              ? fullHistoryRes.data
-              : fullHistoryRes.data?.data || [];
-            
-            return { ...vehicle, swapCount: fullHistoryList.length };
-          } catch (error) {
-            // console.error(`Lỗi khi tải swapCount cho xe ${vehicle.id}:`, error);
-            return { ...vehicle, swapCount: 0 };
-          }
-        });
-
-        const vehiclesWithCounts = await Promise.all(vehiclePromises);
-        setVehicles(vehiclesWithCounts);
+        setVehicles(initialVehicleList);
       } catch (error) {
         handleApiError(error, "Danh sách phương tiện");
         console.error(error);
@@ -343,21 +311,32 @@ const VehiclePage = () => {
       }
     };
 
-    fetchVehiclesAndCounts();
+    fetchVehicles();
   }, [role]);
 
-  // 📍 Lấy danh sách trạm
+  // 🧑‍💻 Lấy danh sách tài xế (chỉ cho Admin/Staff)
   useEffect(() => {
-    const fetchStations = async () => {
-      try {
-        const res = await api.get("/station");
-        setStations(res.data || []);
-      } catch (error) {
-        handleApiError(error, `Tải danh sách trạm:`);
-      }
-    };
-    fetchStations();
-  }, []);
+    if (isAdminOrStaff) {
+      const fetchDrivers = async () => {
+        try {
+          // ⚠️ Giả định API endpoint là '/user/drivers'
+          const res = await api.get("/admin/user");
+          const allUsers = res.data && Array.isArray(res.data.data) ? res.data.data : [];
+          const driverList = allUsers
+            .filter(user => user.role && user.role.toUpperCase() === "DRIVER")
+            .map(driver => ({
+                id: driver.id,
+                name: driver.name, // Giả định trường tên là 'name'
+                // Thêm các trường cần thiết khác ở đây nếu có (vd: vehicleId)
+            }));
+          setDrivers(driverList || []); 
+        } catch (error) {
+          handleApiError(error, "Tải danh sách tài xế");
+        }
+      };
+      fetchDrivers();
+    }
+  }, [isAdminOrStaff]);
 
   // 🔋 Lấy loại pin
   useEffect(() => {
@@ -372,12 +351,7 @@ const VehiclePage = () => {
     fetchBatteryTypes();
   }, []);
 
-  const getBatteryTypeName = (id) => {
-    const type = batteryTypes.find((t) => t.id === id);
-    return type ? type.name : "Không xác định";
-  };
-
-  // 🆕 Hàm xử lý xem lịch sử
+  // Hàm xử lý xem lịch sử
   const handleViewHistory = async (vehicleId) => {
     setSelectedVehicleId(vehicleId);
     setIsHistoryModalVisible(true);
@@ -392,12 +366,12 @@ const VehiclePage = () => {
         ? res.data
         : res.data?.data || [];
 
-      const newSwapCount = historyList.length;
-
-      setVehicleHistory(
-        historyList.sort((a, b) => new Date(b.endTime) - new Date(a.endTime))
+      const sortedHistory = historyList.sort(
+        (a, b) => new Date(b.endTime) - new Date(a.endTime)
       );
 
+      setVehicleHistory(sortedHistory);
+      const newSwapCount = sortedHistory.length;
       setVehicles((prevVehicles) =>
         prevVehicles.map((v) =>
           v.id === vehicleId ? { ...v, swapCount: newSwapCount } : v
@@ -416,7 +390,7 @@ const VehiclePage = () => {
     setVehicleHistory([]);
   };
 
-  // 🧾 Cột bảng - ✅ OPTIMIZATION: Thêm sorter cho tất cả các cột
+  // 🧾 Cột bảng 
   const columns = [
     {
       title: "ID",
@@ -434,7 +408,8 @@ const VehiclePage = () => {
       title: "Biển số xe",
       dataIndex: "plateNumber",
       key: "plateNumber",
-      sorter: (a, b) => (a.plateNumber || "").localeCompare(b.plateNumber || ""),
+      sorter: (a, b) =>
+        (a.plateNumber || "").localeCompare(b.plateNumber || ""),
     },
     {
       title: "Dòng xe",
@@ -442,12 +417,20 @@ const VehiclePage = () => {
       key: "model",
       sorter: (a, b) => (a.model || "").localeCompare(b.model || ""),
     },
+    ...(isAdminOrStaff ? [{
+      title: "Tài xế",
+      dataIndex: "driverName",
+      key: "driverName",
+      sorter: (a, b) =>
+        (a.driverName || "").localeCompare(b.driverName || ""),
+      render: (text) => <Text>{text || "Lỗi"}</Text>,
+    }] : []),
     {
       title: "Loại pin",
-      dataIndex: "batteryTypeId",
-      key: "batteryTypeId",
-      sorter: (a, b) => getBatteryTypeName(a.batteryTypeId).localeCompare(getBatteryTypeName(b.batteryTypeId)),
-      render: (id) => getBatteryTypeName(id),
+      dataIndex: "batteryTypeName",
+      key: "batteryTypeName",
+      sorter: (a, b) =>
+        (a.batteryTypeName || "").localeCompare(b.batteryTypeName || ""),
     },
     {
       title: "Trạng thái",
@@ -466,7 +449,7 @@ const VehiclePage = () => {
       sorter: (a, b) => (a.swapCount || 0) - (b.swapCount || 0),
       render: (swapCount) => (
         <Text style={{ color: "#000000ff" }}>
-          {swapCount === undefined ? <Spin size="small" /> : swapCount}
+          {swapCount === undefined || swapCount === null ? "0" : swapCount}
         </Text>
       ),
     },
@@ -478,7 +461,7 @@ const VehiclePage = () => {
         const isDriver = role === "DRIVER";
         return (
           <Space>
-            {/* 🆕 Nút Xem lịch sử cho TẤT CẢ các vai trò */}
+            {/* Nút Xem lịch sử cho TẤT CẢ các vai trò */}
             <Button
               type="primary" // Có thể dùng 'default' hoặc 'dashed'
               icon={<EyeOutlined />}
@@ -518,40 +501,89 @@ const VehiclePage = () => {
 
   // 🟢 CREATE / UPDATE
   const handleSubmit = async (values) => {
-    const payload = {
+    const selectedBatteryType = batteryTypes.find(t => t.id === values.batteryTypeId);
+    let payload = {
+    model: values.model,
+    batteryTypeId: values.batteryTypeId,
+  };
+  let endpoint = "";
+
+  if (editingVehicle) {
+    // Trường hợp UPDATE
+    if (isAdminOrStaff) {
+      // ADMIN/STAFF: Được sửa VIN, PlateNumber, Model, BatteryType, và DriverId
+      payload = {
+        vin: values.vin,
+        plateNumber: values.plateNumber,
+        model: values.model,
+        batteryTypeId: values.batteryTypeId,
+        driverId: values.driverId, 
+      };
+      endpoint = `/vehicle/${editingVehicle.id}`; 
+    } else if (isDriver) {
+      endpoint = `/vehicle/my-vehicles/${editingVehicle.id}`;
+    } else {
+      message.error("Bạn không có quyền chỉnh sửa xe này.");
+      return; 
+    }
+  } else {
+    payload = {
       vin: values.vin,
       plateNumber: values.plateNumber,
       model: values.model,
       batteryTypeId: values.batteryTypeId,
     };
+    if (isAdminOrStaff && values.driverId) {
+        payload.driverId = values.driverId;
+    }
+    endpoint = "/vehicle";
+  }
+  
+  const selectedDriver = drivers.find(d => d.id === values.driverId);
+  const payloadForFE = {
+    ...payload,
+    batteryTypeName: selectedBatteryType ? selectedBatteryType.name : "Không xác định",
+    driverName: isAdminOrStaff ? (selectedDriver ? selectedDriver.name : null) : editingVehicle?.driverName,
+    id: editingVehicle ? editingVehicle.id : undefined, // Giữ ID cho update
+    status: editingVehicle ? editingVehicle.status : "ACTIVE", // Giữ status cho update
+  }
 
-    try {
-      if (editingVehicle) {
-        await api.put(`/vehicle/${editingVehicle.id}`, payload);
-        setVehicles((prev) =>
-          prev.map((v) =>
-            v.id === editingVehicle.id ? { ...v, ...payload } : v
-          )
-        );
-        message.success("Cập nhật phương tiện thành công!");
-      } else {
-        const res = await api.post("/vehicle", payload);
-        const newVehicle = res?.data || {
-          ...payload,
-          id: Date.now(),
+  try {
+    if (editingVehicle) {
+      // Logic UPDATE
+      await api.put(endpoint, payload);
+      setVehicles((prev) =>
+        prev.map((v) =>
+          v.id === editingVehicle.id
+            ? { ...v, ...payloadForFE } // Cập nhật cả trường driverName (nếu là Admin/Staff)
+            : v
+        )
+      );
+      message.success("Cập nhật phương tiện thành công!");
+    } else {
+      // Logic CREATE
+      const res = await api.post(endpoint, payload);
+      const newVehicleData = res.data && Object.keys(res.data).length > 0 ? res.data : payload;
+
+      const newVehicle = {
+          ...newVehicleData,
+          batteryTypeName: selectedBatteryType ? selectedBatteryType.name : "Không xác định",
+          driverName: isAdminOrStaff && values.driverId ? (selectedDriver ? selectedDriver.name : null) : null,
           swapCount: 0,
           status: "ACTIVE",
-        };
-        setVehicles((prev) => [newVehicle, ...prev]);
-        message.success("Đăng ký phương tiện thành công!");
-      }
-
-      setIsModalVisible(false);
-      form.resetFields();
-    } catch (error) {
-      handleApiError(error, "Lưu thông tin phương tiện");
+          // Đảm bảo có ID (dùng ID từ API hoặc fallback)
+          id: newVehicleData.id || Date.now(), 
+      };
+      setVehicles((prev) => [newVehicle, ...prev]);
+      message.success("Đăng ký phương tiện thành công!");
     }
-  };
+
+    setIsModalVisible(false);
+    form.resetFields();
+  } catch (error) {
+    handleApiError(error, "Lưu thông tin phương tiện");
+  }
+};
 
   // 🔴 SOFT DELETE
   const handleDelete = (id) => {
@@ -578,13 +610,16 @@ const VehiclePage = () => {
   const handleEdit = (vehicle) => {
     setEditingVehicle(vehicle);
     setIsModalVisible(true);
-    form.setFieldsValue({
-      vin: vehicle.vin,
-      plateNumber: vehicle.plateNumber,
-      model: vehicle.model,
-      batteryTypeId: vehicle.batteryTypeId,
-    });
+    const initialValues = {
+    vin: vehicle.vin,
+    plateNumber: vehicle.plateNumber,
+    model: vehicle.model,
+    batteryTypeId: vehicle.batteryTypeId,
+    ...(isAdminOrStaff && { driverId: vehicle.driverId }), 
   };
+  
+  form.setFieldsValue(initialValues);
+};
 
   const handleAdd = () => {
     setEditingVehicle(null);
@@ -666,7 +701,10 @@ const VehiclePage = () => {
               { min: 5, message: "Mã VIN phải có ít nhất 5 ký tự!" },
             ]}
           >
-            <Input placeholder="Nhập mã VIN (số khung xe)" />
+            <Input 
+              placeholder="Nhập mã VIN (số khung xe)"
+              disabled={isDriver && editingVehicle} 
+            />
           </Form.Item>
 
           <Form.Item
@@ -674,7 +712,10 @@ const VehiclePage = () => {
             label="Biển số xe"
             rules={[{ required: true, message: "Vui lòng nhập biển số xe!" }]}
           >
-            <Input placeholder="VD: 83A-12345" />
+            <Input 
+              placeholder="VD: 83A-12345"
+              disabled={isDriver && editingVehicle}  
+            />
           </Form.Item>
 
           <Form.Item
@@ -684,6 +725,26 @@ const VehiclePage = () => {
           >
             <Input placeholder="VD: Model 3, VinFast Feliz..." />
           </Form.Item>
+
+          {isAdminOrStaff && (
+              <Form.Item
+                  name="driverId"
+                  label="Tài xế"
+                  loading={drivers.length === 0}
+              >
+                  <Select 
+                      placeholder="Chọn tài xế" 
+                      allowClear
+                  >
+                      {drivers.map((driver) => (
+                          // Giả định driver object có id và name
+                          <Option key={driver.id} value={driver.id}>
+                              {driver.name} - ID: {driver.id}
+                          </Option>
+                      ))}
+                  </Select>
+              </Form.Item>
+          )}
 
           <Form.Item
             name="batteryTypeId"
@@ -710,14 +771,13 @@ const VehiclePage = () => {
         </Form>
       </Modal>
 
-      {/* 🆕 Modal Lịch sử Đổi Pin mới */}
+      {/* Modal Lịch sử Đổi Pin */}
       <VehicleSwapHistoryModal
         open={isHistoryModalVisible}
         onClose={handleHistoryModalClose}
         vehicleHistory={vehicleHistory}
         loading={historyLoading}
         vehicleId={selectedVehicleId}
-        stations={stations}
         userRole={role}
       />
     </div>

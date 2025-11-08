@@ -187,7 +187,6 @@ export default function DriverSubscriptionManagement() {
     }
   };
 
-
   const openRenewalModal = async (record) => {
     setSelectedSubscription(record);
     setIsRenewalModalVisible(true);
@@ -552,7 +551,6 @@ export default function DriverSubscriptionManagement() {
         </Form>
         {renderCalculationDetails()}
       </Modal>
-
 
       <Modal
         title="Gia hạn gói cước"

@@ -9,20 +9,20 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values) => {
-  setLoading(true);
-  try {
-    await api.post(
-      "/update-password",
-      { password: values.password },
-      { headers: { Authorization: `Bearer ${token}` } } // hoặc body: {token, password}
-    );
-    message.success("Cập nhật mật khẩu thành công!");
-  } catch (err) {
-    message.error("Token không hợp lệ hoặc đã hết hạn!");
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    try {
+      await api.post(
+        "/update-password",
+        { password: values.password },
+        { headers: { Authorization: `Bearer ${token}` } } // hoặc body: {token, password}
+      );
+      message.success("Cập nhật mật khẩu thành công!");
+    } catch (err) {
+      message.error("Token không hợp lệ hoặc đã hết hạn!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">

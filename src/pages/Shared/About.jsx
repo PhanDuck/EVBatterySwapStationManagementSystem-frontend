@@ -382,8 +382,7 @@ function AboutPage() {
                     <div>
                       <Title level={4}>Bước 4: Tiếp Tục Hành Trình</Title>
                       <Paragraph>
-                        Nhận pin đầy năng lượng và tiếp tục di chuyển ngay lập
-                        tức
+                        Nhận pin đầy năng lượng và tiếp tục di chuyển ngay lập tức
                       </Paragraph>
                     </div>
                   ),

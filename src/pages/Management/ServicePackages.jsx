@@ -259,9 +259,7 @@ const ServicePackagesPage = () => {
           CANCELLED: "orange",
         };
         return (
-          <Tag color={colorMap[status] || "default"}>
-            {status || "UNKNOWN"}
-          </Tag>
+          <Tag color={colorMap[status] || "default"}>{status || "UNKNOWN"}</Tag>
         );
       },
     },
@@ -283,7 +281,7 @@ const ServicePackagesPage = () => {
               Xóa
             </Button>
           );
-        };
+        }
       },
     },
   ];

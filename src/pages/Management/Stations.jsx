@@ -820,9 +820,9 @@ const StationPage = () => {
   const activeStations = stations.filter((s) => s.status === "ACTIVE").length;
   const totalCapacity = stations.reduce((sum, s) => sum + (s.capacity || 0), 0);
   const totalCurrentBatteries = stations.reduce(
-        (sum, s) => sum + (s.currentBatteryCount || 0),
-        0
-    );
+    (sum, s) => sum + (s.currentBatteryCount || 0),
+    0
+  );
 
   // ---------------------------
   // JSX Render
@@ -860,13 +860,13 @@ const StationPage = () => {
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
-            <Card>
-                <Statistic
-                    title="Tổng số pin tại trạm"
-                    value={totalCurrentBatteries}
-                    suffix="pin"
-                />
-            </Card>
+          <Card>
+            <Statistic
+              title="Tổng số pin tại trạm"
+              value={totalCurrentBatteries}
+              suffix="pin"
+            />
+          </Card>
         </Col>
       </Row>
 

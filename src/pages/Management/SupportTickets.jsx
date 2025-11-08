@@ -150,7 +150,9 @@ export default function SupportPage() {
         )
       );
 
-      message.success(`Trạng thái của yêu cầu ${ticketId} cập nhật thành ${newStatus}`);
+      message.success(
+        `Trạng thái của yêu cầu ${ticketId} cập nhật thành ${newStatus}`
+      );
       setIsEditStatusModalVisible(false);
     } catch (error) {
       handleApiError(error, "cập nhật trạng thái vé");
