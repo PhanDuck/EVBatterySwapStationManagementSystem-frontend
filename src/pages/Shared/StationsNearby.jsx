@@ -215,9 +215,13 @@ const StationsNearby = () => {
     return vehicles.find((v) => v.id === selectedVehicle);
   }, [vehicles, selectedVehicle]);
 
-  // 🆕 Lọc trạm phù hợp với loại pin của xe
+  // 🆕 Lọc trạm phù hợp với loại pin của xe (hoặc tất cả trạm nếu không có xe)
   const compatibleStations = useMemo(() => {
-    if (!selectedVehicleData) return [];
+    if (!selectedVehicleData) {
+      // Nếu không có xe được chọn, hiển thị tất cả trạm
+      return stations;
+    }
+    // Nếu có xe, chỉ hiển thị trạm phù hợp
     return stations.filter((s) => s.batteryTypeId === selectedVehicleData.batteryTypeId);
   }, [stations, selectedVehicleData]);
 
@@ -285,43 +289,68 @@ const StationsNearby = () => {
             }}
           >
             {/* 🆕 Chọn xe */}
-            <p>
-              <strong>Chọn xe của bạn:</strong>
-            </p>
-            <Select
-              style={{ width: "100%", marginBottom: 16 }}
-              placeholder="Chọn xe"
-              value={selectedVehicle}
-              onChange={(v) => {
-                setSelectedVehicle(v);
-                clearRoute();
-              }}
-            >
-              {vehicles.map((vehicle) => (
-                <Option key={vehicle.id} value={vehicle.id}>
-                  {vehicle.model} ({vehicle.plateNumber})
-                </Option>
-              ))}
-            </Select>
+            {vehicles.length > 0 ? (
+              <>
+                <p>
+                  <strong>Chọn xe của bạn:</strong>
+                </p>
+                <Select
+                  style={{ width: "100%", marginBottom: 16 }}
+                  placeholder="Chọn xe"
+                  value={selectedVehicle}
+                  onChange={(v) => {
+                    setSelectedVehicle(v);
+                    clearRoute();
+                  }}
+                  allowClear
+                >
+                  {vehicles.map((vehicle) => (
+                    <Option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.model} ({vehicle.plateNumber})
+                    </Option>
+                  ))}
+                </Select>
 
-            {/* 🆕 Hiển thị thông tin xe được chọn */}
-            {selectedVehicleData && (
+                {/* 🆕 Hiển thị thông tin xe được chọn */}
+                {selectedVehicleData && (
+                  <Card
+                    size="small"
+                    style={{ marginBottom: 16, backgroundColor: "#f0f5ff" }}
+                  >
+                    <p style={{ margin: 0, fontSize: "12px" }}>
+                      <strong>Loại pin:</strong> {selectedVehicleData.model}
+                    </p>
+                  </Card>
+                )}
+
+                {/* 🆕 Hiển thị "Trạm phù hợp cho xe của bạn" */}
+                {selectedVehicleData && (
+                  <p style={{ marginBottom: 8 }}>
+                    <strong style={{ color: "#52c41a" }}>
+                      ✓ Trạm phù hợp cho xe của bạn ({compatibleStations.length})
+                    </strong>
+                  </p>
+                )}
+              </>
+            ) : (
               <Card
                 size="small"
-                style={{ marginBottom: 16, backgroundColor: "#f0f5ff" }}
+                style={{ marginBottom: 16, backgroundColor: "#fff7e6" }}
               >
-                <p style={{ margin: 0, fontSize: "12px" }}>
-                  <strong>Loại pin:</strong> {selectedVehicleData.model}
+                <p style={{ margin: 0, fontSize: "12px", color: "#ad6800" }}>
+                  <strong>ℹ️ Bạn chưa đăng ký xe nào.</strong> Bạn vẫn có thể xem các trạm trên bản đồ, nhưng không thể đặt lịch.
                 </p>
               </Card>
             )}
 
-            {/* 🆕 Hiển thị "Trạm phù hợp cho xe của bạn" */}
-            <p style={{ marginBottom: 8 }}>
-              <strong style={{ color: "#52c41a" }}>
-                ✓ Trạm phù hợp cho xe của bạn ({compatibleStations.length})
-              </strong>
-            </p>
+            {/* 🆕 Hiển thị "Tất cả trạm" khi không chọn xe */}
+            {!selectedVehicleData && (
+              <p style={{ marginBottom: 8 }}>
+                <strong style={{ color: "#1890ff" }}>
+                  📍 Tất cả trạm ({compatibleStations.length})
+                </strong>
+              </p>
+            )}
 
             <p>
               <strong>Thành phố:</strong>
@@ -517,6 +546,7 @@ const StationsNearby = () => {
                         onClick={() => handleBookingClick(s)}
                         disabled={!selectedVehicle}
                         style={{ width: "100%" }}
+                        title={!selectedVehicle ? "Vui lòng chọn xe để đặt lịch" : ""}
                       >
                         Đặt Lịch Đổi Pin
                       </Button>

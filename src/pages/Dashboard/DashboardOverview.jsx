@@ -1,32 +1,24 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   Row,
   Col,
   Statistic,
-  DatePicker,
-  Space,
   Spin,
-  Empty,
+  Table,
   Typography,
-  message,
+  Tag,
+  Empty,
+  Skeleton,
 } from "antd";
 import {
-  UserOutlined,
-  CarOutlined,
-  ThunderboltOutlined,
-  DollarOutlined,
-  ShopOutlined,
-  CheckCircleOutlined,
-} from "@ant-design/icons";
-import {
+  LineChart,
+  Line,
   BarChart,
   Bar,
   PieChart,
   Pie,
   Cell,
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -38,226 +30,49 @@ import api from "../../config/axios";
 import dayjs from "dayjs";
 import handleApiError from "../../Utils/handleApiError";
 
-const { RangePicker } = DatePicker;
 const { Title } = Typography;
 
-// Màu sắc cho biểu đồ
+// Màu sắc
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+const BATTERY_COLORS = {
+  "Enhanced 54V-24Ah": "#FF6B6B",
+  "Premium 52V-22Ah": "#4ECDC4",
+  "Standard 48V-20Ah": "#45B7D1",
+};
 
 export default function DashboardOverview() {
+  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState([
-    dayjs().subtract(30, "days"),
-    dayjs(),
-  ]);
-  const [statistics, setStatistics] = useState({
-    totalUsers: 0,
-    totalStations: 0,
-    totalBatteries: 0,
-    totalRevenue: 0,
-    totalBookings: 0,
-    completedBookings: 0,
-  });
-  const [revenueData, setRevenueData] = useState([]);
-  const [bookingStatusData, setBookingStatusData] = useState([]);
-  const [batteryStatusData, setBatteryStatusData] = useState([]);
-  const [stationPerformanceData, setStationPerformanceData] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
-  }, [dateRange]);
+  }, []);
 
   const fetchDashboardData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      // Gọi các API để lấy dữ liệu thống kê (sử dụng đúng endpoints như các trang khác)
-      const [usersRes, stationsRes, batteriesRes, bookingsRes, paymentsRes] =
-        await Promise.all([
-          api.get("/admin/user").catch(() => ({ data: [] })),
-          api.get("/station").catch(() => ({ data: [] })),
-          api.get("/battery").catch(() => ({ data: [] })),
-          api.get("/booking").catch(() => ({ data: [] })),
-          api.get("/payment").catch(() => ({ data: [] })),
-        ]);
-
-      // Normalize dữ liệu - xử lý cả trường hợp data trực tiếp hoặc data.data
-      const users = Array.isArray(usersRes.data)
-        ? usersRes.data
-        : usersRes.data?.data || [];
-      const stations = Array.isArray(stationsRes.data)
-        ? stationsRes.data
-        : stationsRes.data?.data || [];
-      const batteries = Array.isArray(batteriesRes.data)
-        ? batteriesRes.data
-        : batteriesRes.data?.data || [];
-      const bookings = Array.isArray(bookingsRes.data)
-        ? bookingsRes.data
-        : bookingsRes.data?.data || [];
-      const payments = Array.isArray(paymentsRes.data)
-        ? paymentsRes.data
-        : paymentsRes.data?.data || [];
-
-      // Lọc users theo status (loại bỏ DELETED)
-      const activeUsers = users.filter(
-        (u) => u.status?.toLowerCase() !== "deleted"
-      );
-
-      // Tính toán thống kê tổng quan
-      const totalRevenue = payments.reduce((sum, p) => {
-        // Chỉ tính các payment có status COMPLETED
-        if (p.status === "COMPLETED") {
-          return sum + (parseFloat(p.amount) || 0);
-        }
-        return sum;
-      }, 0);
-
-      setStatistics({
-        totalUsers: activeUsers.length,
-        totalStations: stations.length,
-        totalBatteries: batteries.length,
-        totalRevenue: totalRevenue,
-        totalBookings: bookings.length,
-        completedBookings: bookings.filter((b) => b.status === "COMPLETED")
-          .length,
+      console.log("Fetching dashboard data...");
+      // Gọi API với timeout 30 giây (nếu quá lâu sẽ timeout)
+      const response = await api.get("/dashboard", {
+        timeout: 30000,
       });
-
-      // Xử lý dữ liệu doanh thu theo ngày
-      const revenueByDate = processRevenueData(payments, dateRange);
-      setRevenueData(revenueByDate);
-
-      // Xử lý dữ liệu trạng thái booking
-      const bookingStatus = processBookingStatusData(bookings);
-      setBookingStatusData(bookingStatus);
-
-      // Xử lý dữ liệu trạng thái pin
-      const batteryStatus = processBatteryStatusData(batteries);
-      setBatteryStatusData(batteryStatus);
-
-      // Xử lý dữ liệu hiệu suất trạm
-      const stationPerformance = processStationPerformanceData(
-        bookings,
-        stations
-      );
-      setStationPerformanceData(stationPerformance);
-    } catch (error) {
-      handleApiError(error, "tải dữ liệu dashboard");
+      console.log("Dashboard response:", response.data);
+      setDashboardData(response.data);
+    } catch (err) {
+      console.error("Dashboard error:", err);
+      // Nếu timeout, hiển thị message thân thiện
+      if (err.code === "ECONNABORTED") {
+        setError("API đang xử lý quá lâu. Vui lòng thử lại sau.");
+      } else {
+        const errorMsg = err.response?.data?.message || err.message || "Lỗi không xác định";
+        setError(errorMsg);
+      }
+      handleApiError(err, "tải dữ liệu dashboard");
     } finally {
       setLoading(false);
     }
-  };
-
-  const processRevenueData = (payments, dateRange) => {
-    // Lọc payments trong khoảng thời gian
-    const [startDate, endDate] = dateRange;
-    const filteredPayments = payments.filter((payment) => {
-      if (payment.status !== "COMPLETED") return false;
-      const paymentDate = dayjs(payment.paymentDate);
-      return (
-        paymentDate.isAfter(startDate.startOf("day")) &&
-        paymentDate.isBefore(endDate.endOf("day"))
-      );
-    });
-
-    // Nhóm theo ngày
-    const revenueMap = {};
-    filteredPayments.forEach((payment) => {
-      const date = dayjs(payment.paymentDate).format("DD/MM");
-      if (!revenueMap[date]) {
-        revenueMap[date] = 0;
-      }
-      revenueMap[date] += parseFloat(payment.amount) || 0;
-    });
-
-    // Tạo mảng dữ liệu cho biểu đồ
-    const dates = [];
-    let currentDate = startDate.clone();
-    while (
-      currentDate.isBefore(endDate) ||
-      currentDate.isSame(endDate, "day")
-    ) {
-      const dateStr = currentDate.format("DD/MM");
-      dates.push({
-        date: dateStr,
-        revenue: revenueMap[dateStr] || 0,
-      });
-      currentDate = currentDate.add(1, "day");
-    }
-
-    return dates;
-  };
-
-  const processBookingStatusData = (bookings) => {
-    const statusMap = {};
-    bookings.forEach((booking) => {
-      const status = booking.status || "UNKNOWN";
-      statusMap[status] = (statusMap[status] || 0) + 1;
-    });
-
-    const statusLabels = {
-      PENDING: "Chờ xử lý",
-      CONFIRMED: "Đã xác nhận",
-      COMPLETED: "Hoàn thành",
-      CANCELLED: "Đã hủy",
-      UNKNOWN: "Không xác định",
-    };
-
-    return Object.keys(statusMap)
-      .filter((status) => statusMap[status] > 0)
-      .map((status) => ({
-        name: statusLabels[status] || status,
-        value: statusMap[status],
-      }));
-  };
-
-  const processBatteryStatusData = (batteries) => {
-    const statusMap = {};
-    batteries.forEach((battery) => {
-      const status = battery.status || "UNKNOWN";
-      statusMap[status] = (statusMap[status] || 0) + 1;
-    });
-
-    const statusLabels = {
-      AVAILABLE: "Sẵn sàng",
-      IN_USE: "Đang sử dụng",
-      CHARGING: "Đang sạc",
-      MAINTENANCE: "Bảo trì",
-      DAMAGED: "Hỏng",
-      UNKNOWN: "Không xác định",
-    };
-
-    return Object.keys(statusMap)
-      .filter((status) => statusMap[status] > 0)
-      .map((status) => ({
-        name: statusLabels[status] || status,
-        value: statusMap[status],
-      }));
-  };
-
-  const processStationPerformanceData = (bookings, stations) => {
-    const stationMap = {};
-    bookings.forEach((booking) => {
-      const stationId = booking.stationId;
-      if (!stationMap[stationId]) {
-        stationMap[stationId] = {
-          total: 0,
-          completed: 0,
-        };
-      }
-      stationMap[stationId].total += 1;
-      if (booking.status === "COMPLETED") {
-        stationMap[stationId].completed += 1;
-      }
-    });
-
-    return stations
-      .map((station) => ({
-        name: station.name || `Trạm ${station.id}`,
-        bookings: stationMap[station.id]?.total || 0,
-        completed: stationMap[station.id]?.completed || 0,
-      }))
-      .filter((s) => s.bookings > 0) // Chỉ hiển thị trạm có booking
-      .sort((a, b) => b.bookings - a.bookings)
-      .slice(0, 10); // Top 10 trạm
   };
 
   const formatCurrency = (value) => {
@@ -267,243 +82,343 @@ export default function DashboardOverview() {
     }).format(value);
   };
 
-  if (loading) {
+  if (error) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <Spin size="large" tip="Đang tải dữ liệu dashboard..." />
+      <div style={{ padding: "24px" }}>
+        <Card style={{ borderColor: "#ff4d4f" }}>
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <h2 style={{ color: "#ff4d4f" }}>❌ Lỗi tải dữ liệu</h2>
+            <p style={{ fontSize: "16px", marginBottom: "20px" }}>{error}</p>
+            <button
+              onClick={fetchDashboardData}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#1890ff",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "14px",
+              }}
+            >
+              Thử lại
+            </button>
+          </div>
+        </Card>
       </div>
     );
   }
 
+  if (loading) {
+    return (
+      <div style={{ padding: "24px" }}>
+        <Title level={2} style={{ marginBottom: "24px" }}>
+          Dashboard Tổng Quan
+        </Title>
+
+        {/* KPI Cards Skeleton */}
+        <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Col xs={24} sm={12} lg={4.8} key={i}>
+              <Card>
+                <Skeleton active paragraph={{ rows: 2 }} />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+
+        {/* Charts Skeleton */}
+        <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+          <Col xs={24}>
+            <Card title="Doanh Thu Theo Tháng">
+              <Skeleton active paragraph={{ rows: 8 }} />
+            </Card>
+          </Col>
+        </Row>
+
+        <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+          <Col xs={24} lg={12}>
+            <Card title="Tỷ Lệ Sử Dụng Trạm">
+              <Skeleton active paragraph={{ rows: 8 }} />
+            </Card>
+          </Col>
+          <Col xs={24} lg={12}>
+            <Card title="Phân Bố Loại Pin">
+              <Skeleton active paragraph={{ rows: 8 }} />
+            </Card>
+          </Col>
+        </Row>
+
+        <div style={{ textAlign: "center", padding: "40px" }}>
+          <Spin size="large" />
+          <p style={{ marginTop: "20px", color: "#666" }}>
+            Đang tải dữ liệu dashboard...
+            <br />
+            <small style={{ color: "#999" }}>(Nếu quá lâu, vui lòng thử lại)</small>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div style={{ padding: "24px" }}>
+        <Empty description="Không thể tải dữ liệu dashboard" />
+      </div>
+    );
+  }
+
+  const overview = dashboardData?.overview || {};
+  const revenue = dashboardData?.revenue || {};
+  const transactions = dashboardData?.transactions || {};
+  const users = dashboardData?.users || {};
+  const stations = dashboardData?.stations || {};
+  const batteries = dashboardData?.batteries || {};
+  const recentTransactions = dashboardData?.recentTransactions || [];
+
+  // Xử lý dữ liệu doanh thu theo tháng
+  const monthlyRevenueData = (revenue?.monthlyRevenues || []).map((item) => ({
+    month: dayjs(item.month).format("MM/YYYY"),
+    revenue: item.revenue || 0,
+    transactions: item.transactionCount || 0,
+  }));
+
+  // Xử lý dữ liệu sử dụng trạm
+  const stationUtilizationData = (stations?.stationUtilizations || []).map((station) => ({
+    name: station.stationName.replace("Trạm Đổi Pin ", ""),
+    utilization: station.utilizationRate || 0,
+    used: station.usedSlots || 0,
+    total: station.totalSlots || 0,
+  }));
+
+  // Xử lý dữ liệu phân bố pin
+  const batteryDistributionData = (batteries?.batteryTypeDistributions || []).map((item) => ({
+    name: item.batteryType,
+    value: item.count || 0,
+  }));
+
+  // Cột cho bảng giao dịch
+  const transactionColumns = [
+    {
+      title: "ID",
+      dataIndex: "transactionId",
+      key: "transactionId",
+      width: 60,
+    },
+    {
+      title: "Tài xế",
+      dataIndex: "driverName",
+      key: "driverName",
+    },
+    {
+      title: "Trạm",
+      dataIndex: "stationName",
+      key: "stationName",
+      render: (text) => text.replace("Trạm Đổi Pin ", ""),
+    },
+    {
+      title: "Biển số",
+      dataIndex: "vehicleLicensePlate",
+      key: "vehicleLicensePlate",
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => (
+        <Tag color={status === "COMPLETED" ? "green" : "orange"}>{status}</Tag>
+      ),
+    },
+    {
+      title: "Thời gian",
+      dataIndex: "transactionTime",
+      key: "transactionTime",
+      render: (time) => dayjs(time).format("DD/MM/YYYY HH:mm"),
+    },
+  ];
+
   return (
     <div style={{ padding: "24px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "24px",
-        }}
-      >
-        <Title level={2}>Dashboard Tổng Quan</Title>
-        <Space>
-          <RangePicker
-            value={dateRange}
-            onChange={(dates) => {
-              if (dates) {
-                setDateRange(dates);
-              }
-            }}
-            format="DD/MM/YYYY"
-            placeholder={["Từ ngày", "Đến ngày"]}
-          />
-        </Space>
-      </div>
+      <Title level={2} style={{ marginBottom: "24px" }}>
+        Dashboard Tổng Quan
+      </Title>
 
-      {/* Thống kê tổng quan */}
+      {/* KPI Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-        <Col xs={24} sm={12} lg={8}>
+        <Col xs={24} sm={12} lg={4.8}>
           <Card hoverable>
             <Statistic
-              title="Tổng người dùng"
-              value={statistics.totalUsers}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: "#3f8600" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card hoverable>
-            <Statistic
-              title="Tổng trạm đổi pin"
-              value={statistics.totalStations}
-              prefix={<ShopOutlined />}
-              valueStyle={{ color: "#1890ff" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card hoverable>
-            <Statistic
-              title="Tổng số pin"
-              value={statistics.totalBatteries}
-              prefix={<ThunderboltOutlined />}
-              valueStyle={{ color: "#faad14" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card hoverable>
-            <Statistic
-              title="Tổng doanh thu"
-              value={statistics.totalRevenue}
-              prefix={<DollarOutlined />}
+              title="Tổng Doanh Thu"
+              value={overview?.totalRevenue || 0}
               formatter={(value) => formatCurrency(value)}
-              valueStyle={{ color: "#cf1322" }}
+              valueStyle={{ color: "#cf1322", fontSize: "18px" }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8}>
+        <Col xs={24} sm={12} lg={4.8}>
           <Card hoverable>
             <Statistic
-              title="Tổng đặt chỗ"
-              value={statistics.totalBookings}
-              prefix={<CarOutlined />}
-              valueStyle={{ color: "#722ed1" }}
+              title="Tổng Giao Dịch"
+              value={overview?.totalTransactions || 0}
+              valueStyle={{ color: "#722ed1", fontSize: "18px" }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8}>
+        <Col xs={24} sm={12} lg={4.8}>
           <Card hoverable>
             <Statistic
-              title="Đặt chỗ hoàn thành"
-              value={statistics.completedBookings}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: "#52c41a" }}
+              title="Tổng Người Dùng"
+              value={users?.totalUsers || 0}
+              valueStyle={{ color: "#3f8600", fontSize: "18px" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={4.8}>
+          <Card hoverable>
+            <Statistic
+              title="Tổng Trạm"
+              value={stations?.totalStations || 0}
+              valueStyle={{ color: "#1890ff", fontSize: "18px" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={4.8}>
+          <Card hoverable>
+            <Statistic
+              title="Tổng Pin"
+              value={batteries?.totalBatteries || 0}
+              valueStyle={{ color: "#faad14", fontSize: "18px" }}
             />
           </Card>
         </Col>
       </Row>
 
-      {/* Biểu đồ doanh thu */}
+      {/* Monthly Revenue Chart */}
       <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-        <Col xs={24} lg={16}>
-          <Card title="Doanh thu theo ngày" hoverable>
-            {revenueData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={revenueData}>
-                  <defs>
-                    <linearGradient
-                      id="colorRevenue"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis
-                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-                  />
-                  <Tooltip
-                    formatter={(value) => [formatCurrency(value), "Doanh thu"]}
-                  />
-                  <Legend />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    name="Doanh thu"
-                    stroke="#8884d8"
-                    fillOpacity={1}
-                    fill="url(#colorRevenue)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+        <Col xs={24}>
+          <Card title="Doanh Thu Theo Tháng" hoverable>
+            {monthlyRevenueData.length > 0 ? (
+              <div style={{ width: "100%", height: 350 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyRevenueData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip
+                      formatter={(value, name) => {
+                        if (name === "revenue") {
+                          return [formatCurrency(value), "Doanh Thu"];
+                        }
+                        return [value, "Giao Dịch"];
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      yAxisId="left"
+                      dataKey="revenue"
+                      fill="#8884d8"
+                      name="Doanh Thu (VND)"
+                    />
+                    <Bar
+                      yAxisId="right"
+                      dataKey="transactions"
+                      fill="#82ca9d"
+                      name="Số Giao Dịch"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
-              <Empty description="Không có dữ liệu doanh thu trong khoảng thời gian này" />
-            )}
-          </Card>
-        </Col>
-        <Col xs={24} lg={8}>
-          <Card title="Trạng thái đặt chỗ" hoverable>
-            {bookingStatusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={bookingStatusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {bookingStatusData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <Empty description="Không có dữ liệu đặt chỗ" />
+              <Empty description="Không có dữ liệu" />
             )}
           </Card>
         </Col>
       </Row>
 
-      {/* Biểu đồ trạng thái pin và hiệu suất trạm */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={8}>
-          <Card title="Trạng thái pin" hoverable>
-            {batteryStatusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={batteryStatusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {batteryStatusData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+      {/* Station Utilization & Battery Distribution */}
+      <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+        <Col xs={24} lg={12}>
+          <Card title="Tỷ Lệ Sử Dụng Trạm" hoverable>
+            {stationUtilizationData.length > 0 ? (
+              <div style={{ width: "100%", height: 350 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stationUtilizationData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="name"
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      interval={0}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis domain={[0, 100]} />
+                    <Tooltip
+                      formatter={(value) => `${value}%`}
+                      labelFormatter={(label) => `Trạm: ${label}`}
+                    />
+                    <Bar dataKey="utilization" fill="#8884d8" name="Tỷ Lệ (%)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
-              <Empty description="Không có dữ liệu pin" />
+              <Empty description="Không có dữ liệu" />
             )}
           </Card>
         </Col>
-        <Col xs={24} lg={16}>
-          <Card title="Top 10 trạm hoạt động tốt nhất" hoverable>
-            {stationPerformanceData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={stationPerformanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="name"
-                    angle={-15}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="bookings" name="Tổng đặt chỗ" fill="#8884d8" />
-                  <Bar dataKey="completed" name="Hoàn thành" fill="#82ca9d" />
-                </BarChart>
-              </ResponsiveContainer>
+
+        <Col xs={24} lg={12}>
+          <Card title="Phân Bố Loại Pin" hoverable>
+            {batteryDistributionData.length > 0 ? (
+              <div style={{ width: "100%", height: 350 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={batteryDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ${value}`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {batteryDistributionData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={BATTERY_COLORS[entry.name] || COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${value} pin`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
-              <Empty description="Không có dữ liệu trạm" />
+              <Empty description="Không có dữ liệu" />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Recent Transactions Table */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24}>
+          <Card title="Giao Dịch Gần Đây" hoverable>
+            {recentTransactions && recentTransactions.length > 0 ? (
+              <Table
+                columns={transactionColumns}
+                dataSource={recentTransactions.map((item, index) => ({
+                  ...item,
+                  key: item.transactionId || index,
+                }))}
+                pagination={{ pageSize: 10 }}
+                scroll={{ x: 800 }}
+              />
+            ) : (
+              <Empty description="Không có giao dịch" />
             )}
           </Card>
         </Col>
