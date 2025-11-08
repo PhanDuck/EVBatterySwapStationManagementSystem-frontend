@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -12,10 +18,7 @@ import {
   message,
   Spin,
 } from "antd";
-import { 
-  PlusOutlined, 
-  CloseCircleOutlined 
-} from "@ant-design/icons";
+import { PlusOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
 import handleApiError from "../../Utils/handleApiError";
@@ -46,9 +49,10 @@ export default function BookingsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      let bookingRes, vehicleRes, stationRes, userRes;
+      let bookingRes;
 
       if (role === "ADMIN" || role === "STAFF") {
+<<<<<<< HEAD
         [bookingRes, vehicleRes, stationRes, userRes] = await Promise.all([
           role === "ADMIN"
             ? api.get("/booking")
@@ -76,20 +80,57 @@ export default function BookingsPage() {
           ? [userRes.data]
           : []
       );
+=======
+        // ADMIN & STAFF: lấy tất cả booking hoặc booking của trạm phụ trách
+        const url = role === "ADMIN" ? "/booking" : "/booking/my-stations";
+        bookingRes = await Promise.race([
+          api.get(url),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Booking API timeout")), 25000)
+          ),
+        ]).catch((err) => {
+          console.warn("Booking API timeout or failed:", err);
+          return { data: [] };
+        });
+      } else {
+        // DRIVER: chỉ lấy booking của chính mình
+        bookingRes = await Promise.race([
+          api.get("/booking/my-bookings"),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Booking API timeout")), 25000)
+          ),
+        ]).catch((err) => {
+          console.warn("Booking API timeout or failed:", err);
+          return { data: [] };
+        });
+      }
+
+      // ✅ Xử lý dữ liệu
+      const processData = (res) => {
+        if (Array.isArray(res?.data)) return res.data;
+        if (res?.data?.data && Array.isArray(res.data.data))
+          return res.data.data;
+        return [];
+      };
+
+      const bookings = processData(bookingRes);
+      setData(bookings);
+>>>>>>> d9d6f98 (sua api booking)
     } catch (error) {
       handleApiError(error, "");
     } finally {
       setLoading(false);
     }
-  }, [role, user]);
+  }, [role]);
 
   useEffect(() => {
     if (initialized.current === false) {
-        initialized.current = true;
-        fetchData();
+      initialized.current = true;
+      fetchData();
     }
   }, [fetchData]);
 
+<<<<<<< HEAD
   // 📖 Map ID sang tên
   const driverName = (id) =>
     users.find((u) => u.id === id)?.fullName || `${id}`;
@@ -100,6 +141,36 @@ export default function BookingsPage() {
 
   // 🔍 Tìm kiếm
   const filteredData = useMemo(() => {
+=======
+  // 📖 Map ID sang tên - ✅ OPTIMIZATION: Sử dụng Map thay vì find() để tăng tốc độ
+  const userMap = useMemo(() => {
+    const map = new Map();
+    users.forEach((u) => map.set(u.id, u.fullName));
+    return map;
+  }, [users]);
+
+  const vehicleMap = useMemo(() => {
+    const map = new Map();
+    vehicles.forEach((v) => map.set(v.id, v.model));
+    return map;
+  }, [vehicles]);
+
+  const stationMap = useMemo(() => {
+    const map = new Map();
+    stations.forEach((s) => map.set(s.id, s.name));
+    return map;
+  }, [stations]);
+
+  const driverName = (id) => userMap.get(id) || `${id}`;
+  const vehicleName = (id) => vehicleMap.get(id) || `${id}`;
+  const stationName = (id) => stationMap.get(id) || `${id}`;
+
+  // 🔍 Tìm kiếm - ✅ OPTIMIZATION: Giới hạn số lần render
+  const filteredData = useMemo(() => {
+    if (!search) return data;
+
+    const searchLower = search.toLowerCase();
+>>>>>>> d9d6f98 (sua api booking)
     return data.filter(
       (item) =>
         driverName(item.driverId)
@@ -112,7 +183,7 @@ export default function BookingsPage() {
     );
   }, [data, search, users, vehicles, stations]);
 
-  // 1. Xử lý Hủy Booking cho ADMIN/STAFF 
+  // 1. Xử lý Hủy Booking cho ADMIN/STAFF
   const handleOpenCancelModal = (record) => {
     setCancellingBooking(record);
     setIsCancelModalVisible(true);
@@ -149,36 +220,30 @@ export default function BookingsPage() {
       setSubmitting(false);
     }
   };
-    // 3. ✅ Xử lý Hủy Booking cho DRIVER (Gửi API trực tiếp)
+  // 3. ✅ Xử lý Hủy Booking cho DRIVER (Gửi API trực tiếp)
   const handleDriverCancel = (record) => {
     Modal.confirm({
-        title: "Xác nhận hủy đặt lịch",
-        content: (
-        <div>
-            <p>Bạn có chắc chắn muốn hủy đặt lịch này không?</p>
-            <p style={{ color: 'red', fontWeight: 'bold' }}>
-                Lưu ý! Bạn không thể hủy sau 2 tiếng kể từ khi đặt lịch.
-            </p>
-        </div>
-    ),
-        okText: "Hủy",
-        okType: "danger",
-        cancelText: "Không",
-        onOk: async () => {
-            try {
-                await api.patch(`/booking/my-bookings/${record.id}/cancel`);
 
-                // Cập nhật state local
-                setData((prev) =>
-                    prev.map((item) =>
-                        item.id === record.id ? { ...item, status: "CANCELLED" } : item
-                    )
-                );
-                message.success("Đã hủy đặt lịch thành công!");
-            } catch (error) {
-                handleApiError(error, "Hủy đặt lịch (Driver)");
-            }
-        },
+      title: "Xác nhận hủy đặt lịch",
+      content: "Bạn có chắc chắn muốn hủy đặt lịch này không?",
+      okText: "Hủy",
+      okType: "danger",
+      cancelText: "Không",
+      onOk: async () => {
+        try {
+          await api.patch(`/booking/my-bookings/${record.id}/cancel`);
+
+          // Cập nhật state local
+          setData((prev) =>
+            prev.map((item) =>
+              item.id === record.id ? { ...item, status: "CANCELLED" } : item
+            )
+          );
+          message.success("Đã hủy đặt lịch thành công!");
+        } catch (error) {
+          handleApiError(error, "Hủy đặt lịch (Driver)");
+        }
+      },
     });
   };
 
@@ -194,21 +259,25 @@ export default function BookingsPage() {
     },
     {
       title: "Tài xế",
-      dataIndex: "driverId",
-      key: "driverId",
-      render: (id) => driverName(id),
+
+      dataIndex: "driverName",
+      key: "driverName",
+      sorter: (a, b) => a.driverName - b.driverName,
+      defaultSortOrder: "descend",     
     },
     {
       title: "Xe",
-      dataIndex: "vehicleId",
-      key: "vehicleId",
-      render: (id) => vehicleName(id),
+      dataIndex: "vehicleModel",
+      key: "vehicleModel",
+      sorter: (a, b) => a.vehicleModel - b.vehicleModel,
+      defaultSortOrder: "descend",  
     },
     {
       title: "Trạm",
-      dataIndex: "stationId",
-      key: "stationId",
-      render: (id) => stationName(id),
+      dataIndex: "stationName",
+      key: "stationName",
+      sorter: (a, b) => a.stationName - b.stationName,
+      defaultSortOrder: "descend",
     },
     {
       title: "Thời gian đặt",
@@ -363,4 +432,6 @@ export default function BookingsPage() {
       </Modal>
     </div>
   );
+
 }
+//driver dùng api: PATCH/api/booking/my-bookings/{id}/cancel để hủy booking, staff/admin dùng api: DELETE/api/booking/staff/{id}/cancel. driver bấm nút hủy

@@ -93,7 +93,7 @@ const RegisterPage = () => {
         phoneNumber: formData.phone.trim(),
         password: formData.password,
         role: "DRIVER", // Đảm bảo role này khớp với yêu cầu của API backend
-        recaptchaToken: captchaToken, // Gửi token reCAPTCHA lên server để xác thực
+        captchaToken: captchaToken, // Gửi token reCAPTCHA lên server để xác thực
       };
 
       // 2. Gọi API POST đến endpoint đăng ký
@@ -264,7 +264,7 @@ const RegisterPage = () => {
           {/* Google reCAPTCHA */}
           <div className="my-4">
             <ReCAPTCHA
-              sitekey="6LerjAUsAAAAALS0R-HInUGVlx_th2Oriy7LMA8p"
+              sitekey="6LccMAYsAAAAAMiEr_9BWJc8ssCkb9hw2sRSvaUr"
               onChange={(token) => {
                 setCaptchaToken(token);
                 if (token) {
