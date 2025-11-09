@@ -375,20 +375,20 @@ const VehiclePage = () => {
   const fetchAvailableBatteries = async (batteryTypeId) => {
     setBatteriesLoading(true);
     try {
-      const res = await api.get("/battery");
-      console.log("All batteries response:", res.data);
+      const res = await api.get(
+        `/station-inventory/available-by-type/${batteryTypeId}`
+      );
+      console.log("Available batteries response:", res.data);
 
-      let allBatteries = [];
+      let availableList = [];
       if (Array.isArray(res.data)) {
-        allBatteries = res.data;
+        availableList = res.data;
+      } else if (res.data?.batteries && Array.isArray(res.data.batteries)) {
+        availableList = res.data.batteries;
       } else if (res.data?.data && Array.isArray(res.data.data)) {
-        allBatteries = res.data.data;
+        availableList = res.data.data;
       }
 
-      // Lọc pin AVAILABLE và có batteryTypeId trùng với xe
-      const availableList = allBatteries.filter(
-        (b) => b.status === "AVAILABLE" && b.batteryTypeId === batteryTypeId
-      );
       console.log(
         "Available batteries for type",
         batteryTypeId,
@@ -699,7 +699,10 @@ const VehiclePage = () => {
   ];
 
   // 🟢 CREATE / UPDATE
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async (values) => {
+    setIsSubmitting(true);
     const selectedBatteryType = batteryTypes.find(
       (t) => t.id === values.batteryTypeId
     );
@@ -782,6 +785,7 @@ const VehiclePage = () => {
         // Logic CREATE - Bắt buộc có ảnh
         if (!imageFile || !(imageFile instanceof File)) {
           message.error("Vui lòng chọn ảnh giấy đăng ký!");
+          setIsSubmitting(false);
           return;
         }
 
@@ -840,6 +844,8 @@ const VehiclePage = () => {
     } catch (error) {
       console.error("Error details:", error.response?.data || error.message);
       handleApiError(error, "Lưu thông tin phương tiện");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -926,7 +932,10 @@ const VehiclePage = () => {
   };
 
   // ✅ Duyệt xe
+  const [isApprovingVehicle, setIsApprovingVehicle] = useState(false);
+
   const handleApproveVehicle = async (vehicleId, batteryId) => {
+    setIsApprovingVehicle(true);
     try {
       console.log("Approving vehicle:", vehicleId, "with battery:", batteryId);
 
@@ -977,6 +986,8 @@ const VehiclePage = () => {
         error.message ||
         "Lỗi khi duyệt xe";
       message.error(errorMessage);
+    } finally {
+      setIsApprovingVehicle(false);
     }
   };
 
@@ -1266,10 +1277,21 @@ const VehiclePage = () => {
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit">
-                {editingVehicle ? "Cập nhật" : "Đăng ký"}
+              <Button type="primary" htmlType="submit" loading={isSubmitting}>
+                {isSubmitting
+                  ? editingVehicle
+                    ? "Đang cập nhật..."
+                    : "Đang đăng ký..."
+                  : editingVehicle
+                  ? "Cập nhật"
+                  : "Đăng ký"}
               </Button>
-              <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
+              <Button
+                onClick={() => setIsModalVisible(false)}
+                disabled={isSubmitting}
+              >
+                Hủy
+              </Button>
             </Space>
           </Form.Item>
         </Form>
@@ -1301,6 +1323,7 @@ const VehiclePage = () => {
           <Button
             key="submit"
             type="primary"
+            loading={isApprovingVehicle}
             onClick={() => {
               if (selectedVehicleForApprove) {
                 console.log(
@@ -1318,64 +1341,18 @@ const VehiclePage = () => {
               }
             }}
           >
-            Duyệt xe
+            {isApprovingVehicle ? "Đang duyệt..." : "Duyệt xe"}
           </Button>,
         ]}
       >
         {selectedVehicleForApprove && (
-          <div
-            style={{
-              maxHeight: "60vh",
-              overflowY: "auto",
-              paddingRight: "8px",
-            }}
-          >
-            <div style={{ marginBottom: "16px" }}>
-              <p style={{ marginBottom: "8px" }}>
-                <strong>Xe:</strong> {selectedVehicleForApprove.plateNumber} -{" "}
-                {selectedVehicleForApprove.model}
-              </p>
-              <p style={{ marginBottom: "8px" }}>
-                <strong>VIN:</strong> {selectedVehicleForApprove.vin}
-              </p>
-              <p style={{ marginBottom: "0" }}>
-                <strong>Loại pin yêu cầu:</strong>{" "}
-                <Tag color="blue">
-                  {selectedVehicleForApprove.batteryTypeName}
-                </Tag>
-              </p>
-            </div>
-
-            <Divider style={{ margin: "16px 0" }} />
-
+          <div>
             <Form layout="vertical">
-              <Form.Item
-                label="Chọn pin từ kho (tùy chọn)"
-                required={false}
-                style={{ marginBottom: "0" }}
-              >
+              <Form.Item label="Chọn pin để gán ban đầu (Pin sẵn có)" required>
                 <Spin spinning={batteriesLoading}>
                   <Select
-                    placeholder={`Chọn pin loại "${selectedVehicleForApprove.batteryTypeName}" từ kho`}
-                    value={selectedBatteryForApprove}
+                    placeholder="Chọn pin phù hợp"
                     onChange={setSelectedBatteryForApprove}
-                    allowClear
-                    style={{ width: "100%" }}
-                    optionLabelProp="label"
-                    notFoundContent={
-                      !batteriesLoading && availableBatteries.length === 0 ? (
-                        <div
-                          style={{
-                            padding: "10px",
-                            textAlign: "center",
-                            color: "#999",
-                          }}
-                        >
-                          Không có pin AVAILABLE loại "
-                          {selectedVehicleForApprove.batteryTypeName}" trong kho
-                        </div>
-                      ) : null
-                    }
                   >
                     {availableBatteries.map((battery) => (
                       <Option
@@ -1398,15 +1375,15 @@ const VehiclePage = () => {
                             Pin #{battery.id} - {battery.model}
                           </div>
                           <div style={{ fontSize: "12px", color: "#666" }}>
-                            Mức sạc:{" "}
+                            Mức sạc:
                             <Tag
                               color={
                                 battery.chargeLevel > 70 ? "green" : "orange"
                               }
                             >
                               {battery.chargeLevel}%
-                            </Tag>{" "}
-                            Tình trạng:{" "}
+                            </Tag>
+                            Tình trạng:
                             <Tag
                               color={
                                 battery.stateOfHealth > 70 ? "green" : "orange"
