@@ -100,7 +100,6 @@ export default function BookingsPage() {
     }
   }, [fetchData]);
 
-
   // 📖 Map ID sang tên - ✅ OPTIMIZATION: Sử dụng Map thay vì find() để tăng tốc độ
   const userMap = useMemo(() => {
     const map = new Map();
@@ -226,14 +225,14 @@ export default function BookingsPage() {
       dataIndex: "driverName",
       key: "driverName",
       sorter: (a, b) => a.driverName - b.driverName,
-      defaultSortOrder: "descend",     
+      defaultSortOrder: "descend",
     },
     {
       title: "Xe",
       dataIndex: "vehicleModel",
       key: "vehicleModel",
       sorter: (a, b) => a.vehicleModel - b.vehicleModel,
-      defaultSortOrder: "descend",  
+      defaultSortOrder: "descend",
     },
     {
       title: "Trạm",
@@ -248,7 +247,7 @@ export default function BookingsPage() {
       key: "bookingTime",
       sorter: (a, b) =>
         dayjs(a.bookingTime).unix() - dayjs(b.bookingTime).unix(),
-      render: (t) => (t ? dayjs(t).format("DD/MM/YYYY HH:mm") : "-"),
+      render: (t) => (t ? dayjs(t).format("DD/MM/YYYY HH:mm") : ""),
     },
     {
       title: "Trạng thái",
@@ -273,7 +272,7 @@ export default function BookingsPage() {
             title: "Mã xác nhận",
             dataIndex: "confirmationCode",
             key: "confirmationCode",
-            render: (code) => <p>{code || "-"}</p>, // Hiển thị mã đổi pin
+            render: (code) => <p>{code}</p>, // Hiển thị mã đổi pin
           },
         ]
       : []), // Trả về mảng rỗng nếu là STAFF hoặc vai trò khác

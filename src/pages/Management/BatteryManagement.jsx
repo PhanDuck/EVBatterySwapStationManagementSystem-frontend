@@ -226,7 +226,7 @@ export default function BatteryManagement() {
       title: "Ngày sản xuất",
       dataIndex: "manufactureDate",
       width: 160,
-      render: (v) => (v ? new Date(v).toLocaleDateString("vi-VN") : "—"),
+      render: (v) => (v ? new Date(v).toLocaleDateString("vi-VN") : ""),
       sorter: (a, b) =>
         dayjs(a.manufactureDate).unix() - dayjs(b.manufactureDate).unix(),
     },
@@ -234,7 +234,7 @@ export default function BatteryManagement() {
       title: "Bảo trì lần cuối",
       dataIndex: "lastMaintenanceDate",
       width: 180,
-      render: (v) => (v ? new Date(v).toLocaleDateString("vi-VN") : "—"),
+      render: (v) => (v ? new Date(v).toLocaleDateString("vi-VN") : ""),
       sorter: (a, b) =>
         dayjs(a.lastMaintenanceDate).unix() -
         dayjs(b.lastMaintenanceDate).unix(),

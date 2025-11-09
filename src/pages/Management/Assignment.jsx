@@ -341,12 +341,12 @@ export default function AssignmentPage() {
         // Ưu tiên assignedAt (từ API response)
         const dateString = record.assignedAt || record.createdAt;
 
-        if (!dateString) return "—";
+        if (!dateString) return "";
 
         const dateObj = new Date(dateString);
 
         // Kiểm tra ngày hợp lệ
-        if (isNaN(dateObj.getTime())) return "—";
+        if (isNaN(dateObj.getTime())) return "";
 
         // Định dạng ngày: DD/MM/YYYY
         return dateObj.toLocaleDateString("vi-VN", {

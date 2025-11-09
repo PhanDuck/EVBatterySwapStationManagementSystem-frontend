@@ -312,7 +312,7 @@ export default function SupportPage() {
       title: "Trạm",
       dataIndex: "stationName",
       key: "stationName",
-      render: (stationName) => stationName || "—",
+      render: (stationName) => stationName,
       width: 150,
     },
     {
@@ -405,7 +405,7 @@ export default function SupportPage() {
             {/* Ticket Info */}
             <div style={{ marginBottom: "12px" }}>
               <p>
-                <strong>Tiêu đề:</strong> {viewingRecord.subject || "—"}
+                <strong>Tiêu đề:</strong> {viewingRecord.subject}
               </p>
               <div style={{ marginBottom: "8px" }}>
                 <strong>Mô tả:</strong>

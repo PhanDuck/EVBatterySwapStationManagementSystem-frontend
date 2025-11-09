@@ -318,12 +318,12 @@ export default function DriverSubscriptionManagement() {
 
   const renderCalculationDetails = () => {
     const formatCurrency = (value) => {
-      if (typeof value !== "number") return "—";
+      if (typeof value !== "number") return "";
       return `${value.toLocaleString()} đ`;
     };
 
     const formatSwaps = (value) => {
-      if (typeof value !== "number") return "—";
+      if (typeof value !== "number") return "";
       return value;
     };
 
@@ -344,13 +344,13 @@ export default function DriverSubscriptionManagement() {
               <List.Item>
                 <List.Item.Meta
                   title="Gói hiện tại"
-                  description={calculation.currentPackageName || "—"}
+                  description={calculation.currentPackageName}
                 />
               </List.Item>
               <List.Item>
                 <List.Item.Meta
                   title="Gói mới"
-                  description={calculation.newPackageName || "—"}
+                  description={calculation.newPackageName}
                 />
               </List.Item>
               <List.Item>
@@ -412,7 +412,7 @@ export default function DriverSubscriptionManagement() {
 
   const renderRenewalCalculationDetails = () => {
     const formatCurrency = (value) => {
-      if (typeof value !== "number") return "—";
+      if (typeof value !== "number") return "";
       return `${value.toLocaleString()} đ`;
     };
 
@@ -425,7 +425,7 @@ export default function DriverSubscriptionManagement() {
               <List.Item>
                 <List.Item.Meta
                   title="Tên gói gia hạn"
-                  description={renewalCalculation.renewalPackageName || "—"}
+                  description={renewalCalculation.renewalPackageName}
                 />
               </List.Item>
               <List.Item>

@@ -414,14 +414,14 @@ export default function InventoryPage() {
       dataIndex: "capacity",
       key: "capacity",
       width: FIXED_COL_WIDTH.CAPACITY,
-      render: (capacity) => capacity || "—",
+      render: (capacity) => capacity,
     },
     {
       title: "Loại Pin",
       dataIndex: "batteryTypeId",
       key: "batteryTypeId",
       width: FIXED_COL_WIDTH.BATTERY_TYPE,
-      render: (typeId) => batteryTypesMap[typeId] || "—",
+      render: (typeId) => batteryTypesMap[typeId],
     },
     {
       title: "Mức sạc (%)",
@@ -431,9 +431,9 @@ export default function InventoryPage() {
       render: (chargeLevel) => {
         const chargeValue = chargeLevel
           ? parseFloat(chargeLevel).toFixed(0)
-          : "—";
+          : "";
 
-        if (chargeValue === "—") return "—";
+        if (chargeValue === "") return "";
 
         let color;
         const numericCharge = parseFloat(chargeValue);
@@ -454,8 +454,8 @@ export default function InventoryPage() {
       width: FIXED_COL_WIDTH.SOH,
       // ĐIỀU CHỈNH: Format SOH (Làm tròn 2 chữ số thập phân)
       render: (soh) => {
-        const sohValue = soh ? parseFloat(soh).toFixed(2) : "—";
-        return sohValue !== "—" ? (
+        const sohValue = soh ? parseFloat(soh).toFixed(2) : "";
+        return sohValue !== "" ? (
           <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
             {sohValue}
           </Tag>
@@ -478,7 +478,7 @@ export default function InventoryPage() {
       dataIndex: "lastMaintenanceDate",
       key: "lastMaintenanceDate",
       width: FIXED_COL_WIDTH.DATE,
-      render: (date) => (date ? new Date(date).toLocaleDateString() : "—"), // Định dạng ngày cho an toàn
+      render: (date) => (date ? new Date(date).toLocaleDateString() : ""), // Định dạng ngày cho an toàn
     },
     {
       title: "Thao tác",
@@ -518,14 +518,14 @@ export default function InventoryPage() {
       dataIndex: "capacity",
       key: "capacity",
       width: FIXED_COL_WIDTH.CAPACITY,
-      render: (capacity) => capacity || "—",
+      render: (capacity) => capacity,
     },
     {
       title: "Loại Pin",
       dataIndex: "batteryTypeId",
       key: "batteryTypeId",
       width: FIXED_COL_WIDTH.BATTERY_TYPE,
-      render: (typeId) => batteryTypesMap[typeId] || "—",
+      render: (typeId) => batteryTypesMap[typeId],
     },
     {
       title: "Mức sạc (%)",
@@ -535,9 +535,9 @@ export default function InventoryPage() {
       render: (chargeLevel) => {
         const chargeValue = chargeLevel
           ? parseFloat(chargeLevel).toFixed(0)
-          : "—";
+          : "";
 
-        if (chargeValue === "—") return "—";
+        if (chargeValue === "") return "";
 
         let color;
         const numericCharge = parseFloat(chargeValue);
@@ -558,13 +558,13 @@ export default function InventoryPage() {
       width: FIXED_COL_WIDTH.SOH,
       // ĐIỀU CHỈNH: Format SOH (Làm tròn 2 chữ số thập phân)
       render: (soh) => {
-        const sohValue = soh ? parseFloat(soh).toFixed(2) : "—";
-        return sohValue !== "—" ? (
+        const sohValue = soh ? parseFloat(soh).toFixed(2) : "";
+        return sohValue !== "" ? (
           <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
             {sohValue}
           </Tag>
         ) : (
-          "—"
+          ""
         );
       },
     },
@@ -762,7 +762,7 @@ export default function InventoryPage() {
             <Tag color="blue">
               {currentBatteryToEdit
                 ? batteryTypesMap[currentBatteryToEdit.batteryTypeId]
-                : "—"}
+                : ""}
             </Tag>
           </p>
 

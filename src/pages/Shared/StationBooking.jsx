@@ -138,8 +138,7 @@ function StationBookingPage() {
                     </Paragraph>
                     {/*<Paragraph>Lịch hẹn của bạn đã được lên lịch vào lúc <strong>{bookingDetails?.bookingTime.format('HH:mm DD/MM/YYYY')}</strong> ({bookingDetails?.bookingTime.fromNow()}).</Paragraph>*/}
                     <Paragraph>
-                      Pin của bạn đã được chuẩn bị xong, hãy đến lấy pin trong
-                      vòng 3 tiếng sau khi đặt.
+                      Pin của bạn đã được chuẩn bị xong, hãy đến lấy pin trong vòng 3 tiếng sau khi đặt.
                     </Paragraph>
                     <Paragraph>
                       <strong>

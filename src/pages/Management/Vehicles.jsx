@@ -58,13 +58,15 @@ const VehiclePage = () => {
   const [vehicleImage, setVehicleImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [pendingVehicles, setPendingVehicles] = useState([]);
-  const [pendingLoading, setPendingLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [availableBatteries, setAvailableBatteries] = useState([]);
   const [batteriesLoading, setBatteriesLoading] = useState(false);
   const [approveModalVisible, setApproveModalVisible] = useState(false);
-  const [selectedVehicleForApprove, setSelectedVehicleForApprove] = useState(null);
-  const [selectedBatteryForApprove, setSelectedBatteryForApprove] = useState(null);
+  const [selectedVehicleForApprove, setSelectedVehicleForApprove] =
+    useState(null);
+  const [selectedBatteryForApprove, setSelectedBatteryForApprove] =
+    useState(null);
+  const [drivers, setDrivers] = useState([]);
 
   const user = (() => {
     try {
@@ -80,223 +82,220 @@ const VehiclePage = () => {
     .trim()
     .toUpperCase();
   const isDriver = role === "DRIVER";
-  const isAdminOrStaff = role === "ADMIN" || role === "STAFF";
+  const isAdmin = role === "ADMIN";
 
   // --- Component Modal Lịch sử Đổi Pin ---
   const VehicleSwapHistoryModal = React.memo(
-  ({
-    open,
-    onClose,
-    vehicleHistory,
-    loading,
-    userRole
-  }) => {
-    const swapCount = vehicleHistory.length;
-    const canViewTransactionId = userRole === "ADMIN" || userRole === "STAFF";
+    ({ open, onClose, vehicleHistory, loading, userRole }) => {
+      const swapCount = vehicleHistory.length;
+      const canViewTransactionId = userRole === "ADMIN" || userRole === "STAFF";
 
-    // ⚙️ Component con hiển thị thông tin pin
-    const BatteryInfoCard = ({ title, batteryData, type }) => {
-      const color = type === "new" ? "#52c41a" : "#faad14"; // Xanh cho Pin Mới (Swap In), Vàng cho Pin Cũ (Swap Out)
+      // ⚙️ Component con hiển thị thông tin pin
+      const BatteryInfoCard = ({ title, batteryData, type }) => {
+        const color = type === "new" ? "#52c41a" : "#faad14"; // Xanh cho Pin Mới (Swap In), Vàng cho Pin Cũ (Swap Out)
 
-      const isSwapIn = type === "new";
-      const batteryId = isSwapIn
-        ? batteryData?.swapOutBatteryId
-        : batteryData?.swapInBatteryId;
-      const model = isSwapIn
-        ? batteryData?.swapOutBatteryModel
-        : batteryData?.swapInBatteryModel;
-      const chargeLevel = isSwapIn
-        ? batteryData?.swapOutBatteryChargeLevel
-        : batteryData?.swapInBatteryChargeLevel;
-      const soh = isSwapIn
-        ? batteryData?.swapOutBatteryHealth
-        : batteryData?.swapInBatteryHealth;
+        const isSwapIn = type === "new";
+        const batteryId = isSwapIn
+          ? batteryData?.swapOutBatteryId
+          : batteryData?.swapInBatteryId;
+        const model = isSwapIn
+          ? batteryData?.swapOutBatteryModel
+          : batteryData?.swapInBatteryModel;
+        const chargeLevel = isSwapIn
+          ? batteryData?.swapOutBatteryChargeLevel
+          : batteryData?.swapInBatteryChargeLevel;
+        const soh = isSwapIn
+          ? batteryData?.swapOutBatteryHealth
+          : batteryData?.swapInBatteryHealth;
 
-      return (
-        <Card
-          bordered
-          title={
-            <Text strong style={{ color: color }}>
-              {title}
-            </Text>
-          }
-          style={{
-            minHeight: 250,
-            borderColor: color,
-          }}
-          headStyle={{ backgroundColor: "#fafafa" }}
-        >
-          <Space direction="vertical" style={{ width: "100%" }}>
-            {/* 1. ID Pin */}
-            <Row justify="space-between" style={{ paddingBottom: 5 }}>
-              <Col>
-                <Text strong>ID Pin:</Text>
-              </Col>
-              <Col>
-                <Text>{batteryId || "—"}</Text>
-              </Col>
-            </Row>
-            <Divider style={{ margin: "5px 0" }} />
-
-            {/* 2. Loại Pin (Model) */}
-            <Row justify="space-between" style={{ paddingBottom: 5 }}>
-              <Col>
-                <Text strong>Loại Pin:</Text>
-              </Col>
-              <Col>
-                <Text>{model || "—"}</Text>
-              </Col>
-            </Row>
-            <Divider style={{ margin: "5px 0" }} />
-
-            {/* 3. Mức sạc (Charge Level) */}
-            <Row justify="space-between" style={{ paddingBottom: 5 }}>
-              <Col>
-                <Text strong>
-                  <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc
-                  (%):
-                </Text>
-              </Col>
-              <Col>
-                <Tag color={chargeLevel > 70 ? "green" : "orange"}>
-                  {chargeLevel || "—"}
-                </Tag>
-              </Col>
-            </Row>
-            <Divider style={{ margin: "5px 0" }} />
-
-            {/* 4. Tình trạng pin (State of Health) */}
-            <Row justify="space-between">
-              <Col>
-                <Text strong>
-                  <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng pin
-                  (%):
-                </Text>
-              </Col>
-              <Col>
-                <Tag color={soh > 70 ? "green" : "orange"}>{soh || "—"}</Tag>
-              </Col>
-            </Row>
-          </Space>
-        </Card>
-      );
-    };
-
-    const HistoryItem = ({ transaction, index, totalSwaps }) => {
-      // 💡 Sử dụng JS Date Object để định dạng thay vì moment
-      const date = new Date(transaction.endTime);
-      const timeString = date.toLocaleTimeString("vi-VN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      const dateString = date.toLocaleDateString("vi-VN");
-      const dateTimeFormatted = `${timeString} ${dateString}`;
-      const stationName = transaction.stationName || "Trạm không rõ";
-      const swapNumber = totalSwaps - index;
-
-      return (
-        <Card
-          style={{ marginBottom: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
-          bodyStyle={{ padding: "16px" }}
-        >
-          {/* Header - ID Giao dịch, Thời gian, Trạm */}
-          <Row
-            justify="space-between"
-            align="middle"
+        return (
+          <Card
+            bordered
+            title={
+              <Text strong style={{ color: color }}>
+                {title}
+              </Text>
+            }
             style={{
-              marginBottom: 15,
-              paddingBottom: 10,
-              borderBottom: "1px solid #f0f0f0",
+              minHeight: 250,
+              borderColor: color,
             }}
+            headStyle={{ backgroundColor: "#fafafa" }}
           >
-            <Col>
-              <Title level={5} style={{ margin: 0 }}>
-                Lần giao dịch {swapNumber}
-              </Title>
-              {canViewTransactionId && (
-                <Text type="secondary" style={{ fontSize: "0.85em" }}>
-                  ID: <Text code>{transaction.id}</Text>
-                </Text>
-              )}
-              <Space size="small" style={{ marginTop: 4 }}>
-                <CalendarOutlined style={{ color: "#1890ff" }} />
-                <Text type="secondary" style={{ fontSize: "0.85em" }}>
-                  {dateTimeFormatted}
-                </Text>
-              </Space>
-            </Col>
-            <Col style={{ textAlign: "right" }}>
-              <Space size="small">
-                <EnvironmentOutlined style={{ color: "#52c41a" }} />
-                <Text strong>{stationName}</Text>
-              </Space>
-            </Col>
-          </Row>
+            <Space direction="vertical" style={{ width: "100%" }}>
+              {/* 1. ID Pin */}
+              <Row justify="space-between" style={{ paddingBottom: 5 }}>
+                <Col>
+                  <Text strong>ID Pin:</Text>
+                </Col>
+                <Col>
+                  <Text>{batteryId}</Text>
+                </Col>
+              </Row>
+              <Divider style={{ margin: "5px 0" }} />
 
-          {/* Pin Cũ vs Pin Mới */}
-          <Row gutter={16} align="middle">
-            <Col span={11}>
-              <BatteryInfoCard
-                title="Pin cũ (Đã tháo ra)"
-                batteryData={transaction}
-                type="old"
-              />
-            </Col>
-            <Col span={2} style={{ textAlign: "center" }}>
-              <SwapOutlined style={{ fontSize: "24px", color: "#1890ff" }} />
-            </Col>
-            <Col span={11}>
-              <BatteryInfoCard
-                title="Pin mới (Đã lắp vào)"
-                batteryData={transaction}
-                type="new"
-              />
-            </Col>
-          </Row>
-        </Card>
-      );
-    };
+              {/* 2. Loại Pin (Model) */}
+              <Row justify="space-between" style={{ paddingBottom: 5 }}>
+                <Col>
+                  <Text strong>Loại Pin:</Text>
+                </Col>
+                <Col>
+                  <Text>{model}</Text>
+                </Col>
+              </Row>
+              <Divider style={{ margin: "5px 0" }} />
 
-    return (
-      <Modal
-        title={
-          <Title level={3} style={{ margin: 0 }}>
-            Lịch sử đổi pin của xe
-          </Title>
-        }
-        open={open}
-        onCancel={onClose}
-        footer={null}
-        width={1000} // Tăng chiều rộng để phù hợp với 2 cột
-        destroyOnClose={true}
-      >
-        <Spin spinning={loading}>
-          {swapCount === 0 && !loading ? (
-            <Empty description="Phương tiện này chưa có lịch sử đổi pin." />
-          ) : (
-            <div
+              {/* 3. Mức sạc (Charge Level) */}
+              <Row justify="space-between" style={{ paddingBottom: 5 }}>
+                <Col>
+                  <Text strong>
+                    <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc
+                    (%):
+                  </Text>
+                </Col>
+                <Col>
+                  <Tag color={chargeLevel > 70 ? "green" : "orange"}>
+                    {chargeLevel}
+                  </Tag>
+                </Col>
+              </Row>
+              <Divider style={{ margin: "5px 0" }} />
+
+              {/* 4. Tình trạng pin (State of Health) */}
+              <Row justify="space-between">
+                <Col>
+                  <Text strong>
+                    <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng
+                    pin (%):
+                  </Text>
+                </Col>
+                <Col>
+                  <Tag color={soh > 70 ? "green" : "orange"}>{soh}</Tag>
+                </Col>
+              </Row>
+            </Space>
+          </Card>
+        );
+      };
+
+      const HistoryItem = ({ transaction, index, totalSwaps }) => {
+        // 💡 Sử dụng JS Date Object để định dạng thay vì moment
+        const date = new Date(transaction.endTime);
+        const timeString = date.toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const dateString = date.toLocaleDateString("vi-VN");
+        const dateTimeFormatted = `${timeString} ${dateString}`;
+        const stationName = transaction.stationName || "Trạm không rõ";
+        const swapNumber = totalSwaps - index;
+
+        return (
+          <Card
+            style={{
+              marginBottom: 20,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            }}
+            bodyStyle={{ padding: "16px" }}
+          >
+            {/* Header - ID Giao dịch, Thời gian, Trạm */}
+            <Row
+              justify="space-between"
+              align="middle"
               style={{
-                maxHeight: "70vh",
-                overflowY: "auto",
-                paddingRight: "10px",
+                marginBottom: 15,
+                paddingBottom: 10,
+                borderBottom: "1px solid #f0f0f0",
               }}
             >
-              {/* Sắp xếp history theo endTime mới nhất trước */}
-              {vehicleHistory.map((item, index) => (
-                <HistoryItem
-                  transaction={item}
-                  key={item.id}
-                  index={index}
-                  totalSwaps={swapCount}
+              <Col>
+                <Title level={5} style={{ margin: 0 }}>
+                  Lần giao dịch {swapNumber}
+                </Title>
+                {canViewTransactionId && (
+                  <Text type="secondary" style={{ fontSize: "0.85em" }}>
+                    ID: <Text code>{transaction.id}</Text>
+                  </Text>
+                )}
+                <Space size="small" style={{ marginTop: 4 }}>
+                  <CalendarOutlined style={{ color: "#1890ff" }} />
+                  <Text type="secondary" style={{ fontSize: "0.85em" }}>
+                    {dateTimeFormatted}
+                  </Text>
+                </Space>
+              </Col>
+              <Col style={{ textAlign: "right" }}>
+                <Space size="small">
+                  <EnvironmentOutlined style={{ color: "#52c41a" }} />
+                  <Text strong>{stationName}</Text>
+                </Space>
+              </Col>
+            </Row>
+
+            {/* Pin Cũ vs Pin Mới */}
+            <Row gutter={16} align="middle">
+              <Col span={11}>
+                <BatteryInfoCard
+                  title="Pin cũ (Đã tháo ra)"
+                  batteryData={transaction}
+                  type="old"
                 />
-              ))}
-            </div>
-          )}
-        </Spin>
-      </Modal>
-    );
-  }
-);
+              </Col>
+              <Col span={2} style={{ textAlign: "center" }}>
+                <SwapOutlined style={{ fontSize: "24px", color: "#1890ff" }} />
+              </Col>
+              <Col span={11}>
+                <BatteryInfoCard
+                  title="Pin mới (Đã lắp vào)"
+                  batteryData={transaction}
+                  type="new"
+                />
+              </Col>
+            </Row>
+          </Card>
+        );
+      };
+
+      return (
+        <Modal
+          title={
+            <Title level={3} style={{ margin: 0 }}>
+              Lịch sử đổi pin của xe
+            </Title>
+          }
+          open={open}
+          onCancel={onClose}
+          footer={null}
+          width={1000} // Tăng chiều rộng để phù hợp với 2 cột
+          destroyOnClose={true}
+        >
+          <Spin spinning={loading}>
+            {swapCount === 0 && !loading ? (
+              <Empty description="Phương tiện này chưa có lịch sử đổi pin." />
+            ) : (
+              <div
+                style={{
+                  maxHeight: "70vh",
+                  overflowY: "auto",
+                  paddingRight: "10px",
+                }}
+              >
+                {/* Sắp xếp history theo endTime mới nhất trước */}
+                {vehicleHistory.map((item, index) => (
+                  <HistoryItem
+                    transaction={item}
+                    key={item.id}
+                    index={index}
+                    totalSwaps={swapCount}
+                  />
+                ))}
+              </div>
+            )}
+          </Spin>
+        </Modal>
+      );
+    }
+  );
 
   // 🚗 Lấy danh sách vehicle
   useEffect(() => {
@@ -305,10 +304,7 @@ const VehiclePage = () => {
 
       try {
         // 1. Tải danh sách xe
-        const endpoint =
-          role === "ADMIN" || role === "STAFF"
-            ? "/vehicle"
-            : "/vehicle/my-vehicles";
+        const endpoint = isAdmin ? "/vehicle" : "/vehicle/my-vehicles";
         const res = await api.get(endpoint);
 
         const initialVehicleList = (
@@ -329,41 +325,38 @@ const VehiclePage = () => {
     };
 
     fetchVehicles();
-  }, [role]);
+  }, [isAdmin]);
 
-  // 🚗 Lấy danh sách xe chờ duyệt (chỉ cho Admin) - Lọc từ danh sách xe có status = PENDING
+  // 👥 Lấy danh sách tài xế (chỉ cho ADMIN)
   useEffect(() => {
-    if (role === "ADMIN") {
-      const fetchPendingVehicles = async () => {
-        setPendingLoading(true);
+    if (isAdmin) {
+      const fetchDrivers = async () => {
         try {
-          const res = await api.get("/vehicle");
-          console.log("All vehicles response:", res.data);
-          
-          let allVehicles = [];
-          if (Array.isArray(res.data)) {
-            allVehicles = res.data;
-          } else if (res.data?.data && Array.isArray(res.data.data)) {
-            allVehicles = res.data.data;
-          }
-          
-          // Lọc xe có status = PENDING
-          const pendingList = allVehicles.filter(v => v.status === "PENDING");
-          const sortedList = pendingList.sort((a, b) => b.id - a.id);
-          console.log("Pending vehicles (status=PENDING):", sortedList);
-          setPendingVehicles(sortedList);
+          const res = await api.get("/admin/user");
+          // Lọc chỉ lấy những user có role = DRIVER
+          const driverList = Array.isArray(res.data)
+            ? res.data.filter((u) => u.role === "DRIVER")
+            : [];
+          setDrivers(driverList.sort((a, b) => a.id - b.id));
         } catch (error) {
-          console.error("Error fetching vehicles:", error);
-          handleApiError(error, "Danh sách xe chờ duyệt");
-          setPendingVehicles([]);
-        } finally {
-          setPendingLoading(false);
+          console.error("Lỗi tải danh sách tài xế:", error);
+          setDrivers([]);
         }
       };
-      fetchPendingVehicles();
+      fetchDrivers();
     }
-  }, [role]);
+  }, [isAdmin]);
 
+  // 🚗 Lấy danh sách xe chờ duyệt từ danh sách vehicles đã có
+  useEffect(() => {
+    if (role === "ADMIN" && vehicles.length > 0) {
+      // Lọc xe có status = PENDING từ danh sách vehicles đã fetch
+      const pendingList = vehicles.filter((v) => v.status === "PENDING");
+      const sortedList = pendingList.sort((a, b) => b.id - a.id);
+      console.log("Pending vehicles (status=PENDING):", sortedList);
+      setPendingVehicles(sortedList);
+    }
+  }, [vehicles, role]);
 
   // 🔋 Lấy loại pin
   useEffect(() => {
@@ -384,19 +377,24 @@ const VehiclePage = () => {
     try {
       const res = await api.get("/battery");
       console.log("All batteries response:", res.data);
-      
+
       let allBatteries = [];
       if (Array.isArray(res.data)) {
         allBatteries = res.data;
       } else if (res.data?.data && Array.isArray(res.data.data)) {
         allBatteries = res.data.data;
       }
-      
+
       // Lọc pin AVAILABLE và có batteryTypeId trùng với xe
       const availableList = allBatteries.filter(
-        b => b.status === "AVAILABLE" && b.batteryTypeId === batteryTypeId
+        (b) => b.status === "AVAILABLE" && b.batteryTypeId === batteryTypeId
       );
-      console.log("Available batteries for type", batteryTypeId, ":", availableList);
+      console.log(
+        "Available batteries for type",
+        batteryTypeId,
+        ":",
+        availableList
+      );
       console.log("Total available batteries:", availableList.length);
       setAvailableBatteries(availableList);
     } catch (error) {
@@ -447,7 +445,7 @@ const VehiclePage = () => {
     setVehicleHistory([]);
   };
 
-  // 🧾 Cột bảng 
+  // 🧾 Cột bảng
   const columns = [
     {
       title: "ID",
@@ -465,18 +463,22 @@ const VehiclePage = () => {
       title: "Ảnh xe",
       dataIndex: "registrationImage",
       key: "registrationImage",
-      render: (image) => (
+      render: (image) =>
         image ? (
           <Image
             src={image}
             alt="Vehicle"
-            style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 4 }}
+            style={{
+              width: 50,
+              height: 50,
+              objectFit: "cover",
+              borderRadius: 4,
+            }}
             preview
           />
         ) : (
           <Text type="secondary">Không có ảnh</Text>
-        )
-      ),
+        ),
     },
     {
       title: "Biển số xe",
@@ -491,13 +493,23 @@ const VehiclePage = () => {
       key: "model",
       sorter: (a, b) => (a.model || "").localeCompare(b.model || ""),
     },
-    ...(isAdminOrStaff ? [{
-      title: "ID tài xế",
-      dataIndex: "driverId",
-      key: "driverId",
-      sorter: (a, b) => (a.driverId || 0) - (b.driverId || 0),
-      render: (driverId) => <Text>{driverId ? `ID: ${driverId}` : "—"}</Text>,
-    }] : []),
+    ...(isAdmin
+      ? [
+          {
+            title: "Tài xế",
+            dataIndex: "driverName",
+            key: "driverName",
+            sorter: (a, b) =>
+              (a.driverName || "").localeCompare(b.driverName || ""),
+            render: (driverName, record) => (
+              <Text>
+                {driverName ||
+                  (record.driverId ? `ID: ${record.driverId}` : "")}
+              </Text>
+            ),
+          },
+        ]
+      : []),
     {
       title: "Loại pin",
       dataIndex: "batteryTypeName",
@@ -601,18 +613,22 @@ const VehiclePage = () => {
       title: "Ảnh xe",
       dataIndex: "registrationImage",
       key: "registrationImage",
-      render: (image) => (
+      render: (image) =>
         image ? (
           <Image
             src={image}
             alt="Vehicle"
-            style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 4 }}
+            style={{
+              width: 50,
+              height: 50,
+              objectFit: "cover",
+              borderRadius: 4,
+            }}
             preview
           />
         ) : (
           <Text type="secondary">Không có ảnh</Text>
-        )
-      ),
+        ),
     },
     {
       title: "Biển số xe",
@@ -628,7 +644,7 @@ const VehiclePage = () => {
       title: "ID tài xế",
       dataIndex: "driverId",
       key: "driverId",
-      render: (driverId) => <Text>{driverId ? `ID: ${driverId}` : "—"}</Text>,
+      render: (driverId) => <Text>{driverId ? `ID: ${driverId}` : ""}</Text>,
     },
     {
       title: "Loại pin",
@@ -684,116 +700,148 @@ const VehiclePage = () => {
 
   // 🟢 CREATE / UPDATE
   const handleSubmit = async (values) => {
-    const selectedBatteryType = batteryTypes.find(t => t.id === values.batteryTypeId);
+    const selectedBatteryType = batteryTypes.find(
+      (t) => t.id === values.batteryTypeId
+    );
     let payload = {
       vin: values.vin,
       plateNumber: values.plateNumber,
       model: values.model,
       batteryTypeId: values.batteryTypeId,
+      ...(editingVehicle && isAdmin && { status: values.status }),
     };
+
+    // Thêm driverId nếu đang sửa và admin chọn tài xế
+    if (editingVehicle && isAdmin && values.driverId) {
+      payload.driverId = values.driverId;
+    }
+
     let endpoint = "";
 
     if (editingVehicle) {
-      endpoint = `/vehicle/${editingVehicle.id}`; 
+      endpoint = `/vehicle/${editingVehicle.id}`;
     } else {
       endpoint = "/vehicle";
     }
-  
-  const payloadForFE = {
-    ...payload,
-    batteryTypeName: selectedBatteryType ? selectedBatteryType.name : "Không xác định",
-    driverName: editingVehicle?.driverName,
-    id: editingVehicle ? editingVehicle.id : undefined,
-    status: editingVehicle ? editingVehicle.status : "ACTIVE",
-  }
 
-  try {
-    if (editingVehicle) {
-      // Logic UPDATE
-      if (imageFile && imageFile instanceof File) {
-        // Nếu có ảnh mới, gửi FormData
+    // Lấy tên tài xế từ danh sách drivers
+    const selectedDriver = drivers.find((d) => d.id === values.driverId);
+    const driverName = selectedDriver
+      ? selectedDriver.fullName
+      : editingVehicle?.driverName;
+
+    const payloadForFE = {
+      ...payload,
+      batteryTypeName: selectedBatteryType
+        ? selectedBatteryType.name
+        : "Không xác định",
+      driverName: driverName,
+      id: editingVehicle ? editingVehicle.id : undefined,
+      //status: editingVehicle ? editingVehicle.status : "ACTIVE",
+      status:
+        values.status || (editingVehicle ? editingVehicle.status : "PENDING"),
+    };
+
+    try {
+      if (editingVehicle) {
+        // Logic UPDATE - Không gửi ảnh khi sửa
+        console.log("Updating vehicle without image");
+        console.log("Payload:", payload);
+
+        // Gửi FormData thay vì JSON để tránh lỗi 415
+        const formData = new FormData();
+        formData.append("vin", payload.vin);
+        formData.append("plateNumber", payload.plateNumber);
+        formData.append("model", payload.model);
+        formData.append("batteryTypeId", payload.batteryTypeId);
+        if (payload.driverId) {
+          formData.append("driverId", payload.driverId);
+        }
+        if (payload.status) {
+          formData.append("status", payload.status);
+        }
+
+        const response = await api.put(endpoint, formData);
+
+        console.log("Update response:", response);
+
+        setVehicles((prev) =>
+          prev.map((v) =>
+            v.id === editingVehicle.id
+              ? {
+                  ...v,
+                  ...payloadForFE,
+                  registrationImage: vehicleImage,
+                  status: values.status || v.status,
+                }
+              : v
+          )
+        );
+        message.success("Cập nhật phương tiện thành công!");
+      } else {
+        // Logic CREATE - Bắt buộc có ảnh
+        if (!imageFile || !(imageFile instanceof File)) {
+          message.error("Vui lòng chọn ảnh giấy đăng ký!");
+          return;
+        }
+
+        let res;
+        // Gửi FormData với ảnh
         const formData = new FormData();
         formData.append("vin", payload.vin);
         formData.append("plateNumber", payload.plateNumber);
         formData.append("model", payload.model);
         formData.append("batteryTypeId", payload.batteryTypeId);
         formData.append("registrationImage", imageFile);
-        console.log("Updating with new image:", imageFile.name);
-        await api.put(endpoint, formData);
-      } else {
-        console.log("Updating without image");
-        await api.put(endpoint, payload);
-      }
-      setVehicles((prev) =>
-        prev.map((v) =>
-          v.id === editingVehicle.id
-            ? { ...v, ...payloadForFE, registrationImage: vehicleImage }
-            : v
-        )
-      );
-      message.success("Cập nhật phương tiện thành công!");
-    } else {
-      // Logic CREATE - Bắt buộc có ảnh
-      if (!imageFile || !(imageFile instanceof File)) {
-        message.error("Vui lòng chọn ảnh giấy đăng ký!");
-        return;
-      }
+        console.log("Sending FormData with image:", imageFile.name);
+        res = await api.post(endpoint, formData);
 
-      let res;
-      // Gửi FormData với ảnh
-      const formData = new FormData();
-      formData.append("vin", payload.vin);
-      formData.append("plateNumber", payload.plateNumber);
-      formData.append("model", payload.model);
-      formData.append("batteryTypeId", payload.batteryTypeId);
-      formData.append("registrationImage", imageFile);
-      console.log("Sending FormData with image:", imageFile.name);
-      res = await api.post(endpoint, formData);
-      
-      // Xử lý response từ backend
-      console.log("API Response:", res.data);
-      let newVehicleData = payload;
-      if (res.data) {
-        // Nếu backend trả về object
-        if (typeof res.data === 'object' && res.data.id) {
-          console.log("Format 1: Direct object with id");
-          newVehicleData = res.data;
+        // Xử lý response từ backend
+        console.log("API Response:", res.data);
+        let newVehicleData = payload;
+        if (res.data) {
+          // Nếu backend trả về object
+          if (typeof res.data === "object" && res.data.id) {
+            console.log("Format 1: Direct object with id");
+            newVehicleData = res.data;
+          }
+          // Nếu backend trả về wrapped response (e.g., { data: {...} })
+          else if (res.data.data && typeof res.data.data === "object") {
+            console.log("Format 2: Wrapped in data field");
+            newVehicleData = res.data.data;
+          }
+          // Nếu backend trả về { success: true, message: "...", data: {...} }
+          else if (res.data.success && res.data.data) {
+            console.log("Format 3: Success wrapper with data");
+            newVehicleData = res.data.data;
+          }
         }
-        // Nếu backend trả về wrapped response (e.g., { data: {...} })
-        else if (res.data.data && typeof res.data.data === 'object') {
-          console.log("Format 2: Wrapped in data field");
-          newVehicleData = res.data.data;
-        }
-        // Nếu backend trả về { success: true, message: "...", data: {...} }
-        else if (res.data.success && res.data.data) {
-          console.log("Format 3: Success wrapper with data");
-          newVehicleData = res.data.data;
-        }
-      }
-      console.log("Final newVehicleData:", newVehicleData);
+        console.log("Final newVehicleData:", newVehicleData);
 
-      const newVehicle = {
+        const newVehicle = {
           ...newVehicleData,
-          batteryTypeName: selectedBatteryType ? selectedBatteryType.name : "Không xác định",
+          batteryTypeName: selectedBatteryType
+            ? selectedBatteryType.name
+            : "Không xác định",
           driverName: null,
           swapCount: 0,
           status: newVehicleData.status || "ACTIVE",
           registrationImage: vehicleImage || newVehicleData.registrationImage,
-          id: newVehicleData.id || Date.now(), 
-      };
-      setVehicles((prev) => [newVehicle, ...prev]);
-      message.success("Đăng ký phương tiện thành công!");
-    }
+          id: newVehicleData.id || Date.now(),
+        };
+        setVehicles((prev) => [newVehicle, ...prev]);
+        message.success("Đăng ký phương tiện thành công!");
+      }
 
-    setIsModalVisible(false);
-    form.resetFields();
-    setVehicleImage(null);
-    setImageFile(null);
-  } catch (error) {
-    console.error("Error details:", error.response?.data || error.message);
-    handleApiError(error, "Lưu thông tin phương tiện");
-  }
-};
+      setIsModalVisible(false);
+      form.resetFields();
+      setVehicleImage(null);
+      setImageFile(null);
+    } catch (error) {
+      console.error("Error details:", error.response?.data || error.message);
+      handleApiError(error, "Lưu thông tin phương tiện");
+    }
+  };
 
   // 🔴 SOFT DELETE
   const handleDelete = (id) => {
@@ -827,8 +875,14 @@ const VehiclePage = () => {
       plateNumber: vehicle.plateNumber,
       model: vehicle.model,
       batteryTypeId: vehicle.batteryTypeId,
+      status: vehicle.status,
     };
-    
+
+    // Thêm driverId nếu là admin
+    if (isAdmin && vehicle.driverId) {
+      initialValues.driverId = vehicle.driverId;
+    }
+
     form.setFieldsValue(initialValues);
   };
 
@@ -837,18 +891,18 @@ const VehiclePage = () => {
     console.log("File selected:", file);
     console.log("File type:", file.type);
     console.log("File size:", file.size);
-    
+
     // Kiểm tra file type
-    const isImage = file.type.startsWith('image/');
+    const isImage = file.type.startsWith("image/");
     if (!isImage) {
-      message.error('Vui lòng chọn file hình ảnh!');
+      message.error("Vui lòng chọn file hình ảnh!");
       return Upload.LIST_IGNORE;
     }
-    
+
     // Kiểm tra file size (max 5MB)
     const isLt5M = file.size / 1024 / 1024 < 5;
     if (!isLt5M) {
-      message.error('Ảnh phải nhỏ hơn 5MB!');
+      message.error("Ảnh phải nhỏ hơn 5MB!");
       return Upload.LIST_IGNORE;
     }
 
@@ -860,14 +914,14 @@ const VehiclePage = () => {
     };
     reader.onerror = (error) => {
       console.error("Error reading file:", error);
-      message.error('Lỗi đọc file ảnh!');
+      message.error("Lỗi đọc file ảnh!");
     };
     reader.readAsDataURL(file);
-    
+
     // Lưu file để gửi lên server
     setImageFile(file);
     console.log("Image file set:", file.name);
-    
+
     return false; // Ngăn upload tự động
   };
 
@@ -875,38 +929,38 @@ const VehiclePage = () => {
   const handleApproveVehicle = async (vehicleId, batteryId) => {
     try {
       console.log("Approving vehicle:", vehicleId, "with battery:", batteryId);
-      
+
       // Tạo payload - gửi batteryId (không phải currentBatteryId)
       const payload = {};
       if (batteryId) {
         payload.batteryId = batteryId;
       }
       console.log("Payload being sent:", JSON.stringify(payload));
-      
+
       // Gửi request
       const res = await api.put(`/vehicle/${vehicleId}/approve`, payload);
       console.log("Full Approve response:", res);
       console.log("Approve response data:", res.data);
       console.log("Response status:", res.status);
-      
+
       message.success("Đã duyệt xe thành công!");
-      
+
       // Cập nhật danh sách xe chờ duyệt
       setPendingVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
-      
+
       // Cập nhật danh sách xe chính - thay đổi status từ PENDING thành ACTIVE
       setVehicles((prev) =>
         prev.map((v) =>
-          v.id === vehicleId 
-            ? { 
-                ...v, 
-                status: "ACTIVE", 
-                ...(batteryId && { currentBatteryId: batteryId })
-              } 
+          v.id === vehicleId
+            ? {
+                ...v,
+                status: "ACTIVE",
+                ...(batteryId && { currentBatteryId: batteryId }),
+              }
             : v
         )
       );
-      
+
       setApproveModalVisible(false);
       setSelectedVehicleForApprove(null);
       setSelectedBatteryForApprove(null);
@@ -915,12 +969,12 @@ const VehiclePage = () => {
       console.error("Error response:", error.response);
       console.error("Error response data:", error.response?.data);
       console.error("Error message:", error.message);
-      
+
       // Hiển thị thông báo lỗi chi tiết
-      const errorMessage = 
-        error.response?.data?.message || 
-        error.response?.data?.error || 
-        error.message || 
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
         "Lỗi khi duyệt xe";
       message.error(errorMessage);
     }
@@ -932,16 +986,19 @@ const VehiclePage = () => {
       console.log("Rejecting vehicle:", vehicleId, "Reason:", reason);
       const res = await api.put(`/vehicle/${vehicleId}/reject`, { reason });
       console.log("Reject response:", res.data);
-      
+
       message.success("Đã từ chối xe!");
-      
+
       // Cập nhật danh sách xe chờ duyệt
       setPendingVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
-      
+
       // Cập nhật danh sách xe chính - xóa xe bị từ chối
       setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
     } catch (error) {
-      console.error("Error rejecting vehicle:", error.response?.data || error.message);
+      console.error(
+        "Error rejecting vehicle:",
+        error.response?.data || error.message
+      );
       message.error(error.response?.data?.message || "Lỗi khi từ chối xe");
     }
   };
@@ -970,7 +1027,7 @@ const VehiclePage = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      {isAdminOrStaff && role === "ADMIN" ? (
+      {isAdmin ? (
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -1015,21 +1072,19 @@ const VehiclePage = () => {
               label: `Xe chờ duyệt (${pendingVehicles.length})`,
               children: (
                 <Card title="Duyệt xe">
-                  <Spin spinning={pendingLoading}>
-                    {pendingVehicles.length === 0 && !pendingLoading ? (
-                      <Empty description="Không có xe chờ duyệt" />
-                    ) : (
-                      <Table
-                        columns={pendingColumns}
-                        dataSource={pendingVehicles}
-                        rowKey={(record) => record.id}
-                        pagination={{
-                          showTotal: (total, range) =>
-                            `${range[0]}-${range[1]} trên ${total} xe`,
-                        }}
-                      />
-                    )}
-                  </Spin>
+                  {pendingVehicles.length === 0 ? (
+                    <Empty description="Không có xe chờ duyệt" />
+                  ) : (
+                    <Table
+                      columns={pendingColumns}
+                      dataSource={pendingVehicles}
+                      rowKey={(record) => record.id}
+                      pagination={{
+                        showTotal: (total, range) =>
+                          `${range[0]}-${range[1]} trên ${total} xe`,
+                      }}
+                    />
+                  )}
                 </Card>
               ),
             },
@@ -1092,9 +1147,7 @@ const VehiclePage = () => {
             label="Mã VIN (Vehicle Identification Number)"
             rules={[{ required: true, message: "Vui lòng nhập mã VIN!" }]}
           >
-            <Input 
-              placeholder="Nhập mã VIN (17 ký tự)"
-            />
+            <Input placeholder="Nhập mã VIN (17 ký tự)" />
           </Form.Item>
 
           <Form.Item
@@ -1102,9 +1155,7 @@ const VehiclePage = () => {
             label="Biển số xe"
             rules={[{ required: true, message: "Vui lòng nhập biển số xe!" }]}
           >
-            <Input 
-              placeholder="VD: 29K112342"
-            />
+            <Input placeholder="VD: 29K112342" />
           </Form.Item>
 
           <Form.Item
@@ -1112,7 +1163,7 @@ const VehiclePage = () => {
             label="Dòng xe"
             rules={[{ required: true, message: "Vui lòng nhập dòng xe!" }]}
           >
-            <Input placeholder="VD: VinFast Klara S" />
+            <Input placeholder="VD: VinFast Klara S, Tesla Model 3" />
           </Form.Item>
 
           <Form.Item
@@ -1129,42 +1180,89 @@ const VehiclePage = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item 
-            name="registrationImage"
-            label="Ảnh giấy đăng ký xe"
-            rules={[{ required: true, message: "Vui lòng chọn ảnh giấy đăng ký!" }]}
-          >
-            <div>
-              <Upload
-                beforeUpload={handleImageUpload}
-                maxCount={1}
-                accept="image/*"
-                listType="picture-card"
-                fileList={[]}
-                onRemove={() => {
-                  setImageFile(null);
-                  setVehicleImage(null);
-                }}
-              >
-                {!vehicleImage && (
-                  <div>
-                    <UploadOutlined style={{ fontSize: 32 }} />
-                    <div style={{ marginTop: 8 }}>Chọn ảnh</div>
+          {editingVehicle && isAdmin && (
+            <Form.Item
+              name="driverId"
+              label="Tài xế"
+              rules={[{ required: true, message: "Vui lòng chọn tài xế!" }]}
+            >
+              <Select placeholder="Chọn tài xế">
+                {drivers.map((driver) => (
+                  <Option key={driver.id} value={driver.id}>
+                    {driver.fullName} (ID: {driver.id})
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
+          {editingVehicle && isAdmin && (
+            <Form.Item
+              name="status"
+              label={
+                <Tooltip title="ACTIVE: Xe đang hoạt động, INACTIVE: Xe bị vô hiệu hóa">
+                  <Space>
+                    Trạng thái <InfoCircleOutlined />
+                  </Space>
+                </Tooltip>
+              }
+              rules={[{ required: true, message: "Vui lòng chọn trạng thái!" }]}
+            >
+              <Select placeholder="Chọn trạng thái">
+                <Option value="ACTIVE">
+                  <Tag color="green">ACTIVE</Tag>
+                </Option>
+                <Option value="INACTIVE">
+                  <Tag color="red">INACTIVE</Tag>
+                </Option>
+              </Select>
+            </Form.Item>
+          )}
+
+          {!editingVehicle && (
+            <Form.Item
+              name="registrationImage"
+              label="Ảnh giấy đăng ký xe"
+              rules={[
+                { required: true, message: "Vui lòng chọn ảnh giấy đăng ký!" },
+              ]}
+            >
+              <div>
+                <Upload
+                  beforeUpload={handleImageUpload}
+                  maxCount={1}
+                  accept="image/*"
+                  listType="picture-card"
+                  fileList={[]}
+                  onRemove={() => {
+                    setImageFile(null);
+                    setVehicleImage(null);
+                  }}
+                >
+                  {!vehicleImage && (
+                    <div>
+                      <UploadOutlined style={{ fontSize: 32 }} />
+                      <div style={{ marginTop: 8 }}>Chọn ảnh</div>
+                    </div>
+                  )}
+                </Upload>
+                {vehicleImage && (
+                  <div style={{ marginTop: 16 }}>
+                    <Image
+                      src={vehicleImage}
+                      alt="Registration Image Preview"
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: 300,
+                        borderRadius: 4,
+                      }}
+                      preview
+                    />
                   </div>
                 )}
-              </Upload>
-              {vehicleImage && (
-                <div style={{ marginTop: 16 }}>
-                  <Image
-                    src={vehicleImage}
-                    alt="Registration Image Preview"
-                    style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 4 }}
-                    preview
-                  />
-                </div>
-              )}
-            </div>
-          </Form.Item>
+              </div>
+            </Form.Item>
+          )}
 
           <Form.Item>
             <Space>
@@ -1189,21 +1287,32 @@ const VehiclePage = () => {
         }}
         width={500}
         footer={[
-          <Button key="cancel" onClick={() => {
-            setApproveModalVisible(false);
-            setSelectedVehicleForApprove(null);
-            setSelectedBatteryForApprove(null);
-            setAvailableBatteries([]);
-          }}>
+          <Button
+            key="cancel"
+            onClick={() => {
+              setApproveModalVisible(false);
+              setSelectedVehicleForApprove(null);
+              setSelectedBatteryForApprove(null);
+              setAvailableBatteries([]);
+            }}
+          >
             Hủy
           </Button>,
-          <Button 
-            key="submit" 
-            type="primary" 
+          <Button
+            key="submit"
+            type="primary"
             onClick={() => {
               if (selectedVehicleForApprove) {
-                console.log("Submit approve with vehicle:", selectedVehicleForApprove.id, "battery:", selectedBatteryForApprove);
-                handleApproveVehicle(selectedVehicleForApprove.id, selectedBatteryForApprove);
+                console.log(
+                  "Submit approve with vehicle:",
+                  selectedVehicleForApprove.id,
+                  "battery:",
+                  selectedBatteryForApprove
+                );
+                handleApproveVehicle(
+                  selectedVehicleForApprove.id,
+                  selectedBatteryForApprove
+                );
               } else {
                 message.error("Vui lòng chọn xe để duyệt!");
               }
@@ -1214,26 +1323,36 @@ const VehiclePage = () => {
         ]}
       >
         {selectedVehicleForApprove && (
-          <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '8px' }}>
-            <div style={{ marginBottom: '16px' }}>
-              <p style={{ marginBottom: '8px' }}>
-                <strong>Xe:</strong> {selectedVehicleForApprove.plateNumber} - {selectedVehicleForApprove.model}
+          <div
+            style={{
+              maxHeight: "60vh",
+              overflowY: "auto",
+              paddingRight: "8px",
+            }}
+          >
+            <div style={{ marginBottom: "16px" }}>
+              <p style={{ marginBottom: "8px" }}>
+                <strong>Xe:</strong> {selectedVehicleForApprove.plateNumber} -{" "}
+                {selectedVehicleForApprove.model}
               </p>
-              <p style={{ marginBottom: '8px' }}>
+              <p style={{ marginBottom: "8px" }}>
                 <strong>VIN:</strong> {selectedVehicleForApprove.vin}
               </p>
-              <p style={{ marginBottom: '0' }}>
-                <strong>Loại pin yêu cầu:</strong> <Tag color="blue">{selectedVehicleForApprove.batteryTypeName}</Tag>
+              <p style={{ marginBottom: "0" }}>
+                <strong>Loại pin yêu cầu:</strong>{" "}
+                <Tag color="blue">
+                  {selectedVehicleForApprove.batteryTypeName}
+                </Tag>
               </p>
             </div>
-            
-            <Divider style={{ margin: '16px 0' }} />
-            
+
+            <Divider style={{ margin: "16px 0" }} />
+
             <Form layout="vertical">
-              <Form.Item 
+              <Form.Item
                 label="Chọn pin từ kho (tùy chọn)"
                 required={false}
-                style={{ marginBottom: '0' }}
+                style={{ marginBottom: "0" }}
               >
                 <Spin spinning={batteriesLoading}>
                   <Select
@@ -1241,34 +1360,60 @@ const VehiclePage = () => {
                     value={selectedBatteryForApprove}
                     onChange={setSelectedBatteryForApprove}
                     allowClear
-                    style={{ width: '100%' }}
+                    style={{ width: "100%" }}
                     optionLabelProp="label"
                     notFoundContent={
                       !batteriesLoading && availableBatteries.length === 0 ? (
-                        <div style={{ padding: '10px', textAlign: 'center', color: '#999' }}>
-                          Không có pin AVAILABLE loại "{selectedVehicleForApprove.batteryTypeName}" trong kho
+                        <div
+                          style={{
+                            padding: "10px",
+                            textAlign: "center",
+                            color: "#999",
+                          }}
+                        >
+                          Không có pin AVAILABLE loại "
+                          {selectedVehicleForApprove.batteryTypeName}" trong kho
                         </div>
                       ) : null
                     }
                   >
                     {availableBatteries.map((battery) => (
-                      <Option 
-                        key={battery.id} 
+                      <Option
+                        key={battery.id}
                         value={battery.id}
                         label={
-                          <Tooltip title={`Mức sạc: ${battery.chargeLevel}% | Tình trạng: ${battery.stateOfHealth}%`}>
-                            <span>Pin #{battery.id} - {battery.model}</span>
+                          <Tooltip
+                            title={`Mức sạc: ${battery.chargeLevel}% | Tình trạng: ${battery.stateOfHealth}%`}
+                          >
+                            <span>
+                              Pin #{battery.id} - {battery.model}
+                            </span>
                           </Tooltip>
                         }
                       >
-                        <div style={{ padding: '8px 0' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                        <div style={{ padding: "8px 0" }}>
+                          <div
+                            style={{ fontWeight: "bold", marginBottom: "4px" }}
+                          >
                             Pin #{battery.id} - {battery.model}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            Mức sạc: <Tag color={battery.chargeLevel > 70 ? 'green' : 'orange'}>{battery.chargeLevel}%</Tag>
-                            {' '}
-                            Tình trạng: <Tag color={battery.stateOfHealth > 70 ? 'green' : 'orange'}>{battery.stateOfHealth}%</Tag>
+                          <div style={{ fontSize: "12px", color: "#666" }}>
+                            Mức sạc:{" "}
+                            <Tag
+                              color={
+                                battery.chargeLevel > 70 ? "green" : "orange"
+                              }
+                            >
+                              {battery.chargeLevel}%
+                            </Tag>{" "}
+                            Tình trạng:{" "}
+                            <Tag
+                              color={
+                                battery.stateOfHealth > 70 ? "green" : "orange"
+                              }
+                            >
+                              {battery.stateOfHealth}%
+                            </Tag>
                           </div>
                         </div>
                       </Option>

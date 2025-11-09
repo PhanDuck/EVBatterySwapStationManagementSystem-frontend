@@ -27,6 +27,7 @@ import {
   SwapOutlined,
   RollbackOutlined,
   SendOutlined,
+  InboxOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
@@ -43,7 +44,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
   // Ánh xạ Battery Type ID sang Tên
   const getBatteryTypeName = (id) => {
     const type = batteryTypes.find((t) => t.id === id);
-    return type ? type.name : "—";
+    return type ? type.name : "";
   };
 
   // 🔋 Hàm tải danh sách pin
@@ -338,7 +339,7 @@ const BatterySwapModal = ({
         dataIndex: "batteryTypeId",
         key: "batteryTypeId",
         width: 200,
-        render: (typeId) => batteryTypesMap[typeId] || "—",
+        render: (typeId) => batteryTypesMap[typeId] || "",
       },
       {
         title: "Tình trạng pin (%)",
@@ -346,13 +347,13 @@ const BatterySwapModal = ({
         key: "stateOfHealth",
         width: 120,
         render: (soh) => {
-          const sohValue = soh ? parseFloat(soh).toFixed(2) : "—";
-          return sohValue !== "—" ? (
+          const sohValue = soh ? parseFloat(soh).toFixed(2) : "";
+          return sohValue !== "" ? (
             <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
               {sohValue}
             </Tag>
           ) : (
-            "—"
+            ""
           );
         },
       },
@@ -377,7 +378,7 @@ const BatterySwapModal = ({
           dataIndex: "lastMaintenanceDate",
           key: "lastMaintenanceDate",
           width: 150,
-          render: (date) => (date ? new Date(date).toLocaleDateString() : "—"),
+          render: (date) => (date ? new Date(date).toLocaleDateString() : ""),
         },
       ];
     }
@@ -441,11 +442,7 @@ const BatterySwapModal = ({
           description={
             currentStep === SWAP_STEP.SELECT_FAULTY
               ? `Danh sách ${stationMaintenanceBatteries.length} pin cần bảo dưỡng/lỗi tại trạm. Vui lòng chọn pin để chuyển về kho.`
-              : `Danh sách ${
-                  warehouseAvailableBatteries.length
-                } pin AVAILABLE trong kho (Loại: ${
-                  batteryTypesMap[stationBatteryTypeId] || "—"
-                }).`
+              : `Danh sách ${warehouseAvailableBatteries.length} pin AVAILABLE trong kho (Loại: ${batteryTypesMap[stationBatteryTypeId]}).`
           }
           type={currentStep === SWAP_STEP.SELECT_FAULTY ? "warning" : "info"}
           showIcon
@@ -846,7 +843,7 @@ const StationPage = () => {
               title="Trạm hoạt động"
               value={activeStations}
               valueStyle={{ color: "#3f8600" }}
-              prefix={<ThunderboltOutlined />}
+              prefix={<EnvironmentOutlined />}
             />
           </Card>
         </Col>
@@ -856,6 +853,7 @@ const StationPage = () => {
               title="Tổng sức chứa"
               value={totalCapacity}
               suffix="pin"
+              prefix={<InboxOutlined />}
             />
           </Card>
         </Col>
@@ -865,6 +863,7 @@ const StationPage = () => {
               title="Tổng số pin tại trạm"
               value={totalCurrentBatteries}
               suffix="pin"
+              prefix={<ThunderboltOutlined />}
             />
           </Card>
         </Col>
@@ -1058,9 +1057,9 @@ const StationPage = () => {
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
-                {editingStation ? "Update" : "Create"}
+                {editingStation ? "Cập nhật" : "Tạo"}
               </Button>
-              <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
+              <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
             </Space>
           </Form.Item>
         </Form>

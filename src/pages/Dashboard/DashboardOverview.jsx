@@ -26,6 +26,13 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import {
+  DollarCircleOutlined,
+  SwapOutlined,
+  UserOutlined,
+  EnvironmentOutlined,
+  ThunderboltOutlined,
+} from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
 import handleApiError from "../../Utils/handleApiError";
@@ -66,7 +73,8 @@ export default function DashboardOverview() {
       if (err.code === "ECONNABORTED") {
         setError("API đang xử lý quá lâu. Vui lòng thử lại sau.");
       } else {
-        const errorMsg = err.response?.data?.message || err.message || "Lỗi không xác định";
+        const errorMsg =
+          err.response?.data?.message || err.message || "Lỗi không xác định";
         setError(errorMsg);
       }
       handleApiError(err, "tải dữ liệu dashboard");
@@ -154,7 +162,9 @@ export default function DashboardOverview() {
           <p style={{ marginTop: "20px", color: "#666" }}>
             Đang tải dữ liệu dashboard...
             <br />
-            <small style={{ color: "#999" }}>(Nếu quá lâu, vui lòng thử lại)</small>
+            <small style={{ color: "#999" }}>
+              (Nếu quá lâu, vui lòng thử lại)
+            </small>
           </p>
         </div>
       </div>
@@ -185,15 +195,19 @@ export default function DashboardOverview() {
   }));
 
   // Xử lý dữ liệu sử dụng trạm
-  const stationUtilizationData = (stations?.stationUtilizations || []).map((station) => ({
-    name: station.stationName.replace("Trạm Đổi Pin ", ""),
-    utilization: station.utilizationRate || 0,
-    used: station.usedSlots || 0,
-    total: station.totalSlots || 0,
-  }));
+  const stationUtilizationData = (stations?.stationUtilizations || []).map(
+    (station) => ({
+      name: station.stationName.replace("Trạm Đổi Pin ", ""),
+      utilization: station.utilizationRate || 0,
+      used: station.usedSlots || 0,
+      total: station.totalSlots || 0,
+    })
+  );
 
   // Xử lý dữ liệu phân bố pin
-  const batteryDistributionData = (batteries?.batteryTypeDistributions || []).map((item) => ({
+  const batteryDistributionData = (
+    batteries?.batteryTypeDistributions || []
+  ).map((item) => ({
     name: item.batteryType,
     value: item.count || 0,
   }));
@@ -249,46 +263,51 @@ export default function DashboardOverview() {
         <Col xs={24} sm={12} lg={4.8}>
           <Card hoverable>
             <Statistic
-              title="Tổng Doanh Thu"
+              title="Tổng doanh thu"
               value={overview?.totalRevenue || 0}
               formatter={(value) => formatCurrency(value)}
               valueStyle={{ color: "#cf1322", fontSize: "18px" }}
+              prefix={<DollarCircleOutlined style={{ color: "#cf1322" }} />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={4.8}>
           <Card hoverable>
             <Statistic
-              title="Tổng Giao Dịch"
+              title="Tổng đặt lịch"
               value={overview?.totalTransactions || 0}
               valueStyle={{ color: "#722ed1", fontSize: "18px" }}
+              prefix={<SwapOutlined style={{ color: "#722ed1" }} />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={4.8}>
           <Card hoverable>
             <Statistic
-              title="Tổng Người Dùng"
+              title="Tổng người dùng"
               value={users?.totalUsers || 0}
               valueStyle={{ color: "#3f8600", fontSize: "18px" }}
+              prefix={<UserOutlined style={{ color: "#3f8600" }} />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={4.8}>
           <Card hoverable>
             <Statistic
-              title="Tổng Trạm"
+              title="Tổng trạm"
               value={stations?.totalStations || 0}
               valueStyle={{ color: "#1890ff", fontSize: "18px" }}
+              prefix={<EnvironmentOutlined style={{ color: "#1890ff" }} />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={4.8}>
           <Card hoverable>
             <Statistic
-              title="Tổng Pin"
+              title="Tổng pin"
               value={batteries?.totalBatteries || 0}
               valueStyle={{ color: "#faad14", fontSize: "18px" }}
+              prefix={<ThunderboltOutlined style={{ color: "#faad14" }} />}
             />
           </Card>
         </Col>
@@ -311,7 +330,7 @@ export default function DashboardOverview() {
                         if (name === "revenue") {
                           return [formatCurrency(value), "Doanh Thu"];
                         }
-                        return [value, "Giao Dịch"];
+                        return [value, "Đặt lịch"];
                       }}
                     />
                     <Legend />
@@ -359,7 +378,11 @@ export default function DashboardOverview() {
                       formatter={(value) => `${value}%`}
                       labelFormatter={(label) => `Trạm: ${label}`}
                     />
-                    <Bar dataKey="utilization" fill="#8884d8" name="Tỷ Lệ (%)" />
+                    <Bar
+                      dataKey="utilization"
+                      fill="#8884d8"
+                      name="Tỷ Lệ (%)"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -388,7 +411,10 @@ export default function DashboardOverview() {
                       {batteryDistributionData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={BATTERY_COLORS[entry.name] || COLORS[index % COLORS.length]}
+                          fill={
+                            BATTERY_COLORS[entry.name] ||
+                            COLORS[index % COLORS.length]
+                          }
                         />
                       ))}
                     </Pie>
@@ -406,7 +432,7 @@ export default function DashboardOverview() {
       {/* Recent Transactions Table */}
       <Row gutter={[16, 16]}>
         <Col xs={24}>
-          <Card title="Giao Dịch Gần Đây" hoverable>
+          <Card title="Đặt lịch Gần Đây" hoverable>
             {recentTransactions && recentTransactions.length > 0 ? (
               <Table
                 columns={transactionColumns}
@@ -418,7 +444,7 @@ export default function DashboardOverview() {
                 scroll={{ x: 800 }}
               />
             ) : (
-              <Empty description="Không có giao dịch" />
+              <Empty description="Không có đặt lịch" />
             )}
           </Card>
         </Col>

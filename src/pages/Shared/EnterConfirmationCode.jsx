@@ -96,7 +96,7 @@ export default function SwapAnimation() {
               <Text strong>ID Pin:</Text>
             </Col>
             <Col>
-              <Text>{batteryData.batteryId || "—"}</Text>
+              <Text>{batteryData.batteryId}</Text>
             </Col>
           </Row>
           <Divider style={{ margin: "8px 0" }} />
@@ -107,7 +107,7 @@ export default function SwapAnimation() {
               <Text strong>Loại Pin:</Text>
             </Col>
             <Col>
-              <Text>{batteryData.model || "—"}</Text>
+              <Text>{batteryData.model}</Text>
             </Col>
           </Row>
           <Divider style={{ margin: "8px 0" }} />

@@ -231,14 +231,14 @@ const ServicePackagesPage = () => {
       dataIndex: "startDate",
       key: "startDate",
       render: (date) =>
-        date ? new Date(date).toLocaleDateString("vi-VN") : "—",
+        date ? new Date(date).toLocaleDateString("vi-VN") : "",
     },
     {
       title: "Ngày hết hạn",
       dataIndex: "endDate",
       key: "endDate",
       render: (date) =>
-        date ? new Date(date).toLocaleDateString("vi-VN") : "—",
+        date ? new Date(date).toLocaleDateString("vi-VN") : "",
     },
     {
       title: "Số lần đổi còn lại",
