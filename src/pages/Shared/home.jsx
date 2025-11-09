@@ -29,7 +29,7 @@ function Home() {
       <section
         style={{
           padding: "0",
-          background: "#0f172a",
+          background: "#020212",
           overflow: "hidden",
         }}
       >
@@ -54,9 +54,9 @@ function Home() {
       {/* Hero */}
       <section
         style={{
-          background: "linear-gradient(135deg, #0A2540 0%, #1B4B6B 100%)",
-          color: "white",
-          padding: "72px 0",
+          padding: "0",
+          background: "radial-gradient(ellipse at center, #0a0e1a 0%, #1a3a4a 50%, #0f4a5a 100%)",
+          overflow: "hidden",
         }}
       >
         <div
@@ -245,6 +245,8 @@ function Home() {
             zIndex: 2,
           }}
         >
+
+
           <Row gutter={[24, 40]} justify="center">
             {/* ITEM 1: TRẠM */}
             <Col xs={12} md={6} style={{ textAlign: "center" }}>
