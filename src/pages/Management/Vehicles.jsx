@@ -378,24 +378,22 @@ const VehiclePage = () => {
     fetchBatteryTypes();
   }, []);
 
-  // 🔋 Lấy danh sách pin AVAILABLE trong kho theo batteryTypeId
+  // 🔋 Lấy danh sách pin AVAILABLE trong kho theo batteryTypeId từ station-inventory
   const fetchAvailableBatteries = async (batteryTypeId) => {
     setBatteriesLoading(true);
     try {
-      const res = await api.get("/battery");
-      console.log("All batteries response:", res.data);
+      const res = await api.get(`/station-inventory/available-by-type/${batteryTypeId}`);
+      console.log("Available batteries response:", res.data);
       
-      let allBatteries = [];
+      let availableList = [];
       if (Array.isArray(res.data)) {
-        allBatteries = res.data;
+        availableList = res.data;
+      } else if (res.data?.batteries && Array.isArray(res.data.batteries)) {
+        availableList = res.data.batteries;
       } else if (res.data?.data && Array.isArray(res.data.data)) {
-        allBatteries = res.data.data;
+        availableList = res.data.data;
       }
       
-      // Lọc pin AVAILABLE và có batteryTypeId trùng với xe
-      const availableList = allBatteries.filter(
-        b => b.status === "AVAILABLE" && b.batteryTypeId === batteryTypeId
-      );
       console.log("Available batteries for type", batteryTypeId, ":", availableList);
       console.log("Total available batteries:", availableList.length);
       setAvailableBatteries(availableList);
@@ -683,7 +681,10 @@ const VehiclePage = () => {
   ];
 
   // 🟢 CREATE / UPDATE
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async (values) => {
+    setIsSubmitting(true);
     const selectedBatteryType = batteryTypes.find(t => t.id === values.batteryTypeId);
     let payload = {
       vin: values.vin,
@@ -736,6 +737,7 @@ const VehiclePage = () => {
       // Logic CREATE - Bắt buộc có ảnh
       if (!imageFile || !(imageFile instanceof File)) {
         message.error("Vui lòng chọn ảnh giấy đăng ký!");
+        setIsSubmitting(false);
         return;
       }
 
@@ -792,6 +794,8 @@ const VehiclePage = () => {
   } catch (error) {
     console.error("Error details:", error.response?.data || error.message);
     handleApiError(error, "Lưu thông tin phương tiện");
+  } finally {
+    setIsSubmitting(false);
   }
 };
 
@@ -872,7 +876,10 @@ const VehiclePage = () => {
   };
 
   // ✅ Duyệt xe
+  const [isApprovingVehicle, setIsApprovingVehicle] = useState(false);
+
   const handleApproveVehicle = async (vehicleId, batteryId) => {
+    setIsApprovingVehicle(true);
     try {
       console.log("Approving vehicle:", vehicleId, "with battery:", batteryId);
       
@@ -923,6 +930,8 @@ const VehiclePage = () => {
         error.message || 
         "Lỗi khi duyệt xe";
       message.error(errorMessage);
+    } finally {
+      setIsApprovingVehicle(false);
     }
   };
 
@@ -1168,10 +1177,10 @@ const VehiclePage = () => {
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit">
-                {editingVehicle ? "Cập nhật" : "Đăng ký"}
+              <Button type="primary" htmlType="submit" loading={isSubmitting}>
+                {isSubmitting ? (editingVehicle ? "Đang cập nhật..." : "Đang đăng ký...") : (editingVehicle ? "Cập nhật" : "Đăng ký")}
               </Button>
-              <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
+              <Button onClick={() => setIsModalVisible(false)} disabled={isSubmitting}>Hủy</Button>
             </Space>
           </Form.Item>
         </Form>
@@ -1200,6 +1209,7 @@ const VehiclePage = () => {
           <Button 
             key="submit" 
             type="primary" 
+            loading={isApprovingVehicle}
             onClick={() => {
               if (selectedVehicleForApprove) {
                 console.log("Submit approve with vehicle:", selectedVehicleForApprove.id, "battery:", selectedBatteryForApprove);
@@ -1209,7 +1219,7 @@ const VehiclePage = () => {
               }
             }}
           >
-            Duyệt xe
+            {isApprovingVehicle ? "Đang duyệt..." : "Duyệt xe"}
           </Button>,
         ]}
       >
