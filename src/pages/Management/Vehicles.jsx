@@ -903,10 +903,10 @@ const VehiclePage = () => {
       return Upload.LIST_IGNORE;
     }
 
-    // Kiểm tra file size (max 5MB)
-    const isLt5M = file.size / 1024 / 1024 < 5;
-    if (!isLt5M) {
-      message.error("Ảnh phải nhỏ hơn 5MB!");
+    // Kiểm tra file size (max 10MB)
+    const isLt10M = file.size / 1024 / 1024 < 10;
+    if (!isLt10M) {
+      showToast("error", "Ảnh phải nhỏ hơn 10MB!");
       return Upload.LIST_IGNORE;
     }
 
@@ -918,7 +918,7 @@ const VehiclePage = () => {
     };
     reader.onerror = (error) => {
       console.error("Error reading file:", error);
-      message.error("Lỗi đọc file ảnh!");
+      showToast("error", "Lỗi đọc file ảnh!");
     };
     reader.readAsDataURL(file);
 
@@ -950,7 +950,7 @@ const VehiclePage = () => {
       console.log("Approve response data:", res.data);
       console.log("Response status:", res.status);
 
-      message.success("Đã duyệt xe thành công!");
+      showToast("success", "Đã duyệt xe thành công!");
 
       // Cập nhật danh sách xe chờ duyệt
       setPendingVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
@@ -983,7 +983,7 @@ const VehiclePage = () => {
         error.response?.data?.error ||
         error.message ||
         "Lỗi khi duyệt xe";
-      message.error(errorMessage);
+      showToast("error", errorMessage);
     } finally {
       setIsApprovingVehicle(false);
     }
@@ -996,7 +996,7 @@ const VehiclePage = () => {
       const res = await api.put(`/vehicle/${vehicleId}/reject`, { reason });
       console.log("Reject response:", res.data);
 
-      message.success("Đã từ chối xe!");
+      showToast("success", "Đã từ chối xe!");
 
       // Cập nhật danh sách xe chờ duyệt
       setPendingVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
@@ -1008,7 +1008,7 @@ const VehiclePage = () => {
         "Error rejecting vehicle:",
         error.response?.data || error.message
       );
-      message.error(error.response?.data?.message || "Lỗi khi từ chối xe");
+      showToast("error", error.response?.data?.message || "Lỗi khi từ chối xe");
     }
   };
 
