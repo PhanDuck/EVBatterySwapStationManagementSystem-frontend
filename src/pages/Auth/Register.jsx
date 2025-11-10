@@ -11,6 +11,7 @@ import {
   FaEye,
   FaEyeSlash,
 } from "react-icons/fa";
+import { showToast } from "../../Utils/toastHandler";
 
 const RegisterPage = () => {
   // ... (Phần state và validation không thay đổi)
@@ -98,21 +99,21 @@ const RegisterPage = () => {
 
       // 2. Gọi API POST đến endpoint đăng ký
       // Giả sử API endpoint là /auth/register
-      const res = await api.post("/register", payload);
+      await api.post("/register", payload);
 
       // 3. Xử lý khi đăng ký thành công (HTTP 200/201)
-      message.success("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
+      showToast("success", "Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
 
       // Chuyển hướng người dùng sau 2 giây
       setTimeout(() => navigate("/login"), 2000);
     } catch (error) {
       // 4. Xử lý lỗi (Ví dụ: 400 Bad Request, 500 Internal Server Error)
-      console.error("Registration Error:", error);
+
       const msg =
-        error?.response?.data?.message || // Lấy thông báo lỗi từ body response
+        error.response?.data|| 
         "Đăng ký thất bại. Vui lòng thử lại.";
 
-      message.error(msg); // Hiển thị thông báo lỗi bằng Antd
+      showToast("error", msg); // Hiển thị thông báo lỗi bằng Antd
       setErrors({ submit: msg }); // Hiển thị lỗi chung bên dưới form (nếu cần)
     } finally {
       // 5. Kết thúc loading, bất kể thành công hay thất bại

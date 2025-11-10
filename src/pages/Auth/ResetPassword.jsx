@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, Form, Input, Button, message } from "antd";
 import api from "../../config/axios";
+import { showToast } from "../../Utils/toastHandler";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -9,20 +10,25 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values) => {
-    setLoading(true);
-    try {
-      await api.post(
-        "/update-password",
-        { password: values.password },
-        { headers: { Authorization: `Bearer ${token}` } } // hoặc body: {token, password}
-      );
-      message.success("Cập nhật mật khẩu thành công!");
-    } catch (err) {
-      message.error("Token không hợp lệ hoặc đã hết hạn!");
-    } finally {
-      setLoading(false);
-    }
-  };
+
+  setLoading(true);
+  try {
+    await api.post(
+      "/update-password",
+      { password: values.password },
+      { headers: { Authorization: `Bearer ${token}` } } // hoặc body: {token, password}
+    );
+    showToast("success", "Cập nhật mật khẩu thành công!");
+    
+  } catch (error) {
+     const message =
+          error.response?.data || "Đăng nhập thất bại, vui lòng thử lại!";
+    showToast("error", message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">

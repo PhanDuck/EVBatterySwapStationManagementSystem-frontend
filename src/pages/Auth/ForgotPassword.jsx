@@ -1,29 +1,25 @@
 import React, { useState } from "react";
-import { Card, Form, Input, Button, message } from "antd";
+import { Card, Form, Input, Button,} from "antd";
 import api from "../../config/axios";
 import BackgroundImage from "../../assets/img/backgroundaboutus.png";
+import { showToast } from "../../Utils/toastHandler";
 
 const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (values) => {
-    try {
-      setLoading(true);
 
-      const res = await api.post(`/reset-password?email=${values.email}`);
-      message.success(
-        res.data?.message || "Hệ thống đã gửi email đặt lại mật khẩu!"
-      );
-    } catch (error) {
-      console.error("Reset password error:", error);
-      message.error(
-        error.response?.data?.message || "Đã xảy ra lỗi, vui lòng thử lại!"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  try {
+    setLoading(true);
+    await api.post(`/reset-password?email=${values.email}`);
+    showToast("success", "Vui lòng kiểm tra email của bạn để đặt lại mật khẩu.");
+  } catch (error) {
+    
+    showToast("error", error.response.data || "Đã xảy ra lỗi, vui lòng thử lại!");
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div
       style={{

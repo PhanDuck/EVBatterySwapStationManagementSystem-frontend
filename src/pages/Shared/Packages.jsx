@@ -3,6 +3,7 @@ import api from "../../config/axios";
 import { getToken } from "../../config/auth";
 import { Await, useNavigate } from "react-router-dom";
 import { message } from "antd";
+import { showToast } from "../../Utils/toastHandler";
 
 function PackagesPage() {
   const [packages, setPackages] = useState([]);
@@ -24,11 +25,11 @@ function PackagesPage() {
       if (res.data?.paymentUrl) {
         window.location.href = res.data.paymentUrl; // Chuyển tới MoMo
       } else {
-        message.error("Không tạo được liên kết thanh toán!");
+        showToast("error", "Không tạo được liên kết thanh toán!");
       }
     } catch (err) {
       console.error("Error:", err);
-      message.error("Lỗi khi tạo thanh toán MoMo!");
+      showToast("error", "Lỗi khi tạo thanh toán MoMo!");
     }
   };
 

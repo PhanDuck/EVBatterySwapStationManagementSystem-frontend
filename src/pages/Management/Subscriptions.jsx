@@ -17,6 +17,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
+import { showToast } from "../../Utils/toastHandler";
 
 // Local helper that wraps axios and returns normalized result
 async function callApi({
@@ -148,11 +149,11 @@ export default function SubscriptionsPage() {
   function handleDelete(id) {
     Modal.confirm({
       title: "Delete package",
-      content: "Are you sure you want to remove this package?",
+      content: "Bạn có chắc chắn muốn xóa gói dịch vụ này không?",
       okType: "danger",
       onOk() {
         setPackages((prev) => prev.filter((p) => p.id !== id));
-        message.success("Package removed");
+        showToast("success", "Đã xóa gói dịch vụ thành công");
       },
     });
   }
@@ -162,14 +163,14 @@ export default function SubscriptionsPage() {
       setPackages((prev) =>
         prev.map((p) => (p.id === editing.id ? { ...p, ...values } : p))
       );
-      message.success("Package updated");
+      showToast("success", "Đã cập nhật gói dịch vụ thành công");
     } else {
       const newPkg = {
         ...values,
         id: `PKG-${String(Math.floor(Math.random() * 900) + 100)}`,
       };
       setPackages((prev) => [newPkg, ...prev]);
-      message.success("Package created");
+      showToast("success", "Đã tạo gói dịch vụ thành công");
     }
     setIsModalVisible(false);
     form.resetFields();
@@ -202,11 +203,11 @@ export default function SubscriptionsPage() {
   return (
     <div style={{ padding: 24 }}>
       <Card
-        title="Service Packages"
+        title="Gói Dịch Vụ"
         extra={
           <Space>
             <Input.Search
-              placeholder="Search by id or name"
+              placeholder="Tìm kiếm gói dịch vụ"
               onSearch={(v) => setSearchText(v)}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 220 }}
@@ -223,7 +224,7 @@ export default function SubscriptionsPage() {
             </Select>
             <DatePicker.RangePicker onChange={(vals) => setDateRange(vals)} />
             <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>
-              Add Package
+              Thêm Gói Dịch Vụ
             </Button>
           </Space>
         }
@@ -237,7 +238,7 @@ export default function SubscriptionsPage() {
       </Card>
 
       <Modal
-        title={editing ? "Edit Package" : "New Package"}
+        title={editing ? "Chỉnh sửa Gói Dịch Vụ" : "Gói Dịch Vụ Mới"}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
@@ -248,35 +249,35 @@ export default function SubscriptionsPage() {
           </Form.Item>
           <Form.Item
             name="price"
-            label="Price ($)"
+            label="Giá ($)"
             rules={[{ required: true }]}
           >
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item
             name="duration"
-            label="Duration (days)"
+            label="Thời gian (ngày)"
             rules={[{ required: true }]}
           >
             <InputNumber min={1} style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item
             name="maxSwaps"
-            label="Max Swaps"
+            label="Số lần đổi tối đa"
             rules={[{ required: true }]}
           >
             <InputNumber min={1} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="popularity" label="Popularity score">
+          <Form.Item name="popularity" label="Điểm phổ biến">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
 
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
-                {editing ? "Update" : "Add"}
+                {editing ? "Cập nhật" : "Thêm mới"}
               </Button>
-              <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
+              <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
             </Space>
           </Form.Item>
         </Form>

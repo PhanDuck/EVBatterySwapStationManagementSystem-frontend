@@ -21,6 +21,7 @@ import {
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
 import { getCurrentUser } from "../../config/auth";
+import { showToast } from "../../Utils/toastHandler";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -83,7 +84,7 @@ export default function SupportPage() {
 
       setData(tickets);
     } catch (error) {
-      handleApiError(error, "danh sách hỗ trợ");
+      showToast("error", error.response?.data || "Lỗi khi tải danh sách hỗ trợ");
     } finally {
       setLoading(false);
     }
@@ -98,7 +99,7 @@ export default function SupportPage() {
       const res = await api.get("/station");
       setStationList(res.data || []);
     } catch (error) {
-      handleApiError(error, "danh sách trạm");
+      showToast("error", error.response?.data || "Lỗi khi tải danh sách trạm");
     }
   };
 
@@ -118,12 +119,12 @@ export default function SupportPage() {
       };
 
       await api.post("/support-ticket", payload);
-      message.success("🎫 Ticket created successfully!");
+      showToast("success", "Tạo vé hỗ trợ thành công!");
       setIsCreateModalVisible(false);
       form.resetFields();
       fetchData(); // ✅ load lại danh sách
     } catch (error) {
-      handleApiError(error, "tạo vé hỗ trợ");
+      showToast("error", error.response?.data || "Lỗi khi tạo vé hỗ trợ");
     } finally {
       setLoadingCreate(false);
     }
@@ -184,7 +185,7 @@ export default function SupportPage() {
         setResponses(res.data || []);
       }
     } catch (error) {
-      handleApiError(error, "lịch sử phản hồi");
+      showToast("error", error.response?.data || "Lỗi khi tải lịch sử phản hồi");
       setResponses([]);
     }
   };
@@ -196,7 +197,7 @@ export default function SupportPage() {
         ticketId: viewingRecord.id,
         message: values.message,
       });
-      message.success("✅ Reply sent!");
+      showToast("success", "Gửi phản hồi thành công!");
       fetchResponses(viewingRecord.id); // refresh list
       form.resetFields(["message"]); // Clear the reply box
       // Optional: Update status to IN_PROGRESS when replying
@@ -204,7 +205,7 @@ export default function SupportPage() {
         await handleStatusChange(viewingRecord.id, "IN_PROGRESS");
       }
     } catch (error) {
-      handleApiError(error, "gửi phản hồi");
+      showToast("error", error.response?.data || "Lỗi khi gửi phản hồi");
     } finally {
       setLoadingReply(false);
     }

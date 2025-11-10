@@ -17,6 +17,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
+import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -53,7 +54,7 @@ export default function BatteryManagement() {
       } else if (role === "STAFF" && stationId) {
         batteryRes = await api.get(`/battery?stationId=${stationId}`);
       } else {
-        message.warning("Bạn không có quyền xem trang này!");
+        showToast("warning", "Bạn không có quyền xem trang này!");
         return;
       }
 
@@ -70,7 +71,8 @@ export default function BatteryManagement() {
       }));
       setBatteries(mapped.sort((a, b) => b.id - a.id)); // Sắp xếp theo ID giảm dần
     } catch (error) {
-      handleApiError(error, "tải dữ liệu");
+      const message = error.response?.data || "Tải dữ liệu thất bại, vui lòng thử lại!";
+      showToast("error", message);
     } finally {
       setLoading(false);
       setLoadingTypes(false);
@@ -92,18 +94,27 @@ export default function BatteryManagement() {
 
     try {
       if (editingBattery) {
-        await api.put(`/battery/${editingBattery.id}`, data);
-        message.success("Cập nhật pin thành công!");
+
+        res = await api.put(`/battery/${editingBattery.id}`, data);
+        showToast("success", "Cập nhật pin thành công!");
+        fetchAllData();
+        // setBatteries((prev) =>
+        //   prev.map((b) => (b.id === editingBattery.id ? { ...b, ...data } : b))
+        // );
       } else {
-        await api.post("/battery", data);
-        message.success("Thêm pin mới thành công!");
+        res = await api.post("/battery", data);
+        showToast("success", "Thêm pin mới thành công!");
+        fetchAllData();
+        // setBatteries((prev) => [...prev, res.data]);
+
       }
       fetchAllData();
 
       setIsModalVisible(false);
       form.resetFields();
-    } catch (err) {
-      handleApiError(err, "lưu thông tin pin");
+    } catch (error) {
+      const message = error.response?.data || "Lưu thông tin pin thất bại, vui lòng thử lại!";
+      showToast("error", message);
     }
   };
 
@@ -117,9 +128,10 @@ export default function BatteryManagement() {
         try {
           await api.delete(`/battery/${record.id}`);
           setBatteries((prev) => prev.filter((b) => b.id !== record.id));
-          message.success("Đã xóa thành công!");
+          showToast("success", "Đã xóa thành công!");
         } catch (error) {
-          handleApiError(error, "xóa pin");
+          const message = error.response?.data || "Xóa pin thất bại, vui lòng thử lại!";
+          showToast("error", message);
         }
       },
     });
@@ -153,21 +165,27 @@ export default function BatteryManagement() {
       if (editingType) {
         // Cập nhật (PUT /api/battery-type/{id})
         await api.put(`/battery-type/${editingType.id}`, data);
-        message.success("Cập nhật loại pin thành công!");
+
+        showToast("success", "Cập nhật loại pin thành công!");
+        // Cập nhật lại list loại pin
+
         setBatteryTypes((prev) =>
           prev.map((t) => (t.id === editingType.id ? { ...t, ...data } : t))
         );
       } else {
         const res = await api.post("/battery-type", data);
-        message.success("Thêm loại pin mới thành công!");
+
+        showToast("success", "Thêm loại pin mới thành công!");
+        // Thêm bản ghi mới vào đầu danh sách
         setBatteryTypes((prev) => [res.data, ...prev]);
       }
       // Sau khi thêm/sửa, refresh cả bảng Pin thường để cập nhật tên Loại Pin nếu cần
       fetchAllData();
       setIsTypeModalVisible(false);
       typeForm.resetFields();
-    } catch (err) {
-      handleApiError(err, "lưu thông tin loại pin");
+    } catch (error) {
+      const message = error.response?.data || "Lưu thông tin loại pin thất bại, vui lòng thử lại!";
+      showToast("error", message);
     }
   };
 

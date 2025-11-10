@@ -26,6 +26,7 @@ import {
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
+import { showToast } from "../../Utils/toastHandler";
 
 // === KHAI BÁO CÁC API ===
 const API_ASSIGNMENTS = "/staff-station-assignment";
@@ -57,12 +58,12 @@ const AssignStaffModal = ({
     try {
       // API: POST /api/staff-station-assignment
       await api.post(API_ASSIGNMENTS, values);
-      message.success(
-        `✅ Phân quyền nhân viên ${values.staffId} quản lý trạm ${values.stationId} thành công!`
-      );
+      showToast("success", `Phân quyền nhân viên ${values.staffId} quản lý trạm ${values.stationId} thành công!`);
       onSuccess();
     } catch (error) {
-      handleApiError(error, "Phân quyền nhân viên");
+      const message =
+        error.response?.data || "Phân quyền nhân viên thất bại, vui lòng thử lại!";
+      showToast("error", message);
     }
   };
 
@@ -178,7 +179,8 @@ export default function AssignmentPage() {
       const data = Array.isArray(res.data) ? res.data : [];
       setAssignments(data);
     } catch (error) {
-      handleApiError(error, "Danh sách phân quyền nhân viên");
+      const message = error.response?.data || "Lấy danh sách phân quyền nhân viên thất bại, vui lòng thử lại!";
+      showToast("error", message);
       setAssignments([]);
     } finally {
       setLoading(false);
@@ -195,7 +197,8 @@ export default function AssignmentPage() {
       const staffsFetched = Array.isArray(staffRes.data) ? staffRes.data : [];
       setAllStaffs(staffsFetched);
     } catch (error) {
-      handleApiError(error, "Danh sách nhân viên");
+      const message = error.response?.data || "Lấy danh sách nhân viên thất bại, vui lòng thử lại!";
+      showToast("error", message);        
     }
 
     // Tải Trạm
@@ -208,7 +211,8 @@ export default function AssignmentPage() {
         : [];
       setAllStations(stationsFetched);
     } catch (error) {
-      handleApiError(error, "Danh sách trạm");
+      const message = error.response?.data || "Lấy danh sách trạm thất bại, vui lòng thử lại!";
+      showToast("error", message);
     }
   }, []);
 
@@ -222,12 +226,12 @@ export default function AssignmentPage() {
         `${API_ASSIGNMENTS}/staff/${staffId}/station/${stationId}`
       );
 
-      message.success(
-        `✅ Xóa phân quyền Nhân viên ${staffId} khỏi Trạm ${stationId} thành công.`
-      );
+
+      showToast("success", `Xóa phân quyền Nhân viên ${staffId} khỏi Trạm ${stationId} thành công.`);
       await fetchAllAssignments(); // Tải lại danh sách sau khi xóa
     } catch (error) {
-      handleApiError(error, "Xóa phân quyền nhân viên");
+      const message = error.response?.data || "Xóa phân quyền nhân viên thất bại, vui lòng thử lại!";
+      showToast("error", message);
     }
     setLoading(false);
   };

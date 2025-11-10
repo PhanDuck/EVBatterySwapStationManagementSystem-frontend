@@ -26,6 +26,7 @@ import api from "../../config/axios";
 import dayjs from "dayjs";
 import handleApiError from "../../Utils/handleApiError";
 import { getCurrentUser } from "../../config/auth";
+import { showToast } from "../../Utils/toastHandler";
 const { Option } = Select;
 const { Title, Text } = Typography;
 
@@ -95,7 +96,7 @@ export default function DriverSubscriptionManagement() {
         setDrivers(Array.isArray(driverRes?.data) ? driverRes.data : []);
       }
     } catch (error) {
-      handleApiError(error, "tải dữ liệu");
+      showToast("error", error.response?.data || "Tải dữ liệu thất bại, vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
@@ -149,7 +150,7 @@ export default function DriverSubscriptionManagement() {
       });
       setCalculation(res.data);
     } catch (error) {
-      handleApiError(error, "tính toán chi phí nâng cấp");
+      showToast("error", error.response?.data || "Tính toán chi phí nâng cấp thất bại, vui lòng thử lại!");
     } finally {
       setIsCalculating(false);
     }
@@ -157,11 +158,11 @@ export default function DriverSubscriptionManagement() {
 
   const handleConfirmUpgrade = async () => {
     if (calculation && !calculation.canUpgrade) {
-      message.error("Không thể nâng cấp. Vui lòng kiểm tra lại các điều kiện.");
+      showToast("error", "Không thể nâng cấp. Vui lòng kiểm tra lại các điều kiện.");
       return;
     }
     if (!targetPackageId) {
-      message.warning("Vui lòng chọn một gói để nâng cấp.");
+      showToast("warning", "Vui lòng chọn một gói để nâng cấp.");
       return;
     }
     setSubmitting(true);
@@ -176,12 +177,12 @@ export default function DriverSubscriptionManagement() {
       if (res.data?.paymentUrl) {
         window.location.href = res.data.paymentUrl;
       } else {
-        message.success("Yêu cầu nâng cấp đã được xử lý!");
+        showToast("success", "Yêu cầu nâng cấp đã được xử lý!");
         setIsUpgradeModalVisible(false);
         fetchData();
       }
     } catch (error) {
-      handleApiError(error, "bắt đầu nâng cấp");
+      showToast("error", error.response?.data || "Bắt đầu nâng cấp thất bại, vui lòng thử lại!");
     } finally {
       setSubmitting(false);
     }
@@ -204,7 +205,7 @@ export default function DriverSubscriptionManagement() {
       });
       setRenewalCalculation(res.data);
     } catch (error) {
-      handleApiError(error, "tính toán chi phí gia hạn");
+      showToast("error", error.response?.data || "Tính toán chi phí gia hạn thất bại, vui lòng thử lại!");
     } finally {
       setIsCalculatingRenewal(false);
     }
@@ -212,7 +213,7 @@ export default function DriverSubscriptionManagement() {
 
   const handleConfirmRenewal = async () => {
     if (!targetPackageId) {
-      message.warning("Vui lòng chọn một gói để gia hạn.");
+      showToast("warning", "Vui lòng chọn một gói để gia hạn.");
       return;
     }
     setSubmitting(true);
@@ -228,12 +229,12 @@ export default function DriverSubscriptionManagement() {
       if (res.data && res.data.payUrl) {
         window.location.href = res.data.payUrl;
       } else {
-        message.success("Yêu cầu gia hạn đã được xử lý thành công!");
+        showToast("success", "Yêu cầu gia hạn đã được xử lý thành công!");
         setIsRenewalModalVisible(false);
         fetchData();
       }
     } catch (error) {
-      handleApiError(error, "bắt đầu gia hạn");
+      showToast("error", error.response?.data || "Bắt đầu gia hạn thất bại, vui lòng thử lại!");
     } finally {
       setSubmitting(false);
     }

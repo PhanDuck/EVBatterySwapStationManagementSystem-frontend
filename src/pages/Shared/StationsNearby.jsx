@@ -82,7 +82,6 @@ const StationsNearby = () => {
 
   const markerRefs = useRef({});
   const navigate = useNavigate();
-  const currentUser = getCurrentUser();
 
   // 🆕 Fetch vehicles của driver
   useEffect(() => {

@@ -15,6 +15,8 @@ import {
 import { EditOutlined, DeleteOutlined, UserOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
+import { showToast } from "../../Utils/toastHandler";
+import { s } from "framer-motion/client";
 
 const { Option } = Select;
 
@@ -41,7 +43,7 @@ export default function AccountPage() {
           .sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
         setAccounts(list);
       } catch (error) {
-        handleApiError(error, `Lỗi tải danh sách người dùng:`);
+        showToast("error", error.response?.data || "Lỗi tải danh sách người dùng");
       } finally {
         setLoading(false);
       }
@@ -67,9 +69,9 @@ export default function AccountPage() {
           setDeletingId(id);
           await api.delete(`/admin/user/${id}`);
           setAccounts((prev) => prev.filter((u) => (u.id ?? u._id) !== id));
-          message.success("Đã xóa thành công!");
+          showToast("success", "Đã xóa thành công!");
         } catch (error) {
-          handleApiError(error, "xóa người dùng");
+          showToast("error", error.response?.data || "Lỗi khi xóa người dùng");
         } finally {
           setDeletingId(null);
         }
@@ -103,13 +105,13 @@ export default function AccountPage() {
         );
       });
       if (dup) {
-        message.error("Email hoặc số điện thoại đã tồn tại.");
+        showToast("error", "Email hoặc số điện thoại đã tồn tại.");
         return;
       }
 
       // creation is disabled — only allow updates
       if (!editingAccount) {
-        message.error("Tạo người dùng mới đã bị vô hiệu hóa.");
+        showToast("error", "Tạo người dùng mới đã bị vô hiệu hóa.");
         return;
       }
 
@@ -120,7 +122,7 @@ export default function AccountPage() {
       setAccounts((prev) =>
         prev.map((a) => ((a.id ?? a._id) === id ? updated : a))
       );
-      message.success("Cập nhật thành công!");
+      showToast("success", "Cập nhật thành công!");
       setIsModalVisible(false);
 
       form.resetFields();
@@ -142,9 +144,9 @@ export default function AccountPage() {
         } catch {
           /* ignore storage errors */
         }
-        message.error("Unauthorized — vui lòng đăng nhập lại");
+        showToast("error", "Unauthorized — vui lòng đăng nhập lại");
       } else {
-        message.error(
+        showToast(
           error.response?.data?.message || "Không thể cập nhật người dùng"
         );
       }

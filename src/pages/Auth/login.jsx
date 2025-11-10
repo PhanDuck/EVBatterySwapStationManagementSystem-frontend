@@ -14,6 +14,7 @@ import {
 
 import bgImage from "../../assets/img/backgroundaboutus.png";
 import { Link } from "react-router-dom";
+import { showToast } from "../../Utils/toastHandler";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -91,7 +92,9 @@ const LoginPage = () => {
               user = me.data;
             }
           } catch {
-            console.warn("⚠️ Không lấy được thông tin user hiện tại");
+
+              showToast("Warning", "Không lấy được thông tin user hiện tại");
+
           }
         }
 
@@ -108,7 +111,8 @@ const LoginPage = () => {
         else navigate("/");
       } catch (error) {
         const message =
-          error?.response?.data?.message || "Login failed. Please try again.";
+          error.response?.data || "Đăng nhập thất bại, vui lòng thử lại!";
+        showToast("error", message);
         setErrors({ submit: message });
       } finally {
         setIsLoading(false);

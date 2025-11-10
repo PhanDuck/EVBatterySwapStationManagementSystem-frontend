@@ -22,6 +22,7 @@ import {
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
 import { getCurrentRole } from "../../config/auth";
+import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
 
@@ -105,9 +106,13 @@ export default function InventoryPage() {
 
     // Nếu không tìm thấy vai trò, dừng lại (Thêm kiểm tra an toàn)
     if (!upperRole) {
+<<<<<<< HEAD
       message.error(
         "Không xác định được quyền người dùng. Vui lòng thử đăng nhập lại."
       );
+=======
+      showToast("error", "Không xác định được quyền người dùng. Vui lòng thử đăng nhập lại.");
+>>>>>>> a4d6080 (Fix Message Response + Add Profile)
       setStations([]);
       return;
     }
@@ -154,7 +159,7 @@ export default function InventoryPage() {
       });
       setBatteryTypesMap(map);
     } catch (error) {
-      handleApiError(error, "Tải loại pin!");
+      showToast("error", error.response?.data || "Tải loại pin thất bại, vui lòng thử lại!");
     }
   }, []);
 
@@ -177,13 +182,65 @@ export default function InventoryPage() {
       setStationInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
       return inventory.length > 0 ? inventory[0].batteryTypeId : null;
     } catch (error) {
-      handleApiError(error, "Tải tồn kho trạm!");
+      showToast("error", error.response?.data || "Tải tồn kho trạm thất bại, vui lòng thử lại!");
       setStationInventory([]);
       return null;
     } finally {
       setLoading(false);
     }
   }, []);
+
+
+  // Tải tồn kho chung trong Kho
+  const fetchWarehouseInventory = useCallback(async (typeIdToFilter = null) => {
+    setLoading(true);
+    try {
+      let res;
+      let inventory = [];
+      
+      // --- Logic API ---
+        if (!isAdmin) {
+            // STAFF: Chỉ tải pin AVAILABLE và bắt buộc phải có typeIdToFilter
+            if (!typeIdToFilter) {
+                // Nếu là Staff VÀ không có typeId để lọc -> Không tải, trả về rỗng
+                setWarehouseInventory([]);
+                showToast("warning", "Staff cần có Pin tại Trạm để xác định loại pin kho cần tải.");
+                return;
+            }
+            // Staff tải pin AVAILABLE theo loại
+            res = await api.get(
+                `/station-inventory/available-by-type/${typeIdToFilter}`
+            );
+        } else {
+            // ADMIN: Luôn tải TOÀN BỘ kho (AVAILABLE & MAINTENANCE)
+            // Lọc sẽ được xử lý sau trên Client
+            res = await api.get("/station-inventory");
+        }
+
+      // Xử lý response 
+      if (Array.isArray(res.data)) {
+        inventory = res.data;
+      } else if (res.data?.batteries && Array.isArray(res.data.batteries)) {
+        inventory = res.data.batteries;
+      }
+
+      // --- Logic Lọc trên Client (Chỉ áp dụng cho ADMIN) ---
+        let filteredInventory = inventory;
+        if (isAdmin && typeIdToFilter) {
+            // Admin áp dụng lọc theo loại pin trên dữ liệu toàn bộ đã tải
+            filteredInventory = inventory.filter(
+                (item) => item.batteryTypeId === typeIdToFilter
+            );
+        }
+
+      setWarehouseInventory(filteredInventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
+    } catch (error) {
+      showToast("error", error.response?.data || "Tải tồn kho kho thất bại, vui lòng thử lại!");
+      setWarehouseInventory([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin]);
 
   // Effect chạy lần đầu
   useEffect(() => {
@@ -235,20 +292,18 @@ export default function InventoryPage() {
     const typeId = getBatteryTypeForCurrentStation();
 
     if (!typeId) {
-      return message.warning(
-        "Không có pin tại trạm để xác định loại pin cần lọc."
-      );
+      return showToast("warning", "Không có pin tại trạm để xác định loại pin cần lọc.");   
     }
 
     // Cập nhật state và gọi hàm tải dữ liệu mới
     setFilterBatteryTypeId(typeId);
     fetchWarehouseInventory(typeId);
-    message.success(`Đã lọc Pin Kho theo loại: ${batteryTypesMap[typeId]}.`);
+    showToast("success", `Đã lọc Pin Kho theo loại: ${batteryTypesMap[typeId]}.`);
   };
 
   // Xử lý Pin lỗi VỀ KHO
   const handleMoveToWarehouse = async (record) => {
-    if (!selectedStationId) return message.error("Vui lòng chọn trạm!");
+    if (!selectedStationId) return showToast("warning", "Vui lòng chọn trạm!");
 
     // API: POST /api/station-inventory/move-to-warehouse
     try {
@@ -258,12 +313,12 @@ export default function InventoryPage() {
           stationId: selectedStationId,
         },
       });
-      message.success(`✅ Pin ${record.id} đã được chuyển về kho bảo trì.`);
+      showToast("success", `✅ Pin ${record.id} đã được chuyển về kho bảo trì.`);
       fetchStationInventory(selectedStationId); // Refresh Pin tại trạm
       // Tải lại Pin Kho, sử dụng filter hiện tại nếu có
       fetchWarehouseInventory(filterBatteryTypeId);
     } catch (error) {
-      handleApiError(error, "Chuyển pin về kho bảo trì.");
+      showToast("error", error.response?.data || "Chuyển pin về kho bảo trì thất bại, vui lòng thử lại!");
     }
   };
 
@@ -287,7 +342,7 @@ export default function InventoryPage() {
 
   // Xử lý Pin Tốt RA TRẠM
   const handleMoveToStation = async (batteryId, typeId) => {
-    if (!selectedStationId) return message.error("Vui lòng chọn trạm!");
+    if (!selectedStationId) return showToast("warning", "Vui lòng chọn trạm!");
 
     // API: POST /api/station-inventory/move-to-station
     try {
@@ -298,12 +353,12 @@ export default function InventoryPage() {
           batteryTypeId: typeId,
         },
       });
-      message.success(`✅ Pin ${batteryId} đã được chuyển ra trạm.`);
+      showToast("success", `✅ Pin ${batteryId} đã được chuyển ra trạm.`);
       // Tải lại Pin Kho, sử dụng filter hiện tại nếu có
       fetchStationInventory(selectedStationId);
       fetchWarehouseInventory(filterBatteryTypeId);
     } catch (error) {
-      handleApiError(error, "Chuyển pin ra trạm.");
+      showToast("error", error.response?.data || "Chuyển pin ra trạm thất bại, vui lòng thử lại!");
     }
   };
 
@@ -368,14 +423,12 @@ export default function InventoryPage() {
           },
         }
       );
-      message.success(
-        `✅ Pin ${record.id} đã hoàn tất bảo trì, SOH cập nhật: ${newSOH}%.`
-      );
+      showToast("success", `✅ Pin ${record.id} đã hoàn tất bảo trì, SOH cập nhật: ${newSOH}%.`);
       setIsEditSOHModalVisible(false); // Đóng modal
       // Refresh Kho sau khi cập nhật
       fetchWarehouseInventory(filterBatteryTypeId);
     } catch (error) {
-      handleApiError(error, "Lỗi cập nhật SOH/Hoàn tất bảo trì.");
+      showToast("error", error.response?.data || "Lỗi cập nhật SOH/Hoàn tất bảo trì.");
       console.error(
         "Lỗi API Cập nhật SOH:",
         error.response?.data || error.message

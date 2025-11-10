@@ -31,6 +31,7 @@ import {
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
+import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
 
@@ -62,11 +63,9 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
         : [];
 
       setBatteries(data);
-      message.success(
-        `Tải thành công ${data.length} pin tại trạm ${stationId}.`
-      );
+      showToast("success", `Tải thành công ${data.length} pin tại trạm ${stationId}.`);
     } catch (err) {
-      handleApiError(err, "Tải danh sách pin tại trạm");
+      showToast("error", err.response?.data || "Tải danh sách pin tại trạm thất bại, vui lòng thử lại!");
       setBatteries([]);
     } finally {
       setLoading(false);

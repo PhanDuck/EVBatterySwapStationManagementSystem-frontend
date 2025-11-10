@@ -23,6 +23,7 @@ import api from "../../config/axios";
 import dayjs from "dayjs";
 import handleApiError from "../../Utils/handleApiError";
 import { getCurrentUser } from "../../config/auth";
+import { showToast } from "../../Utils/toastHandler";
 
 const { TextArea } = Input;
 
@@ -52,6 +53,9 @@ export default function BookingsPage() {
       let bookingRes;
 
       if (role === "ADMIN" || role === "STAFF") {
+
+
+
         // ADMIN & STAFF: lấy tất cả booking hoặc booking của trạm phụ trách
         const url = role === "ADMIN" ? "/booking" : "/booking/my-stations";
         bookingRes = await Promise.race([
@@ -168,11 +172,12 @@ export default function BookingsPage() {
         )
       );
 
-      message.success("Đã hủy booking thành công!");
+      showToast("success", "Đã hủy booking thành công!");
+      
       setIsCancelModalVisible(false);
       setCancellingBooking(null);
     } catch (error) {
-      handleApiError(error, "Cancel booking (Admin/Staff)");
+      showToast("error", error.response?.data || "Hủy booking thất bại, vui lòng thử lại!");
     } finally {
       setSubmitting(false);
     }
@@ -201,9 +206,9 @@ export default function BookingsPage() {
               item.id === record.id ? { ...item, status: "CANCELLED" } : item
             )
           );
-          message.success("Đã hủy đặt lịch thành công!");
+          showToast("success", "Đã hủy đặt lịch thành công!");
         } catch (error) {
-          handleApiError(error, "Hủy đặt lịch (Driver)");
+          showToast("error", error.response?.data || "Hủy đặt lịch thất bại, vui lòng thử lại!");
         }
       },
     });

@@ -26,6 +26,7 @@ import api from "../../config/axios";
 import MomoLogo from "../../assets/img/MoMoLogo.svg";
 import dayjs from "dayjs"; // Import dayjs
 import handleApiError from "../../Utils/handleApiError";
+import { showToast } from "../../Utils/toastHandler";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -53,7 +54,7 @@ const TransactionsPage = () => {
       setTransactions(list);
       setFilteredTransactions(list);
     } catch (error) {
-      handleApiError(error, "danh sách giao dịch");
+      showToast("error", error.response?.data || "Lỗi khi tải danh sách giao dịch");
     } finally {
       setLoading(false);
     }
@@ -106,17 +107,17 @@ const TransactionsPage = () => {
       if (editing) {
         // Update
         await api.put(`/swap-transaction/${editing.id}`, values);
-        message.success("Cập nhật giao dịch thành công!");
+        showToast("success", "Cập nhật giao dịch thành công!");
       } else {
         // Create
         await api.post("/swap-transaction", values);
-        message.success("Tạo giao dịch mới thành công!");
+        showToast("success", "Tạo giao dịch mới thành công!");
       }
       setModalVisible(false);
       setEditing(null);
       fetchTransactions();
     } catch (error) {
-      handleApiError(error, "lưu giao dịch");
+      showToast("error", error.response?.data || "Lỗi khi lưu giao dịch");
     }
   };
 

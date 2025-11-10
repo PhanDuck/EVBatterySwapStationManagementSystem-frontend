@@ -14,6 +14,7 @@ import {
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
+import { showToast } from "../../Utils/toastHandler";
 
 const ServicePackagesPage = () => {
   const [packages, setPackages] = useState([]);
@@ -44,7 +45,7 @@ const ServicePackagesPage = () => {
       const res = await api.get("/admin/user");
       setUsers(res.data);
     } catch (error) {
-      handleApiError(error, "Danh sách người dùng");
+      showToast("error", error.response?.data || "Lấy danh sách người dùng thất bại, vui lòng thử lại!");
     }
   };
 
@@ -57,7 +58,7 @@ const ServicePackagesPage = () => {
         : res.data?.data || [];
       setDriverSubscriptions(subscriptions.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (error) {
-      handleApiError(error, "Danh sách gói cước tài xế");
+      showToast("error", error.response?.data || "Lấy danh sách gói cước tài xế thất bại, vui lòng thử lại!");
     }
   };
 
@@ -74,16 +75,16 @@ const ServicePackagesPage = () => {
 
       if (editingPackage) {
         await api.put(`/service-package/${editingPackage.id}`, payload);
-        message.success("Package updated successfully");
+        showToast("success", "Thay đổi package thành công");
       } else {
         await api.post("/service-package", payload);
-        message.success("Package created successfully");
+        showToast("success", "Tạo package thành công");
       }
       setIsModalVisible(false);
       form.resetFields();
       fetchPackages();
     } catch (error) {
-      handleApiError(error, "Lưu gói dịch vụ");
+      showToast("error", error.response?.data || "Lưu gói dịch vụ thất bại, vui lòng thử lại!");
     }
   };
 
@@ -96,10 +97,10 @@ const ServicePackagesPage = () => {
       onOk: async () => {
         try {
           await api.delete(`/service-package/${id}`);
-          message.success("Package deleted successfully");
+          showToast("success", "Xóa gói dịch vụ thành công");
           fetchPackages();
         } catch (error) {
-          handleApiError(error, "Xóa gói dịch vụ");
+          showToast("error", error.response?.data || "Xóa gói dịch vụ thất bại, vui lòng thử lại!");
         }
       },
     });
@@ -115,10 +116,10 @@ const ServicePackagesPage = () => {
       onOk: async () => {
         try {
           await api.delete(`/driver-subscription/${id}`);
-          message.success("Đã xóa gói cước tài xế thành công!");
+          showToast("success", "Đã xóa gói cước tài xế thành công!");
           fetchDriverSubscriptions();
         } catch (error) {
-          handleApiError(error, "Xóa gói cước tài xế");
+          showToast("error", error.response?.data || "Xóa gói cước tài xế thất bại, vui lòng thử lại!");
         }
       },
     });

@@ -39,6 +39,7 @@ import {
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
+import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -315,7 +316,7 @@ const VehiclePage = () => {
 
         setVehicles(initialVehicleList);
       } catch (error) {
-        handleApiError(error, "Danh sách phương tiện");
+        showToast("error", error.response?.data || "Lỗi tải danh sách phương tiện");
         console.error(error);
       } finally {
         setLoading(false);
@@ -327,34 +328,17 @@ const VehiclePage = () => {
 
   // 👥 Lấy danh sách tài xế (chỉ cho ADMIN)
   useEffect(() => {
-    if (isAdmin) {
-      const fetchDrivers = async () => {
-        try {
-          const res = await api.get("/admin/user");
-          // Lọc chỉ lấy những user có role = DRIVER
-          const driverList = Array.isArray(res.data)
-            ? res.data.filter((u) => u.role === "DRIVER")
-            : [];
-          setDrivers(driverList.sort((a, b) => a.id - b.id));
-        } catch (error) {
-          console.error("Lỗi tải danh sách tài xế:", error);
-          setDrivers([]);
-        }
-      };
-      fetchDrivers();
-    }
-  }, [isAdmin]);
 
-  // 🚗 Lấy danh sách xe chờ duyệt từ danh sách vehicles đã có
-  useEffect(() => {
-    if (role === "ADMIN" && vehicles.length > 0) {
-      // Lọc xe có status = PENDING từ danh sách vehicles đã fetch
-      const pendingList = vehicles.filter((v) => v.status === "PENDING");
-      const sortedList = pendingList.sort((a, b) => b.id - a.id);
-      console.log("Pending vehicles (status=PENDING):", sortedList);
-      setPendingVehicles(sortedList);
-    }
-  }, [vehicles, role]);
+    const fetchStations = async () => {
+      try {
+        const res = await api.get("/station");
+        setStations(res.data || []);
+      } catch (error) {
+        showToast("error", error.response?.data || "Lỗi tải danh sách trạm");
+      }
+    };
+    fetchStations();
+  }, []);
 
   // 🔋 Lấy loại pin
   useEffect(() => {
@@ -363,7 +347,7 @@ const VehiclePage = () => {
         const res = await api.get("/battery-type");
         setBatteryTypes(res.data || []);
       } catch (error) {
-        handleApiError(error, "Tải danh sách loại pin");
+        showToast("error", error.response?.data || "Lỗi tải danh sách loại pin");
       }
     };
     fetchBatteryTypes();
@@ -431,7 +415,7 @@ const VehiclePage = () => {
         )
       );
     } catch (error) {
-      handleApiError(error, "Tải lịch sử đổi pin");
+      showToast("error", error.response?.data || "Lỗi tải lịch sử đổi pin");
     } finally {
       setHistoryLoading(false);
     }
@@ -778,7 +762,8 @@ const VehiclePage = () => {
               : v
           )
         );
-        message.success("Cập nhật phương tiện thành công!");
+        showToast("success", "Cập nhật phương tiện thành công!");
+        
       } else {
         // Logic CREATE - Bắt buộc có ảnh
         if (!imageFile || !(imageFile instanceof File)) {
@@ -832,7 +817,7 @@ const VehiclePage = () => {
           id: newVehicleData.id || Date.now(),
         };
         setVehicles((prev) => [newVehicle, ...prev]);
-        message.success("Đăng ký phương tiện thành công!");
+        showToast("success", "Đăng ký phương tiện thành công!");
       }
 
       setIsModalVisible(false);
@@ -840,10 +825,8 @@ const VehiclePage = () => {
       setVehicleImage(null);
       setImageFile(null);
     } catch (error) {
-      console.error("Error details:", error.response?.data || error.message);
-      handleApiError(error, "Lưu thông tin phương tiện");
-    } finally {
-      setIsSubmitting(false);
+
+      showToast("error", error.response?.data || "Lỗi lưu thông tin phương tiện");
     }
   };
 
@@ -861,9 +844,9 @@ const VehiclePage = () => {
           setVehicles((prev) =>
             prev.map((v) => (v.id === id ? { ...v, status: "INACTIVE" } : v))
           );
-          message.success("Đã vô hiệu hóa phương tiện!");
+          showToast("success", "Đã vô hiệu hóa phương tiện!");
         } catch (error) {
-          handleApiError(error, "vô hiệu hóa phương tiện");
+          showToast("error", error.response?.data || "Lỗi vô hiệu hóa phương tiện");
         }
       },
     });
