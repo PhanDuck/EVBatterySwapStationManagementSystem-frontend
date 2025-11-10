@@ -55,9 +55,9 @@ const BookingFormFields = ({
       try {
         const res = await api.get(GET_VEHICLES_API_URL);
         const fetchedVehicles = res.data || [];
-        setVehicles(res.data || []);
+        setVehicles(fetchedVehicles);
 
-        // 🆕 Nếu có preselectedVehicleId, tự động tải trạm tương thích
+        // Nếu có preselectedVehicleId, tự động tải trạm tương thích
         if (preselectedVehicleId) {
           const preselectedVehicle = fetchedVehicles.find(
             (v) => v.id === preselectedVehicleId
@@ -115,11 +115,15 @@ const BookingFormFields = ({
         rules={[{ required: true, message: "Vui lòng chọn xe của bạn!" }]}
       >
         <Select placeholder="Chọn một chiếc xe" onChange={handleVehicleChange}>
-          {vehicles.map((v) => (
-            <Option key={v.id} value={v.id}>
-              {v.model} ({v.plateNumber || "Chưa có biển số"})
-            </Option>
-          ))}
+          {vehicles.map((v) => {
+            const isDisabled = v.status !== "ACTIVE";
+            const disabledLabel = isDisabled ? ` (${v.status === "PENDING" ? "Chờ duyệt" : "Không hoạt động"})` : "";
+            return (
+              <Option key={v.id} value={v.id} disabled={isDisabled}>
+                {v.model} ({v.plateNumber || "Chưa có biển số"}){disabledLabel}
+              </Option>
+            );
+          })}
         </Select>
       </Form.Item>
 

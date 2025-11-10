@@ -149,8 +149,7 @@ const VehiclePage = () => {
               <Row justify="space-between" style={{ paddingBottom: 5 }}>
                 <Col>
                   <Text strong>
-                    <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc
-                    (%):
+                    <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc (%):
                   </Text>
                 </Col>
                 <Col>
@@ -165,8 +164,7 @@ const VehiclePage = () => {
               <Row justify="space-between">
                 <Col>
                   <Text strong>
-                    <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng
-                    pin (%):
+                    <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng pin (%):
                   </Text>
                 </Col>
                 <Col>
@@ -515,7 +513,7 @@ const VehiclePage = () => {
       dataIndex: "batteryTypeName",
       key: "batteryTypeName",
       sorter: (a, b) =>
-        (a.batteryTypeName || "").localeCompare(b.batteryTypeName || ""),
+        (a.batteryTypeName || "").localeCompare(b.batteryTypeName),
     },
     {
       title: "Trạng thái",
@@ -711,7 +709,7 @@ const VehiclePage = () => {
       plateNumber: values.plateNumber,
       model: values.model,
       batteryTypeId: values.batteryTypeId,
-      ...(editingVehicle && isAdmin && { status: values.status }),
+      //...(editingVehicle && isAdmin && { status: values.status }),
     };
 
     // Thêm driverId nếu đang sửa và admin chọn tài xế
@@ -733,7 +731,7 @@ const VehiclePage = () => {
       ? selectedDriver.fullName
       : editingVehicle?.driverName;
 
-    const payloadForFE = {
+    const updateData = {
       ...payload,
       batteryTypeName: selectedBatteryType
         ? selectedBatteryType.name
@@ -760,9 +758,9 @@ const VehiclePage = () => {
         if (payload.driverId) {
           formData.append("driverId", payload.driverId);
         }
-        if (payload.status) {
-          formData.append("status", payload.status);
-        }
+        // if (payload.status) {
+        //   formData.append("status", payload.status);
+        // }
 
         const response = await api.put(endpoint, formData);
 
@@ -773,9 +771,9 @@ const VehiclePage = () => {
             v.id === editingVehicle.id
               ? {
                   ...v,
-                  ...payloadForFE,
+                  ...updateData,
                   registrationImage: vehicleImage,
-                  status: values.status || v.status,
+                  status: v.status,
                 }
               : v
           )
@@ -1207,7 +1205,7 @@ const VehiclePage = () => {
             </Form.Item>
           )}
 
-          {editingVehicle && isAdmin && (
+          {/* {editingVehicle && isAdmin && (
             <Form.Item
               name="status"
               label={
@@ -1228,7 +1226,7 @@ const VehiclePage = () => {
                 </Option>
               </Select>
             </Form.Item>
-          )}
+          )} */}
 
           {!editingVehicle && (
             <Form.Item

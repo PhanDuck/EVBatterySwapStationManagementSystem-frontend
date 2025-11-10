@@ -42,94 +42,6 @@ export default function InventoryPage() {
 
   // --- 1. FUNCTIONS TẢI DỮ LIỆU ---
 
-  // Tải danh sách trạm Staff quản lý
-  const fetchManagedStations = useCallback(async () => {
-    // 💡 KHẮC PHỤC LỖI: Lấy vai trò mới nhất và chuẩn hóa từ auth.js
-    const currentRole = getCurrentRole(); // Lấy lại role trong hàm callback
-    const currentUpperRole = currentRole ? currentRole.toUpperCase() : null;
-
-    // Nếu không tìm thấy vai trò, dừng lại (Thêm kiểm tra an toàn)
-    if (!upperRole) {
-      message.error(
-        "Không xác định được quyền người dùng. Vui lòng thử đăng nhập lại."
-      );
-      setStations([]);
-      return;
-    }
-
-    try {
-      let res;
-      let isRoleAdmin = currentUpperRole === "ADMIN";
-
-      // Logic: Admin lấy tất cả các trạm, Staff lấy trạm được gán
-      if (isRoleAdmin) {
-        res = await api.get("/station");
-      } else {
-        res = await api.get("/staff-station-assignment/my-stations");
-      }
-
-      const data = Array.isArray(res.data) ? res.data : [];
-      setStations(data);
-
-      // Tự động chọn trạm đầu tiên nếu có
-      if (data.length > 0) {
-        setSelectedStationId(data[0].id);
-      }
-    } catch (error) {
-      handleApiError(
-        error,
-        upperRole === "ADMIN"
-          ? "Tải danh sách tất cả trạm!"
-          : "Tải danh sách trạm quản lý!"
-      );
-      console.error(error);
-      setStations([]);
-    }
-  }, []);
-
-  // Tải Map Loại Pin (Tên, Dung lượng)
-  const fetchBatteryTypes = useCallback(async () => {
-    try {
-      const res = await api.get("/battery-type");
-      const map = {};
-      // TĂNG CƯỜNG BẢO VỆ Ở ĐÂY: Dùng Array.isArray
-      (Array.isArray(res.data) ? res.data : []).forEach((type) => {
-        // <-- CHỈNH SỬA
-        map[type.id] = `${type.name} (${type.capacity}Ah)`;
-      });
-      setBatteryTypesMap(map);
-    } catch (error) {
-      handleApiError(error, "Tải loại pin!");
-    }
-  }, []);
-
-  // Tải Pin cần bảo dưỡng tại trạm đã chọn
-  const fetchStationInventory = useCallback(async (stationId) => {
-    if (!stationId) return;
-    setLoading(true);
-    try {
-      // API: GET /api/station/{id}/batteries/needs-maintenance
-      const res = await api.get(
-        `/station/${stationId}/batteries/needs-maintenance`
-      );
-      // Xử lý response - có thể là mảng trực tiếp hoặc object có key batteries
-      let inventory = Array.isArray(res.data)
-        ? res.data
-        : res.data?.batteries && Array.isArray(res.data.batteries)
-        ? res.data.batteries
-        : [];
-
-      setStationInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
-      return inventory.length > 0 ? inventory[0].batteryTypeId : null;
-    } catch (error) {
-      handleApiError(error, "Tải tồn kho trạm!");
-      setStationInventory([]);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Tải tồn kho chung trong Kho
   const fetchWarehouseInventory = useCallback(
     async (typeIdToFilter = null) => {
@@ -186,12 +98,98 @@ export default function InventoryPage() {
     [isAdmin]
   );
 
+  // Tải danh sách trạm Staff quản lý
+  const fetchManagedStations = useCallback(async () => {
+    const currentRole = getCurrentRole(); // Lấy lại role trong hàm callback
+    const currentUpperRole = currentRole ? currentRole.toUpperCase() : null;
+
+    // Nếu không tìm thấy vai trò, dừng lại (Thêm kiểm tra an toàn)
+    if (!upperRole) {
+      message.error(
+        "Không xác định được quyền người dùng. Vui lòng thử đăng nhập lại."
+      );
+      setStations([]);
+      return;
+    }
+
+    try {
+      let res;
+      let isRoleAdmin = currentUpperRole === "ADMIN";
+
+      // Logic: Admin lấy tất cả các trạm, Staff lấy trạm được gán
+      if (isRoleAdmin) {
+        res = await api.get("/station");
+      } else {
+        res = await api.get("/staff-station-assignment/my-stations");
+      }
+
+      const data = Array.isArray(res.data) ? res.data : [];
+      setStations(data);
+
+      // Tự động chọn trạm đầu tiên nếu có
+      if (data.length > 0) {
+        setSelectedStationId(data[0].id);
+      }
+    } catch (error) {
+      handleApiError(
+        error,
+        upperRole === "ADMIN"
+          ? "Tải danh sách tất cả trạm!"
+          : "Tải danh sách trạm quản lý!"
+      );
+      console.error(error);
+      setStations([]);
+    }
+  }, [fetchWarehouseInventory]);
+
+  // Tải Map Loại Pin (Tên, Dung lượng)
+  const fetchBatteryTypes = useCallback(async () => {
+    try {
+      const res = await api.get("/battery-type");
+      const map = {};
+      // TĂNG CƯỜNG BẢO VỆ Ở ĐÂY: Dùng Array.isArray
+      (Array.isArray(res.data) ? res.data : []).forEach((type) => {
+        // <-- CHỈNH SỬA
+        map[type.id] = `${type.name} (${type.capacity}Ah)`;
+      });
+      setBatteryTypesMap(map);
+    } catch (error) {
+      handleApiError(error, "Tải loại pin!");
+    }
+  }, []);
+
+  // Tải Pin cần bảo dưỡng tại trạm đã chọn
+  const fetchStationInventory = useCallback(async (stationId) => {
+    if (!stationId) return;
+    setLoading(true);
+    try {
+      // API: GET /api/station/{id}/batteries/needs-maintenance
+      const res = await api.get(
+        `/station/${stationId}/batteries/needs-maintenance`
+      );
+      // Xử lý response - có thể là mảng trực tiếp hoặc object có key batteries
+      let inventory = Array.isArray(res.data)
+        ? res.data
+        : res.data?.batteries && Array.isArray(res.data.batteries)
+        ? res.data.batteries
+        : [];
+
+      setStationInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
+      return inventory.length > 0 ? inventory[0].batteryTypeId : null;
+    } catch (error) {
+      handleApiError(error, "Tải tồn kho trạm!");
+      setStationInventory([]);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Effect chạy lần đầu
   useEffect(() => {
     fetchManagedStations();
     fetchBatteryTypes();
-    fetchWarehouseInventory();
-  }, [fetchManagedStations, fetchBatteryTypes, fetchWarehouseInventory]);
+  }, [fetchManagedStations, fetchBatteryTypes]);
 
   // Effect chạy khi trạm được chọn thay đổi
   useEffect(() => {
