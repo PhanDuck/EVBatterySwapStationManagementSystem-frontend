@@ -44,60 +44,7 @@ export default function InventoryPage() {
   // --- 1. FUNCTIONS TẢI DỮ LIỆU ---
 
   // Tải tồn kho chung trong Kho
-  const fetchWarehouseInventory = useCallback(
-    async (typeIdToFilter = null) => {
-      setLoading(true);
-      try {
-        let res;
-        let inventory = [];
-
-        // --- Logic API ---
-        if (!isAdmin) {
-          // STAFF: Chỉ tải pin AVAILABLE và bắt buộc phải có typeIdToFilter
-          if (!typeIdToFilter) {
-            // Nếu là Staff VÀ không có typeId để lọc -> Không tải, trả về rỗng
-            setWarehouseInventory([]);
-            message.warning(
-              "Staff cần có Pin tại Trạm để xác định loại pin kho cần tải."
-            );
-            return;
-          }
-          // Staff tải pin AVAILABLE theo loại
-          res = await api.get(
-            `/station-inventory/available-by-type/${typeIdToFilter}`
-          );
-        } else {
-          // ADMIN: Luôn tải TOÀN BỘ kho (AVAILABLE & MAINTENANCE)
-          // Lọc sẽ được xử lý sau trên Client
-          res = await api.get("/station-inventory");
-        }
-
-        // Xử lý response
-        if (Array.isArray(res.data)) {
-          inventory = res.data;
-        } else if (res.data?.batteries && Array.isArray(res.data.batteries)) {
-          inventory = res.data.batteries;
-        }
-
-        // --- Logic Lọc trên Client (Chỉ áp dụng cho ADMIN) ---
-        let filteredInventory = inventory;
-        if (isAdmin && typeIdToFilter) {
-          // Admin áp dụng lọc theo loại pin trên dữ liệu toàn bộ đã tải
-          filteredInventory = inventory.filter(
-            (item) => item.batteryTypeId === typeIdToFilter
-          );
-        }
-
-        setWarehouseInventory(filteredInventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
-      } catch (error) {
-        handleApiError(error, "Tải tồn kho kho!");
-        setWarehouseInventory([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [isAdmin]
-  );
+  
 
   // Tải danh sách trạm Staff quản lý
   const fetchManagedStations = useCallback(async () => {
@@ -106,13 +53,8 @@ export default function InventoryPage() {
 
     // Nếu không tìm thấy vai trò, dừng lại (Thêm kiểm tra an toàn)
     if (!upperRole) {
-<<<<<<< HEAD
-      message.error(
-        "Không xác định được quyền người dùng. Vui lòng thử đăng nhập lại."
-      );
-=======
+
       showToast("error", "Không xác định được quyền người dùng. Vui lòng thử đăng nhập lại.");
->>>>>>> a4d6080 (Fix Message Response + Add Profile)
       setStations([]);
       return;
     }
