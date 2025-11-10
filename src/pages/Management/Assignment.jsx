@@ -5,7 +5,6 @@ import {
   Button,
   Space,
   Tag,
-  message,
   Popconfirm,
   Tooltip,
   Modal,
@@ -19,30 +18,16 @@ import {
   ReloadOutlined,
   DeleteOutlined,
   UserAddOutlined,
-  DesktopOutlined,
+  EnvironmentOutlined,
   UserOutlined,
   CalendarOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
-import handleApiError from "../../Utils/handleApiError";
 import { showToast } from "../../Utils/toastHandler";
 
-// === KHAI BÁO CÁC API ===
-const API_ASSIGNMENTS = "/staff-station-assignment";
-// API thực tế: /api/admin/user
-const API_USERS_ALL = "/admin/user";
-// API thực tế: /api/station
-const API_STATIONS_ALL = "/station";
-
 const STAFF_ROLE = "STAFF";
-
 const { Option } = Select;
-
-/**
- * Component Modal Gán Staff vào Trạm
- * Admin dùng để gán 1 Staff vào 1 Trạm (POST /api/staff-station-assignment)
- */
 const AssignStaffModal = ({
   isModalVisible,
   onCancel,
@@ -57,12 +42,16 @@ const AssignStaffModal = ({
   const handleAssign = async (values) => {
     try {
       // API: POST /api/staff-station-assignment
-      await api.post(API_ASSIGNMENTS, values);
-      showToast("success", `Phân quyền nhân viên ${values.staffId} quản lý trạm ${values.stationId} thành công!`);
+      await api.post("/staff-station-assignment", values);
+      showToast(
+        "success",  
+        `Phân quyền nhân viên ${values.staffId} quản lý trạm ${values.stationId} thành công!`
+      );
       onSuccess();
     } catch (error) {
       const message =
-        error.response?.data || "Phân quyền nhân viên thất bại, vui lòng thử lại!";
+        error.response?.data ||
+        "Phân quyền nhân viên thất bại, vui lòng thử lại!";
       showToast("error", message);
     }
   };
@@ -151,20 +140,12 @@ const AssignStaffModal = ({
   );
 };
 
-/**
- * Component Chính: Trang Quản lý Phân quyền Staff-Station
- * Chỉ dành cho Admin
- */
 export default function AssignmentPage() {
   const [loading, setLoading] = useState(false);
   const [assignments, setAssignments] = useState([]);
   const [isAssignModalVisible, setIsAssignModalVisible] = useState(false);
-
-  // State phụ cho Modal Gán (cần tải danh sách Staff và Trạm)
   const [allStaffs, setAllStaffs] = useState([]);
   const [allStations, setAllStations] = useState([]);
-
-  // State cho chức năng Tìm kiếm
   const [searchStaffId, setSearchStaffId] = useState("");
   const [searchStationId, setSearchStationId] = useState("");
 
@@ -175,11 +156,13 @@ export default function AssignmentPage() {
     setLoading(true);
     try {
       // API: GET /api/staff-station-assignment
-      const res = await api.get(API_ASSIGNMENTS);
+      const res = await api.get("/staff-station-assignment");
       const data = Array.isArray(res.data) ? res.data : [];
       setAssignments(data);
     } catch (error) {
-      const message = error.response?.data || "Lấy danh sách phân quyền nhân viên thất bại, vui lòng thử lại!";
+      const message =
+        error.response?.data ||
+        "Lấy danh sách phân quyền nhân viên thất bại, vui lòng thử lại!";
       showToast("error", message);
       setAssignments([]);
     } finally {
@@ -191,27 +174,27 @@ export default function AssignmentPage() {
   const fetchAuxiliaryData = useCallback(async () => {
     // Tải Staff
     try {
-      // API: GET /api/admin/user
-      const staffRes = await api.get(API_USERS_ALL);
-      // Giả định API trả về một mảng User object
+      const staffRes = await api.get("/admin/user");
       const staffsFetched = Array.isArray(staffRes.data) ? staffRes.data : [];
       setAllStaffs(staffsFetched);
     } catch (error) {
-      const message = error.response?.data || "Lấy danh sách nhân viên thất bại, vui lòng thử lại!";
-      showToast("error", message);        
+      const message =
+        error.response?.data ||
+        "Lấy danh sách nhân viên thất bại, vui lòng thử lại!";
+      showToast("error", message);
     }
 
     // Tải Trạm
     try {
-      // API: GET /api/station
-      const stationRes = await api.get(API_STATIONS_ALL);
-      // Giả định API trả về một mảng Station object
+      const stationRes = await api.get("/station");
       const stationsFetched = Array.isArray(stationRes.data)
         ? stationRes.data
         : [];
       setAllStations(stationsFetched);
     } catch (error) {
-      const message = error.response?.data || "Lấy danh sách trạm thất bại, vui lòng thử lại!";
+      const message =
+        error.response?.data ||
+        "Lấy danh sách trạm thất bại, vui lòng thử lại!";
       showToast("error", message);
     }
   }, []);
@@ -223,14 +206,18 @@ export default function AssignmentPage() {
     setLoading(true);
     try {
       await api.delete(
-        `${API_ASSIGNMENTS}/staff/${staffId}/station/${stationId}`
+        `${"/staff-station-assingment"}/staff/${staffId}/station/${stationId}`
       );
 
-
-      showToast("success", `Xóa phân quyền Nhân viên ${staffId} khỏi Trạm ${stationId} thành công.`);
+      showToast(
+        "success",
+        `Xóa phân quyền Nhân viên ${staffId} khỏi Trạm ${stationId} thành công.`
+      );
       await fetchAllAssignments(); // Tải lại danh sách sau khi xóa
     } catch (error) {
-      const message = error.response?.data || "Xóa phân quyền nhân viên thất bại, vui lòng thử lại!";
+      const message =
+        error.response?.data ||
+        "Xóa phân quyền nhân viên thất bại, vui lòng thử lại!";
       showToast("error", message);
     }
     setLoading(false);
@@ -238,58 +225,36 @@ export default function AssignmentPage() {
 
   // --- C. EFFECT CHẠY LẦN ĐẦU ---
   useEffect(() => {
-    // Tải dữ liệu chính và phụ khi vào trang
     fetchAllAssignments();
     fetchAuxiliaryData();
   }, [fetchAllAssignments, fetchAuxiliaryData]);
 
   // --- D. ÁNH XẠ DỮ LIỆU ĐỂ HIỂN THỊ TÊN, ID VÀ LỌC (SỬ DỤNG useMemo ĐỂ LỌC) ---
   const filteredAndMappedAssignments = useMemo(() => {
-    // Tạo map (bản đồ) ID -> Tên để tra cứu nhanh chóng
-    const staffMap = new Map(
-      allStaffs.map((s) => [
-        String(s.id),
-        s.username || s.fullName || `ID: ${s.id}`,
-      ])
-    );
-    const stationMap = new Map(allStations.map((t) => [String(t.id), t.name]));
-
-    // Bước 1: Ánh xạ dữ liệu Assignment
-    const mapped = assignments.map((record) => {
-      const staffIdStr = String(record.staffId);
-      const stationIdStr = String(record.stationId);
-
-      const staffName = staffMap.get(staffIdStr);
-      const stationName = stationMap.get(stationIdStr);
-
-      return {
-        ...record,
-        // Thêm trường mới để hiển thị và lọc
-        staffName: staffName || `ID: ${record.staffId}`,
-        stationName: stationName || `ID: ${record.stationId}`,
-      };
-    });
-
     // Lấy giá trị tìm kiếm đã chuẩn hóa
     const staffSearchValue = (searchStaffId || "").trim().toLowerCase();
     const stationSearchValue = (searchStationId || "").trim().toLowerCase();
 
-    // Bước 2: Lọc dữ liệu
-    return mapped.filter((record) => {
+    // Lọc dữ liệu (Không cần ánh xạ vì API đã trả về staffName/stationName)
+    return assignments.filter((record) => {
+      // Đảm bảo các trường name tồn tại để gọi .toLowerCase()
+      const currentStaffName = (record.staffName || "").toLowerCase();
+      const currentStationName = (record.stationName || "").toLowerCase();
+      
       const staffMatch = staffSearchValue
-        ? record.staffName.toLowerCase().includes(staffSearchValue)
+        ? currentStaffName.includes(staffSearchValue) || String(record.staffId).includes(staffSearchValue)
         : true;
 
       const stationMatch = stationSearchValue
-        ? record.stationName.toLowerCase().includes(stationSearchValue)
+        ? currentStationName.includes(stationSearchValue) || String(record.stationId).includes(stationSearchValue)
         : true;
 
-      // Chỉ hiển thị khi cả 2 điều kiện tìm kiếm đều thỏa mãn (hoặc không tìm kiếm gì)
+      // Chỉ hiển thị khi cả 2 điều kiện tìm kiếm đều thỏa mãn
       return staffMatch && stationMatch;
     });
-    // Dependency: Phụ thuộc vào assignments, allStaffs, allStations (dữ liệu gốc), và 2 giá trị tìm kiếm
-  }, [assignments, allStaffs, allStations, searchStaffId, searchStationId]);
-
+    // Dependency: Phụ thuộc vào assignments (dữ liệu gốc), và 2 giá trị tìm kiếm
+  }, [assignments, searchStaffId, searchStationId]);
+  
   // --- E. ĐỊNH NGHĨA CỘT CHO BẢNG ---
 
   const columns = [
@@ -319,7 +284,7 @@ export default function AssignmentPage() {
     {
       title: (
         <Space size={4}>
-          <DesktopOutlined />
+          <EnvironmentOutlined />
           Trạm
         </Space>
       ),
@@ -427,7 +392,7 @@ export default function AssignmentPage() {
           {/* 1. Tìm Staff (Lọc theo Staff ID/Name) */}
           <Col xs={24} sm={12}>
             <Input
-              prefix={<UserOutlined style={{ color: "rgba(0,0,0,.25)" }} />}
+              prefix={<SearchOutlined style={{ color: "rgba(0,0,0,.25)" }} />}
               placeholder="Tìm nhân viên"
               onChange={(e) => setSearchStaffId(e.target.value)}
               value={searchStaffId}
@@ -438,7 +403,7 @@ export default function AssignmentPage() {
           {/* 2. Tìm Trạm (Lọc theo Station ID/Name) */}
           <Col xs={24} sm={12}>
             <Input
-              prefix={<DesktopOutlined style={{ color: "rgba(0,0,0,.25)" }} />}
+              prefix={<SearchOutlined style={{ color: "rgba(0,0,0,.25)" }} />}
               placeholder="Tìm trạm"
               onChange={(e) => setSearchStationId(e.target.value)}
               value={searchStationId}

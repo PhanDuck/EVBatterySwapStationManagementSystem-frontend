@@ -52,35 +52,15 @@ export default function SupportPage() {
     try {
       const ticketAPI =
         role === "DRIVER" ? "/support-ticket/my-tickets" : "/support-ticket";
-
-      // Nếu là DRIVER, không cần gọi API user vì đã có trong localStorage
-      // Nếu là ADMIN/STAFF, gọi API để lấy danh sách users
-      const apiCalls = [api.get(ticketAPI)];
-      if (role !== "DRIVER") {
-        apiCalls.push(api.get("/admin/user"));
-      }
-
-      const [ticketRes, userRes] = await Promise.all(apiCalls);
-
-      const users =
-        role === "DRIVER"
-          ? [currentUser]
-          : Array.isArray(userRes?.data)
-          ? userRes.data
-          : [];
-
-      const tickets = (ticketRes.data || [])
-        .map((t) => {
-          const user = users.find(
-            (u) => u.id === t.customerId || u.id === t.createdBy
-          );
-          return {
-            ...t,
-            key: t.id ?? t._id,
-            user: user || null,
-          };
-        })
-        .sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
+      const res = await api.get(ticketAPI);
+      const tickets = (res.data || []) 
+            .map((t) => {
+                return {
+                    ...t,
+                    key: t.id ?? t._id,
+                };
+            })
+            .sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
 
       setData(tickets);
     } catch (error) {

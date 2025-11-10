@@ -328,17 +328,33 @@ const VehiclePage = () => {
 
   // 👥 Lấy danh sách tài xế (chỉ cho ADMIN)
   useEffect(() => {
+    if (isAdmin) {
+          const fetchDrivers = async () => {
+            try {
+              const res = await api.get("/admin/user");
+              // Lọc chỉ lấy những user có role = DRIVER
+              const driverList = Array.isArray(res.data)
+                ? res.data.filter((u) => u.role === "DRIVER")
+                : [];
+              setDrivers(driverList.sort((a, b) => a.id - b.id));
+            } catch (error) {
+              showToast("error", error.response?.data || "Lỗi tải danh sách tài xế");
+            }
+          };
+          fetchDrivers();
+        }
+      }, [isAdmin]);
 
-    const fetchStations = async () => {
-      try {
-        const res = await api.get("/station");
-        setStations(res.data || []);
-      } catch (error) {
-        showToast("error", error.response?.data || "Lỗi tải danh sách trạm");
-      }
-    };
-    fetchStations();
-  }, []);
+  // 🚗 Lấy danh sách xe chờ duyệt từ danh sách vehicles đã có
+  useEffect(() => {
+    if (role === "ADMIN" && vehicles.length > 0) {
+      // Lọc xe có status = PENDING từ danh sách vehicles đã fetch
+      const pendingList = vehicles.filter((v) => v.status === "PENDING");
+      const sortedList = pendingList.sort((a, b) => b.id - a.id);
+      console.log("Pending vehicles (status=PENDING):", sortedList);
+      setPendingVehicles(sortedList);
+    }
+  }, [vehicles, role]);
 
   // 🔋 Lấy loại pin
   useEffect(() => {

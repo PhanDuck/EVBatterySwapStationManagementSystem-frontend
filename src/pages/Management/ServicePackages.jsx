@@ -8,7 +8,6 @@ import {
   Form,
   Input,
   InputNumber,
-  message,
   Tag,
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -18,7 +17,6 @@ import { showToast } from "../../Utils/toastHandler";
 
 const ServicePackagesPage = () => {
   const [packages, setPackages] = useState([]);
-  const [users, setUsers] = useState([]);
   const [driverSubscriptions, setDriverSubscriptions] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingPackage, setEditingPackage] = useState(null);
@@ -28,7 +26,6 @@ const ServicePackagesPage = () => {
   useEffect(() => {
     fetchPackages();
     fetchDriverSubscriptions();
-    fetchAllUsers();
   }, []);
 
   const fetchPackages = async () => {
@@ -40,14 +37,14 @@ const ServicePackagesPage = () => {
     }
   };
 
-  const fetchAllUsers = async () => {
-    try {
-      const res = await api.get("/admin/user");
-      setUsers(res.data);
-    } catch (error) {
-      showToast("error", error.response?.data || "Lấy danh sách người dùng thất bại, vui lòng thử lại!");
-    }
-  };
+  // const fetchAllUsers = async () => {
+  //   try {
+  //     const res = await api.get("/admin/user");
+  //     setUsers(res.data);
+  //   } catch (error) {
+  //     showToast("error", error.response?.data || "Lấy danh sách người dùng thất bại, vui lòng thử lại!");
+  //   }
+  // };
 
   const fetchDriverSubscriptions = async () => {
     try {
@@ -154,7 +151,6 @@ const ServicePackagesPage = () => {
       render: (price) =>
         price.toLocaleString("vi-VN", { style: "currency", currency: "VND" }),
     },
-    { title: "Max Swaps", dataIndex: "maxSwaps", key: "maxSwaps" },
     {
       title: "Thời hạn",
       dataIndex: "duration",
@@ -197,10 +193,10 @@ const ServicePackagesPage = () => {
     },
   ];
 
-  const userMap = useMemo(
-    () => new Map(users.map((user) => [user.id, user.fullName])),
-    [users]
-  );
+  // const userMap = useMemo(
+  //   () => new Map(users.map((user) => [user.id, user.fullName])),
+  //   [users]
+  // );
   const packageMap = useMemo(
     () => new Map(packages.map((pkg) => [pkg.id, pkg.name])),
     [packages]
@@ -217,15 +213,17 @@ const ServicePackagesPage = () => {
     },
     {
       title: "Tài xế",
-      dataIndex: "driverId",
+      dataIndex: "driverName",
       key: "driverName",
-      render: (driverId) => userMap.get(driverId) || `ID: ${driverId}`,
+      render: (driverName, record) => (
+        driverName || `ID: ${record.driverId}` 
+      ),
     },
     {
       title: "Gói dịch vụ",
-      dataIndex: "packageId",
+      dataIndex: "packageName",
       key: "packageName",
-      render: (packageId) => packageMap.get(packageId) || `ID: ${packageId}`,
+      render: (packageName) => packageName,
     },
     {
       title: "Ngày đăng ký",
