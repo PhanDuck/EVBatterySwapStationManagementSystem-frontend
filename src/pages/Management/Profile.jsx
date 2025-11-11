@@ -11,12 +11,8 @@ export default function Profile() {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
-    // phoneNumber: "",
-    // username: "",
-    // role: "",
-    // status: "",
-    // birthDate: "",
-    // gender: "",
+    birthDate: "",
+    gender: "",
   });
 
   const [loading, setLoading] = useState(false);

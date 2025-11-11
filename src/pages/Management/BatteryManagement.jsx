@@ -11,12 +11,10 @@ import {
   Select,
   DatePicker,
   Tag,
-  message,
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../config/axios";
-import handleApiError from "../../Utils/handleApiError";
 import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
@@ -94,15 +92,14 @@ export default function BatteryManagement() {
 
     try {
       if (editingBattery) {
-
-        res = await api.put(`/battery/${editingBattery.id}`, data);
+        await api.put(`/battery/${editingBattery.id}`, data);
         showToast("success", "Cập nhật pin thành công!");
         fetchAllData();
         // setBatteries((prev) =>
         //   prev.map((b) => (b.id === editingBattery.id ? { ...b, ...data } : b))
         // );
       } else {
-        res = await api.post("/battery", data);
+        await api.post("/battery", data);
         showToast("success", "Thêm pin mới thành công!");
         fetchAllData();
         // setBatteries((prev) => [...prev, res.data]);

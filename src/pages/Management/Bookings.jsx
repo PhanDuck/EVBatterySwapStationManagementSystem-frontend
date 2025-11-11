@@ -15,7 +15,6 @@ import {
   Input,
   Space,
   Tag,
-  message,
   Spin,
 } from "antd";
 import { PlusOutlined, CloseCircleOutlined } from "@ant-design/icons";
@@ -317,7 +316,7 @@ export default function BookingsPage() {
   return (
     <div style={{ padding: 24 }}>
       <Card
-        title="Quản lý đặt lịch"
+        title="Quản lý đặt lịch của tài xế"
         extra={
           <Space>
             <Input
