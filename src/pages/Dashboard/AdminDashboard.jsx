@@ -15,6 +15,7 @@ import BatteryManagement from "../Management/BatteryManagement";
 import ServicePackagesPage from "../Management/ServicePackages";
 import Inventories from "../Management/Inventory";
 import Assignments from "../Management/Assignment";
+import Profile from "../Management/Profile";
 
 export default function AdminDashboard() {
   return (

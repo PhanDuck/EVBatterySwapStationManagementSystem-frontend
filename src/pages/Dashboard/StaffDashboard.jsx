@@ -8,6 +8,7 @@ import Stations from "../Management/Stations";
 import Vehicles from "../Management/Vehicles";
 import SupportTickets from "../Management/SupportTickets";
 import Inventories from "../Management/Inventory";
+import Profile from "../Management/Profile";
 
 export default function StaffDashboard() {
   return (
