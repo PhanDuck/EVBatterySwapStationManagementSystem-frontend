@@ -52,6 +52,12 @@ function StationBookingPage() {
 
   // 🆕 Tự động điền form nếu có URL params
   useEffect(() => {
+    if (vehicleIdFromUrl) {
+      form.setFieldsValue({
+        vehicleId: parseInt(vehicleIdFromUrl),
+      });
+      setCurrentStep(1);
+    }
     if (vehicleIdFromUrl && stationIdFromUrl) {
       form.setFieldsValue({
         vehicleId: parseInt(vehicleIdFromUrl),

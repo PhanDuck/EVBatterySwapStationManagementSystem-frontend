@@ -11,12 +11,14 @@ const BookingFormFields = ({
   form,
   onVehicleChange,
   preselectedVehicleId,
+  preselectedStationId,
 }) => {
   const [vehicles, setVehicles] = useState([]);
   const [compatibleStations, setCompatibleStations] = useState([]);
   const [isStationLoading, setIsStationLoading] = useState(false);
   const [isVehicleLoading, setIsVehicleLoading] = useState(true);
   const [selectedVehicleDetails, setSelectedVehicleDetails] = useState(null);
+  const [preselectedStationName, setPreselectedStationName] = useState(null);
 
   const fetchCompatibleStations = useCallback(async (vehicleId) => {
     if (!vehicleId) {
@@ -59,6 +61,10 @@ const BookingFormFields = ({
             (v) => v.id === preselectedVehicleId
           );
           setSelectedVehicleDetails(preselectedVehicle);
+          // Tự động fetch trạm tương thích
+          if (preselectedVehicleId) {
+            fetchCompatibleStations(preselectedVehicleId);
+          }
         }
       } catch (error) {
         console.error("Lỗi khi tải danh sách xe:", error);
@@ -72,6 +78,17 @@ const BookingFormFields = ({
     };
     fetchVehicles();
   }, [preselectedVehicleId]);
+
+  // 🆕 Fetch tên trạm khi có preselectedStationId
+  useEffect(() => {
+    if (preselectedStationId && compatibleStations.length > 0) {
+      const station = compatibleStations.find((s) => s.id === preselectedStationId);
+      if (station) {
+        setPreselectedStationName(station.name);
+        form.setFieldsValue({ stationId: preselectedStationId });
+      }
+    }
+  }, [preselectedStationId, compatibleStations, form]);
 
   const handleVehicleChange = (vehicleId) => {
     form.setFieldsValue({ stationId: undefined }); // Reset station selection
@@ -139,7 +156,7 @@ const BookingFormFields = ({
           placeholder="Chọn một trạm"
           showSearch
           optionFilterProp="children"
-          disabled={!form.getFieldValue("vehicleId") || isStationLoading}
+          disabled={!form.getFieldValue("vehicleId")}
           loading={isStationLoading}
           notFoundContent={
             isStationLoading ? (
@@ -159,20 +176,6 @@ const BookingFormFields = ({
           ))}
         </Select>
       </Form.Item>
-
-      {/* <Form.Item
-        name="bookingTime"
-        label="3. Chọn thời gian hẹn"
-        rules={[{ required: true, message: "Vui lòng chọn ngày và giờ!" }]}
-      >
-        <DatePicker
-          showTime={{ format: "HH:mm", minuteStep: 15 }}
-          format="YYYY-MM-DD HH:mm"
-          disabledDate={disabledDate}
-          style={{ width: "100%" }}
-          placeholder="Chọn ngày và giờ"
-        />
-      </Form.Item> */}
     </>
   );
 };
