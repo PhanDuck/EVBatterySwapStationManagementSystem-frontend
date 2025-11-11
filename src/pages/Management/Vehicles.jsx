@@ -843,6 +843,7 @@ const VehiclePage = () => {
     } catch (error) {
 
       showToast("error", error.response?.data || "Lỗi lưu thông tin phương tiện");
+      setIsSubmitting(false);
     }
   };
 

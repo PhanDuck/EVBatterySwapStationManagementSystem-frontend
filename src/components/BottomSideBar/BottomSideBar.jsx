@@ -35,10 +35,10 @@ const BottomSideBar = ({ collapse }) => {
   const Role = getRole();
 
   const items = [
-    {
-      key: "1",
-      label: <span>Setting</span>,
-    },
+    // {
+    //   key: "1",
+    //   label: <span>Setting</span>,
+    // },
     {
       key: "home",
       label: (

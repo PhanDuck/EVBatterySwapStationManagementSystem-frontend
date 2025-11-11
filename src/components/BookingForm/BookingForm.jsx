@@ -6,15 +6,11 @@ import api from "../../config/axios";
 const { Option } = Select;
 const { Text } = Typography;
 
-const GET_VEHICLES_API_URL = "/vehicle/my-vehicles";
-const GET_COMPATIBLE_STATIONS_API_URL = "/booking/compatible-stations";
-
 // Component giờ đây sẽ nhận thêm prop `form`, `onVehicleChange`, `preselectedVehicleId`, `preselectedStationId`
 const BookingFormFields = ({
   form,
   onVehicleChange,
   preselectedVehicleId,
-  preselectedStationId,
 }) => {
   const [vehicles, setVehicles] = useState([]);
   const [compatibleStations, setCompatibleStations] = useState([]);
@@ -30,7 +26,7 @@ const BookingFormFields = ({
     setIsStationLoading(true);
     try {
       const res = await api.get(
-        `${GET_COMPATIBLE_STATIONS_API_URL}/${vehicleId}`
+        `${"/booking/compatible-stations"}/${vehicleId}`
       );
       const stationsData = res.data.map((s) => ({
         ...s,
@@ -53,7 +49,7 @@ const BookingFormFields = ({
   useEffect(() => {
     const fetchVehicles = async () => {
       try {
-        const res = await api.get(GET_VEHICLES_API_URL);
+        const res = await api.get("/vehicle/my-vehicles");
         const fetchedVehicles = res.data || [];
         setVehicles(fetchedVehicles);
 
