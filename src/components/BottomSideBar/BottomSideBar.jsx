@@ -36,16 +36,7 @@ const BottomSideBar = ({ collapse }) => {
   };
 
   const Role = getRole();
-
-  useEffect(() => {
-  const handleUserUpdate = () => {
-    const storedUser = JSON.parse(localStorage.getItem("currentUser"));
-    setUser(storedUser);
-  };
-
-  window.addEventListener("user-updated", handleUserUpdate);
-  return () => window.removeEventListener("user-updated", handleUserUpdate);
-}, []);
+ 
 
   const items = [
 
