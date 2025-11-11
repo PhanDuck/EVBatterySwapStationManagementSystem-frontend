@@ -13,7 +13,7 @@ import {
   Input,
   Modal,
   Form,
-  message,
+
 } from "antd";
 import {
   DollarOutlined,
@@ -24,8 +24,7 @@ import {
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import MomoLogo from "../../assets/img/MoMoLogo.svg";
-import dayjs from "dayjs"; // Import dayjs
-import handleApiError from "../../Utils/handleApiError";
+import dayjs from "dayjs"; 
 import { showToast } from "../../Utils/toastHandler";
 
 const { RangePicker } = DatePicker;
@@ -131,19 +130,7 @@ const TransactionsPage = () => {
       sorter: (a, b) => a.id - b.id,
       defaultSortOrder: "descend",
     },
-    // {
-    //   title: "Loại",
-    //   dataIndex: "type",
-    //   render: (type) => {
-    //     const colors = {
-    //       "Battery Swap": "blue",
-    //       Subscription: "green",
-    //       Refund: "orange",
-    //       Penalty: "red",
-    //     };
-    //     return <Tag color={colors[type] || "default"}>{type}</Tag>;
-    //   },
-    // },
+
     {
       title: "Số tiền",
       dataIndex: "amount",

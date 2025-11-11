@@ -1,4 +1,4 @@
-import React, {
+import {
   useEffect,
   useState,
   useMemo,
@@ -28,9 +28,6 @@ const { TextArea } = Input;
 
 export default function BookingsPage() {
   const [data, setData] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
-  const [stations, setStations] = useState([]);
-  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState("");
@@ -41,7 +38,6 @@ export default function BookingsPage() {
   // 🧩 User hiện tại - lấy từ localStorage
   const user = getCurrentUser() || {};
   const role = user?.role;
-  const userId = user?.id;
   const navigate = useNavigate();
   const initialized = useRef(false);
 
@@ -52,9 +48,6 @@ export default function BookingsPage() {
       let bookingRes;
 
       if (role === "ADMIN" || role === "STAFF") {
-
-
-
         // ADMIN & STAFF: lấy tất cả booking hoặc booking của trạm phụ trách
         const url = role === "ADMIN" ? "/booking" : "/booking/my-stations";
         bookingRes = await Promise.race([
@@ -103,45 +96,19 @@ export default function BookingsPage() {
     }
   }, [fetchData]);
 
-  // 📖 Map ID sang tên - ✅ OPTIMIZATION: Sử dụng Map thay vì find() để tăng tốc độ
-  const userMap = useMemo(() => {
-    const map = new Map();
-    users.forEach((u) => map.set(u.id, u.fullName));
-    return map;
-  }, [users]);
-
-  const vehicleMap = useMemo(() => {
-    const map = new Map();
-    vehicles.forEach((v) => map.set(v.id, v.model));
-    return map;
-  }, [vehicles]);
-
-  const stationMap = useMemo(() => {
-    const map = new Map();
-    stations.forEach((s) => map.set(s.id, s.name));
-    return map;
-  }, [stations]);
-
-  const driverName = (id) => userMap.get(id) || `${id}`;
-  const vehicleName = (id) => vehicleMap.get(id) || `${id}`;
-  const stationName = (id) => stationMap.get(id) || `${id}`;
-
-  // 🔍 Tìm kiếm - ✅ OPTIMIZATION: Giới hạn số lần render
+  // 🔍 Tìm kiếm - Tìm kiếm trực tiếp trên dữ liệu từ API
   const filteredData = useMemo(() => {
     if (!search) return data;
 
     const searchLower = search.toLowerCase();
     return data.filter(
       (item) =>
-        driverName(item.driverId)
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        vehicleName(item.vehicleId)
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        stationName(item.stationId).toLowerCase().includes(search.toLowerCase())
+        (item.driverName?.toLowerCase().includes(searchLower)) ||
+        (item.vehicleModel?.toLowerCase().includes(searchLower)) ||
+        (item.vehiclePlateNumber?.toLowerCase().includes(searchLower)) ||
+        (item.stationName?.toLowerCase().includes(searchLower))
     );
-  }, [data, search, users, vehicles, stations]);
+  }, [data, search]);
 
   // 1. Xử lý Hủy Booking cho ADMIN/STAFF
   const handleOpenCancelModal = (record) => {
@@ -172,7 +139,7 @@ export default function BookingsPage() {
       );
 
       showToast("success", "Đã hủy booking thành công!");
-      
+
       setIsCancelModalVisible(false);
       setCancellingBooking(null);
     } catch (error) {
@@ -181,6 +148,7 @@ export default function BookingsPage() {
       setSubmitting(false);
     }
   };
+
   // 3. ✅ Xử lý Hủy Booking cho DRIVER (Gửi API trực tiếp)
   const handleDriverCancel = (record) => {
     Modal.confirm({
@@ -219,31 +187,51 @@ export default function BookingsPage() {
       title: "ID",
       dataIndex: "id",
       key: "id",
-      width: 80,
+      width: 60,
       sorter: (a, b) => a.id - b.id,
       defaultSortOrder: "descend",
     },
     {
       title: "Tài xế",
-
       dataIndex: "driverName",
       key: "driverName",
-      sorter: (a, b) => a.driverName - b.driverName,
-      defaultSortOrder: "descend",
+      sorter: (a, b) => (a.driverName || "").localeCompare(b.driverName || ""),
+    },
+    {
+      title: "Điện thoại",
+      dataIndex: "driverPhone",
+      key: "driverPhone",
+      render: (phone) => <span>{phone || "N/A"}</span>,
     },
     {
       title: "Xe",
       dataIndex: "vehicleModel",
       key: "vehicleModel",
-      sorter: (a, b) => a.vehicleModel - b.vehicleModel,
-      defaultSortOrder: "descend",
+      sorter: (a, b) => (a.vehicleModel || "").localeCompare(b.vehicleModel || ""),
+    },
+    {
+      title: "Biển số",
+      dataIndex: "vehiclePlateNumber",
+      key: "vehiclePlateNumber",
+      render: (plate) => <span>{plate || "N/A"}</span>,
     },
     {
       title: "Trạm",
       dataIndex: "stationName",
       key: "stationName",
-      sorter: (a, b) => a.stationName - b.stationName,
-      defaultSortOrder: "descend",
+      sorter: (a, b) => (a.stationName || "").localeCompare(b.stationName || ""),
+    },
+    {
+      title: "Pin cũ",
+      dataIndex: "swapOutBatteryModel",
+      key: "swapOutBatteryModel",
+      render: (model) => <span>{model || "N/A"}</span>,
+    },
+    {
+      title: "Pin mới",
+      dataIndex: "swapInBatteryModel",
+      key: "swapInBatteryModel",
+      render: (model) => <span>{model || "N/A"}</span>,
     },
     {
       title: "Thời gian đặt",
@@ -251,7 +239,7 @@ export default function BookingsPage() {
       key: "bookingTime",
       sorter: (a, b) =>
         dayjs(a.bookingTime).unix() - dayjs(b.bookingTime).unix(),
-      render: (t) => (t ? dayjs(t).format("DD/MM/YYYY HH:mm") : ""),
+      render: (t) => (t ? dayjs(t).format("DD/MM/YYYY HH:mm") : "N/A"),
     },
     {
       title: "Trạng thái",
@@ -269,48 +257,67 @@ export default function BookingsPage() {
         return <Tag color={color}>{s}</Tag>;
       },
     },
-    // Mã đổi pin (Chỉ hiển thị cho ADMIN và DRIVER)
+    // Mã xác nhận (Chỉ hiển thị cho ADMIN và DRIVER)
     ...(role === "ADMIN" || role === "DRIVER"
       ? [
           {
             title: "Mã xác nhận",
             dataIndex: "confirmationCode",
             key: "confirmationCode",
-            render: (code) => <p>{code}</p>, // Hiển thị mã đổi pin
+            render: (code) => <span>{code || "N/A"}</span>,
           },
         ]
-      : []), // Trả về mảng rỗng nếu là STAFF hoặc vai trò khác
-    {
-      title: "Thao tác",
-      key: "actions",
-
-      render: (_, record) => (
-        <Space>
-          {(role === "ADMIN" || role === "STAFF") &&
-            record.status === "CONFIRMED" && (
-              <Button
-                type="primary"
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => handleOpenCancelModal(record)}
-              >
-                Hủy
-              </Button>
-            )}
-
-          {role === "DRIVER" && record.status === "CONFIRMED" && (
-            <Button
-              type="primary"
-              danger
-              icon={<CloseCircleOutlined />}
-              onClick={() => handleDriverCancel(record)}
-            >
-              Hủy
-            </Button>
-          )}
-        </Space>
-      ),
-    },
+      : []),
+    // Cột Thao tác (Chỉ hiển thị cho ADMIN và STAFF)
+    ...(role === "ADMIN" || role === "STAFF"
+      ? [
+          {
+            title: "Thao tác",
+            key: "actions",
+            width: 120,
+            render: (_, record) => (
+              <Space>
+                {record.status === "CONFIRMED" && (
+                  <Button
+                    type="primary"
+                    danger
+                    size="small"
+                    icon={<CloseCircleOutlined />}
+                    onClick={() => handleOpenCancelModal(record)}
+                  >
+                    Hủy
+                  </Button>
+                )}
+              </Space>
+            ),
+          },
+        ]
+      : []),
+    // Cột Thao tác cho DRIVER
+    ...(role === "DRIVER"
+      ? [
+          {
+            title: "Thao tác",
+            key: "actions",
+            width: 120,
+            render: (_, record) => (
+              <Space>
+                {(record.status === "PENDING" || record.status === "CONFIRMED") && (
+                  <Button
+                    type="primary"
+                    danger
+                    size="small"
+                    icon={<CloseCircleOutlined />}
+                    onClick={() => handleDriverCancel(record)}
+                  >
+                    Hủy
+                  </Button>
+                )}
+              </Space>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -320,10 +327,10 @@ export default function BookingsPage() {
         extra={
           <Space>
             <Input
-              placeholder="Tìm tài xế / xe / trạm"
+              placeholder="Tìm tài xế / xe / biển số / trạm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ width: 250 }}
+              style={{ width: 280 }}
             />
             {role === "DRIVER" && (
               <Button
@@ -345,7 +352,9 @@ export default function BookingsPage() {
             pagination={{
               showTotal: (total, range) =>
                 `${range[0]}-${range[1]} trên ${total} lịch`,
+              pageSize: 10,
             }}
+            scroll={{ x: 1200 }}
           />
         </Spin>
       </Card>

@@ -903,10 +903,10 @@ const VehiclePage = () => {
       return Upload.LIST_IGNORE;
     }
 
-    // Kiểm tra file size (max 10MB)
-    const isLt10M = file.size / 1024 / 1024 < 10;
-    if (!isLt10M) {
-      showToast("error", "Ảnh phải nhỏ hơn 10MB!");
+    // Kiểm tra file size (max 5MB)
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      showToast("error", "Ảnh phải nhỏ hơn 5MB!");
       return Upload.LIST_IGNORE;
     }
 

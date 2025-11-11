@@ -29,6 +29,7 @@ import BookingFormFields from "../../components/BookingForm/BookingForm";
 
 import "../../App.css";
 import "../../index.css";
+import { showToast } from "../../Utils/toastHandler";
 
 dayjs.locale("vi");
 dayjs.extend(relativeTime);
@@ -52,6 +53,12 @@ function StationBookingPage() {
 
   // 🆕 Tự động điền form nếu có URL params
   useEffect(() => {
+    if (vehicleIdFromUrl) {
+      form.setFieldsValue({
+        vehicleId: parseInt(vehicleIdFromUrl),
+      });
+      setCurrentStep(1);
+    }
     if (vehicleIdFromUrl && stationIdFromUrl) {
       form.setFieldsValue({
         vehicleId: parseInt(vehicleIdFromUrl),
@@ -77,17 +84,11 @@ function StationBookingPage() {
         //bookingTime: dayjs(values.bookingTime),
       });
       setBookingSuccess(true);
-      notification.success({
-        message: "Đặt Lịch Thành Công!",
-        description: `Lịch hẹn của bạn đã được xác nhận.`,
-      });
+      showToast("success", "Đặt lịch thành công!");
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Đã xảy ra lỗi khi đặt lịch.";
-      notification.error({
-        message: "Đặt Lịch Thất Bại",
-        description: errorMessage,
-      });
+        error.response?.data || "Đã xảy ra lỗi khi đặt lịch.";
+      showToast("error", errorMessage);
     } finally {
       setLoading(false);
     }

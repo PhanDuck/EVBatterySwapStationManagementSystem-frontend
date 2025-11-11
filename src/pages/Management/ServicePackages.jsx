@@ -37,15 +37,6 @@ const ServicePackagesPage = () => {
     }
   };
 
-  // const fetchAllUsers = async () => {
-  //   try {
-  //     const res = await api.get("/admin/user");
-  //     setUsers(res.data);
-  //   } catch (error) {
-  //     showToast("error", error.response?.data || "Lấy danh sách người dùng thất bại, vui lòng thử lại!");
-  //   }
-  // };
-
   const fetchDriverSubscriptions = async () => {
     try {
       // Sử dụng API admin để lấy tất cả driver subscriptions
@@ -66,8 +57,8 @@ const ServicePackagesPage = () => {
         name: values.name,
         description: values.description,
         price: values.price,
-        duration: values.duration, // API dùng "duration" không phải "durationDays"
-        maxSwaps: values.maxSwaps, // API dùng "maxSwaps" không phải "maxSwap"
+        duration: values.duration, 
+        maxSwaps: values.maxSwaps, 
       };
 
       if (editingPackage) {
@@ -136,8 +127,8 @@ const ServicePackagesPage = () => {
       name: pkg.name,
       description: pkg.description,
       price: pkg.price,
-      duration: pkg.duration || pkg.durationDays, // Hỗ trợ cả 2 tên
-      maxSwaps: pkg.maxSwaps || pkg.maxSwap, // Hỗ trợ cả 2 tên
+      duration: pkg.duration || pkg.durationDays, 
+      maxSwaps: pkg.maxSwaps || pkg.maxSwap, 
     });
   };
 
@@ -155,7 +146,6 @@ const ServicePackagesPage = () => {
       title: "Thời hạn",
       dataIndex: "duration",
       key: "duration",
-
       render: (days) => `${days || 0} ngày`,
     },
     {
@@ -192,15 +182,6 @@ const ServicePackagesPage = () => {
       ),
     },
   ];
-
-  // const userMap = useMemo(
-  //   () => new Map(users.map((user) => [user.id, user.fullName])),
-  //   [users]
-  // );
-  const packageMap = useMemo(
-    () => new Map(packages.map((pkg) => [pkg.id, pkg.name])),
-    [packages]
-  );
 
   const subscriptionColumns = [
     {
