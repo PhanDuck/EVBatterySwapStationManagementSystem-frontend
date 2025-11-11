@@ -18,8 +18,11 @@ import {
   CheckCircleOutlined,
   ThunderboltOutlined,
   HeartOutlined,
+  CarOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
+// import axios from "axios";
+import api from "../../config/axios";
 
 export default function SwapAnimation() {
   const [code, setCode] = useState("");
@@ -27,16 +30,14 @@ export default function SwapAnimation() {
   const [step, setStep] = useState(1); // 1: Nhập code, 2: Cho pin vào, 3: Sẵn sàng Swap
   const [newBattery, setNewBattery] = useState(null); // Pin mới sắp lắp vào
   const [oldBattery, setOldBattery] = useState(null); // Pin cũ tháo ra
+  const [transactionInfo, setTransactionInfo] = useState({
+    vehiclePlate: null,
+    driverName: null,
+  });
 
-  const token = sessionStorage.getItem("authToken");
+  // const token = sessionStorage.getItem("authToken");
 
   const { Title, Text } = Typography;
-
-  // Định nghĩa các API endpoints
-  const API_BASE_URL = "";
-  const GET_NEW_BATTERY_API_URL = "/api/swap-transaction/new-battery";
-  const GET_OLD_BATTERY_API_URL = "/api/swap-transaction/old-battery";
-  const POST_SWAP_API_URL = "/api/swap-transaction/swap-by-code";
 
   // ⚙️ Component con hiển thị thông tin pin (dùng lại cho cả pin cũ và pin mới)
   const BatteryInfoCard = ({ title, batteryData, loading, type }) => {
@@ -116,8 +117,7 @@ export default function SwapAnimation() {
           <Row justify="space-between">
             <Col>
               <Text strong>
-                <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc
-                (%):
+                <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc (%):
               </Text>
             </Col>
             <Col>
@@ -132,8 +132,7 @@ export default function SwapAnimation() {
           <Row justify="space-between">
             <Col>
               <Text strong>
-                <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng
-                pin(%):
+                <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng pin(%):
               </Text>
             </Col>
             <Col>
@@ -163,19 +162,22 @@ export default function SwapAnimation() {
     setLoading(true);
     try {
       // API lấy thông tin pin mới
-      const res = await axios.get(
-        `${API_BASE_URL}${GET_NEW_BATTERY_API_URL}?code=${code}`, // Dùng 'code' làm parameter
+      const res = await api.get(
+        "/swap-transaction/new-battery",
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          params: { code: code },
         }
       );
 
       setNewBattery(res.data);
+      setTransactionInfo({
+        vehiclePlate: res.data.vehiclePlate,
+        driverName: res.data.driverName,
+      });
       setStep(2); // Chuyển sang bước "Cho pin vào"
       message.success("✅ Xác nhận mã thành công! Sẵn sàng cho pin vào.");
     } catch (error) {
+      setTransactionInfo({ vehiclePlate: null, driverName: null });
       message.error(
         error?.response?.data?.message ||
           "❌ Lấy thông tin pin mới không thành công!"
@@ -198,12 +200,10 @@ export default function SwapAnimation() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // API lấy thông tin pin cũ
-      const res = await axios.get(
-        `${API_BASE_URL}${GET_OLD_BATTERY_API_URL}?code=${code}`, // Dùng 'code' làm parameter
+      const res = await api.get(
+        "/swap-transaction/old-battery",
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          params: { code: code },
         }
       );
 
@@ -234,13 +234,11 @@ export default function SwapAnimation() {
 
     // API Swap Transaction cuối cùng
     try {
-      const res = await axios.post(
-        `${POST_SWAP_API_URL}?code=${code}`,
-        {}, // body rỗng
+      const res = await api.post(
+        "/swap-transaction/swap-by-code",
+        {},
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          params: { code: code },
         }
       );
 
@@ -250,6 +248,7 @@ export default function SwapAnimation() {
       setStep(1);
       setNewBattery(null);
       setOldBattery(null);
+      setTransactionInfo({ vehiclePlate: null, driverName: null });
     } catch (error) {
       message.error(
         error?.response?.data?.message || "❌ Đổi không thành công!"
@@ -329,6 +328,7 @@ export default function SwapAnimation() {
                 setStep(1);
                 setNewBattery(null);
                 setOldBattery(null);
+                setTransactionInfo({ vehiclePlate: null, driverName: null });
               }
             }}
             style={{ marginBottom: 12 }}
@@ -345,6 +345,37 @@ export default function SwapAnimation() {
           >
             Kiểm tra mã
           </Button>
+
+         {/* HIỂN THỊ THÔNG TIN XE VÀ TÀI XẾ SAU KHI XÁC NHẬN MÃ */}
+          {step > 1 && (
+            <div style={{ marginTop: 16 }}>
+              <Divider style={{ margin: "8px 0" }} />
+              <Space direction="vertical" style={{ width: "100%" }}>
+                {/* Tài xế */}
+                <Row justify="space-between" align="middle" style={{ width: "100%" }}>
+                  <Col>
+                    <Text strong>
+                      <UserOutlined style={{ marginRight: 4 }} /> Tài xế: 
+                    </Text>
+                  </Col>
+                  <Col>
+                    <Text>{transactionInfo.driverName}</Text>
+                  </Col>
+                </Row>
+                {/* Biển số xe */}
+                <Row justify="space-between" align="middle" style={{ width: "100%" }}>
+                  <Col>
+                    <Text strong>
+                      <CarOutlined style={{ marginRight: 4 }} /> Biển số xe:
+                    </Text>
+                  </Col>
+                  <Col>
+                    <Text>{transactionInfo.vehiclePlate}</Text>
+                  </Col>
+                </Row>             
+              </Space>
+            </div>
+          )} 
         </Card>
 
         {/* 2. KHU VỰC HIỂN THỊ PIN VÀ HÀNH ĐỘNG (Chỉ hiện khi step > 1, Căn giữa) */}
@@ -412,58 +443,3 @@ export default function SwapAnimation() {
     </div>
   );
 }
-
-// const handleConfirm = async () => {
-//   if (!code || code.length !== 6) {
-//     return message.warning("⚠️ Vui lòng nhập đúng mã gồm 6 ký tự.");
-//   }
-
-//   try {
-//     setLoading(true);
-
-//     const res = await axios.post(
-//       `/api/swap-transaction/swap-by-code?confirmationCode=${code}`,
-//       {},
-//       {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       }
-//     );
-
-//     message.success("✅ Xác nhận thành công!");
-//     console.log("✅ Response API:", res.data);
-//   } catch (error) {
-//     console.error("❌ Lỗi API:", error);
-//     message.error(
-//       error?.response?.data?.message || "❌ Xác nhận không thành công!"
-//     );
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
-// return (
-//   <Card
-//     title="Nhập mã xác nhận để Swap Pin"
-//     style={{ maxWidth: 400, margin: "0 auto" }}
-//   >
-//     <Input
-//       placeholder="Nhập mã gồm 6 ký tự"
-//       value={code}
-//       maxLength={6}
-//       onChange={(e) => setCode(e.target.value)}
-//       style={{ marginBottom: 12 }}
-//     />
-
-//     <Button
-//       type="primary"
-//       block
-//       onClick={handleConfirm}
-//       loading={loading}
-//       disabled={!code}
-//     >
-//       Xác nhận Swap
-//     </Button>
-//   </Card>
-// );
