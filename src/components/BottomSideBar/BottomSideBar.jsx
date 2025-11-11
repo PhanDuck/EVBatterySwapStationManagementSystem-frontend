@@ -1,12 +1,15 @@
 import { Avatar, Dropdown, Space } from "antd"; // ✅ thêm Button
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserOutlined } from "@ant-design/icons";
 import { HiOutlineSparkles } from "react-icons/hi";
-import LogoutBtn from "../LogoutBtn/LogoutBtn";
+import LogoutBtn from "../Btn/LogoutBtn";
+import ProfileBtn from "../Btn/ProfileBtn";
+import HomeBtn from "../Btn/HomeBtn";
 
 const BottomSideBar = ({ collapse }) => {
   const navigate = useNavigate();
+  const [setUser] = localStorage.getItem("currentUser");
 
   function getDisplayName() {
     try {
@@ -34,28 +37,26 @@ const BottomSideBar = ({ collapse }) => {
 
   const Role = getRole();
 
+  useEffect(() => {
+  const handleUserUpdate = () => {
+    const storedUser = JSON.parse(localStorage.getItem("currentUser"));
+    setUser(storedUser);
+  };
+
+  window.addEventListener("user-updated", handleUserUpdate);
+  return () => window.removeEventListener("user-updated", handleUserUpdate);
+}, []);
+
   const items = [
-    // {
-    //   key: "1",
-    //   label: <span>Setting</span>,
-    // },
+
+    {
+      key: "1",
+      label: <ProfileBtn />
+    },
+
     {
       key: "home",
-      label: (
-        <button
-          style={{
-            background: "none",
-            border: "none",
-            color: "#1890ff",
-            padding: 0,
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
-          onClick={() => navigate("/")}
-        >
-          Trang chủ
-        </button>
-      ),
+      label: <HomeBtn />       
     },
     {
       key: "2",

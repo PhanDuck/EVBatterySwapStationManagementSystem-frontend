@@ -35,6 +35,7 @@ export default function AdminDashboard() {
         <Route path="transactions" element={<Transactions />} />
         <Route path="tickets" element={<SupportTickets />} />
         <Route path="service-packages" element={<ServicePackagesPage />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="*" element={<div>Không tìm thấy trang!</div>} />
       </Routes>
     </MainLayout>

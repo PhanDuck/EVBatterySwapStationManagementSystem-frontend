@@ -45,8 +45,7 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
       { path: "vehicles", label: "Xe điện của tôi", icon: <FiTruck /> },
       { path: "transactions", label: "Giao dịch của tôi", icon: <MdOutlinePayments /> },
       { path: "driver-subscription", label: "Quản lý đăng ký", icon: <FiHelpCircle />},
-      { path: "tickets", label: "Hỗ trợ", icon: <TbMessageCircleQuestion /> },
-      { path: "Profile", label: "Hồ sơ của tôi", icon: <FiSettings /> },
+      { path: "tickets", label: "Hỗ trợ", icon: <TbMessageCircleQuestion /> },  
     ],
   };
 

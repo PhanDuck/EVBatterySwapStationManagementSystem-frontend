@@ -11,7 +11,7 @@ const LogoutBtn = () => {
     clearAuth();
     sessionStorage.clear();
     navigate("/login", { replace: true }); // quay lại login
-    window.location.reload(); // 💥 reload để reset toàn bộ state
+    window.location.reload(); 
   };
   return (
     <div>
@@ -22,7 +22,7 @@ const LogoutBtn = () => {
         onClick={handleLogout}
         block
       >
-        Logout
+        Đăng xuất
       </Button>
     </div>
   );

@@ -10,8 +10,8 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import { isAuthenticated } from "../../config/auth";
-import LogoutBtn from "../LogoutBtn/LogoutBtn";
-import DashboardButton from "../DashboardBtn/DashboardButton";
+import LogoutBtn from "../Btn/LogoutBtn";
+import DashboardButton from "../Btn/DashboardButton";
 
 const Navbar = () => {
   const navigate = useNavigate();
