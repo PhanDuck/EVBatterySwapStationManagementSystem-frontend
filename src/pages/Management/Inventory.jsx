@@ -619,11 +619,18 @@ export default function InventoryPage() {
     },
   ];
 
+  const selectedStation = stations.find(
+    (station) => station.id === selectedStationId
+  );
+  const cardTitle = selectedStation
+  ? `Quản lý tồn kho pin tại ${selectedStation.name}`
+  : "Quản lý tồn kho pin tại trạm";
+
   return (
     <div style={{ padding: "24px" }}>
       {/* CARD QUẢN LÝ TỒN KHO TẠI TRẠM */}
       <Card
-        title="Quản lý tồn kho pin tại trạm"
+        title={cardTitle}
         extra={
           <Space>
             <Select
