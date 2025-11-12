@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -103,10 +97,10 @@ export default function BookingsPage() {
     const searchLower = search.toLowerCase();
     return data.filter(
       (item) =>
-        (item.driverName?.toLowerCase().includes(searchLower)) ||
-        (item.vehicleModel?.toLowerCase().includes(searchLower)) ||
-        (item.vehiclePlateNumber?.toLowerCase().includes(searchLower)) ||
-        (item.stationName?.toLowerCase().includes(searchLower))
+        item.driverName?.toLowerCase().includes(searchLower) ||
+        item.vehicleModel?.toLowerCase().includes(searchLower) ||
+        item.vehiclePlateNumber?.toLowerCase().includes(searchLower) ||
+        item.stationName?.toLowerCase().includes(searchLower)
     );
   }, [data, search]);
 
@@ -134,7 +128,9 @@ export default function BookingsPage() {
       // Cập nhật state local
       setData((prev) =>
         prev.map((item) =>
-          item.id === bookingId ? { ...item, status: "CANCELLED" } : item
+          item.id === bookingId
+            ? { ...item, status: "CANCELLED", confirmationCode: null }
+            : item
         )
       );
 
@@ -143,7 +139,10 @@ export default function BookingsPage() {
       setIsCancelModalVisible(false);
       setCancellingBooking(null);
     } catch (error) {
-      showToast("error", error.response?.data || "Hủy booking thất bại, vui lòng thử lại!");
+      showToast(
+        "error",
+        error.response?.data || "Hủy booking thất bại, vui lòng thử lại!"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -157,7 +156,7 @@ export default function BookingsPage() {
         <div>
           <p>Bạn có chắc chắn muốn hủy đặt lịch này không?</p>
           <p style={{ color: "red", fontWeight: "bold" }}>
-            Lưu ý! Bạn không thể hủy sau 2 tiếng kể từ khi đặt lịch.
+            Lưu ý! Bạn không thể hủy sau 2 giờ kể từ khi đặt lịch.
           </p>
         </div>
       ),
@@ -170,12 +169,17 @@ export default function BookingsPage() {
           // Cập nhật state local
           setData((prev) =>
             prev.map((item) =>
-              item.id === record.id ? { ...item, status: "CANCELLED" } : item
+              item.id === record.id
+                ? { ...item, status: "CANCELLED", confirmationCode: null }
+                : item
             )
           );
           showToast("success", "Đã hủy đặt lịch thành công!");
         } catch (error) {
-          showToast("error", error.response?.data || "Hủy đặt lịch thất bại, vui lòng thử lại!");
+          showToast(
+            "error",
+            error.response?.data || "Hủy đặt lịch thất bại, vui lòng thử lại!"
+          );
         }
       },
     });
@@ -201,37 +205,39 @@ export default function BookingsPage() {
       title: "Điện thoại",
       dataIndex: "driverPhone",
       key: "driverPhone",
-      render: (phone) => <span>{phone || "N/A"}</span>,
+      render: (phone) => <span>{phone}</span>,
     },
     {
       title: "Xe",
       dataIndex: "vehicleModel",
       key: "vehicleModel",
-      sorter: (a, b) => (a.vehicleModel || "").localeCompare(b.vehicleModel || ""),
+      sorter: (a, b) =>
+        (a.vehicleModel || "").localeCompare(b.vehicleModel),
     },
     {
       title: "Biển số",
       dataIndex: "vehiclePlateNumber",
       key: "vehiclePlateNumber",
-      render: (plate) => <span>{plate || "N/A"}</span>,
+      render: (plate) => <span>{plate}</span>,
     },
     {
       title: "Trạm",
       dataIndex: "stationName",
       key: "stationName",
-      sorter: (a, b) => (a.stationName || "").localeCompare(b.stationName || ""),
+      sorter: (a, b) =>
+        (a.stationName || "").localeCompare(b.stationName || ""),
     },
     {
       title: "Pin cũ",
       dataIndex: "swapOutBatteryModel",
       key: "swapOutBatteryModel",
-      render: (model) => <span>{model || "N/A"}</span>,
+      render: (model) => <span>{model}</span>,
     },
     {
       title: "Pin mới",
       dataIndex: "swapInBatteryModel",
       key: "swapInBatteryModel",
-      render: (model) => <span>{model || "N/A"}</span>,
+      render: (model) => <span>{model}</span>,
     },
     {
       title: "Thời gian đặt",
@@ -264,7 +270,7 @@ export default function BookingsPage() {
             title: "Mã xác nhận",
             dataIndex: "confirmationCode",
             key: "confirmationCode",
-            render: (code) => <span>{code || "N/A"}</span>,
+            render: (code) => <span>{code}</span>,
           },
         ]
       : []),
@@ -302,7 +308,8 @@ export default function BookingsPage() {
             width: 120,
             render: (_, record) => (
               <Space>
-                {(record.status === "PENDING" || record.status === "CONFIRMED") && (
+                {(record.status === "PENDING" ||
+                  record.status === "CONFIRMED") && (
                   <Button
                     type="primary"
                     danger

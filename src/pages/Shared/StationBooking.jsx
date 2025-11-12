@@ -4,7 +4,7 @@ import {
   Form,
   Button,
   Card,
-  notification,
+  //notification,
   Typography,
   Layout,
   Row,
@@ -36,8 +36,6 @@ dayjs.extend(relativeTime);
 
 const { Title, Paragraph } = Typography;
 const { Step } = Steps;
-
-const POST_BOOKING_API_URL = "/booking";
 
 function StationBookingPage() {
   const [form] = Form.useForm();
@@ -76,12 +74,15 @@ function StationBookingPage() {
       stationId: values.stationId,
     };
     try {
-      const res = await api.post(POST_BOOKING_API_URL, payload);
+      const res = await api.post("/booking", payload);
+      const bookingTime = dayjs(values.bookingTime);
+      const expiryTime = bookingTime.add(3, 'hours');
       setBookingDetails({
         ...res.data,
-        vehicleName: `ID ${values.vehicleId}`, // Placeholder
-        stationName: `ID ${values.stationId}`, // Placeholder
-        //bookingTime: dayjs(values.bookingTime),
+        vehicleName: `ID ${values.vehicleId}`, 
+        stationName: `ID ${values.stationId}`, 
+        bookingTime: bookingTime,
+        expiryTime: expiryTime,
       });
       setBookingSuccess(true);
       showToast("success", "Đặt lịch thành công!");
@@ -120,7 +121,7 @@ function StationBookingPage() {
   return (
     <div style={{ padding: "24px", marginTop: 40, background: "#f0f2f5" }}>
       <Row justify="center">
-        <Col xs={24} sm={20} md={16} lg={12} xl={10}>
+        <Col xs={24} sm={20} md={16} lg={16} xl={14}>
           <Card
             style={{
               boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
@@ -137,13 +138,16 @@ function StationBookingPage() {
                       Mã xác nhận:{" "}
                       <strong>{bookingDetails?.confirmationCode}</strong>
                     </Paragraph>
-                    {/*<Paragraph>Lịch hẹn của bạn đã được lên lịch vào lúc <strong>{bookingDetails?.bookingTime.format('HH:mm DD/MM/YYYY')}</strong> ({bookingDetails?.bookingTime.fromNow()}).</Paragraph>*/}
+                    <Paragraph>Lịch hẹn của bạn đã được lên lịch vào lúc <strong>{bookingDetails?.bookingTime.format('HH:mm DD/MM/YYYY')}</strong> ({bookingDetails?.bookingTime.fromNow()}).</Paragraph>
+                    {bookingDetails?.expiryTime && (
+                      <Paragraph>Lịch hẹn của bạn sẽ <b>hết hạn</b> vào lúc <b>{bookingDetails.expiryTime.format('HH:mm DD/MM/YYYY')}</b> ({bookingDetails.expiryTime.fromNow(true)} nữa).</Paragraph>
+                    )}
                     <Paragraph>
-                      Pin của bạn đã được chuẩn bị xong, hãy đến lấy pin trong vòng 3 tiếng sau khi đặt.
+                      Pin của bạn đã được chuẩn bị xong, hãy đến lấy pin trong vòng <b>3 giờ</b> kể từ lúc đặt lịch.
                     </Paragraph>
                     <Paragraph>
                       <strong>
-                        Lưu ý bạn không thể hủy sau 2 tiếng kể từ lúc đặt lịch.
+                        Lưu ý bạn không thể hủy sau 2 giờ kể từ lúc đặt lịch.
                       </strong>
                     </Paragraph>
                   </div>

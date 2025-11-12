@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import api from "../../config/axios";
 import { getToken } from "../../config/auth";
 import { Await, useNavigate } from "react-router-dom";
-import { message } from "antd";
 import { showToast } from "../../Utils/toastHandler";
 
 function PackagesPage() {
