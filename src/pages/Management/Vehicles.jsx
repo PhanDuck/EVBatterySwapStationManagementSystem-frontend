@@ -713,9 +713,9 @@ const VehiclePage = () => {
     };
 
     // Thêm driverId nếu đang sửa và admin chọn tài xế
-    if (editingVehicle && isAdmin && values.driverId) {
-      payload.driverId = values.driverId;
-    }
+    // if (editingVehicle && isAdmin && values.driverId) {
+    //   payload.driverId = values.driverId;
+    // }
 
     let endpoint = "";
 
@@ -755,9 +755,9 @@ const VehiclePage = () => {
         formData.append("plateNumber", payload.plateNumber);
         formData.append("model", payload.model);
         formData.append("batteryTypeId", payload.batteryTypeId);
-        if (payload.driverId) {
-          formData.append("driverId", payload.driverId);
-        }
+        // if (payload.driverId) {
+        //   formData.append("driverId", payload.driverId);
+        // }
         // if (payload.status) {
         //   formData.append("status", payload.status);
         // }
@@ -883,9 +883,9 @@ const VehiclePage = () => {
     };
 
     // Thêm driverId nếu là admin
-    if (isAdmin && vehicle.driverId) {
-      initialValues.driverId = vehicle.driverId;
-    }
+    // if (isAdmin && vehicle.driverId) {
+    //   initialValues.driverId = vehicle.driverId;
+    // }
 
     form.setFieldsValue(initialValues);
   };
@@ -1189,7 +1189,7 @@ const VehiclePage = () => {
             </Select>
           </Form.Item>
 
-          {editingVehicle && isAdmin && (
+          {/* {editingVehicle && isAdmin && (
             <Form.Item
               name="driverId"
               label="Tài xế"
@@ -1203,7 +1203,7 @@ const VehiclePage = () => {
                 ))}
               </Select>
             </Form.Item>
-          )}
+          )} */}
 
           {/* {editingVehicle && isAdmin && (
             <Form.Item
