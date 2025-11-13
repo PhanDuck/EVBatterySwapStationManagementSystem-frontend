@@ -22,7 +22,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
-import { showToast } from "../../components/Shared/ToastNotification";
+import { showToast } from "../../utils/toastHandler";
 
 export default function SwapAnimation() {
   const [code, setCode] = useState("");
