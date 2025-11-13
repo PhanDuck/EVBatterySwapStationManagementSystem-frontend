@@ -27,6 +27,7 @@ import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
 const MAX_STATION_CAPACITY = 20;
+const MAX_BATTERIES_ALLOWED = 19;
 
 export default function InventoryPage() {
   const [loading, setLoading] = useState(false);
@@ -54,7 +55,7 @@ export default function InventoryPage() {
     // Lấy số lượng pin thực tế đang có tại trạm (từ dữ liệu stationInventory đã tải)
     const currentBatteryCount = stationInventory.length;
 
-    return station
+    const baseInfo = station
       ? {
           id: station.id,
           name: station.name,
@@ -67,6 +68,16 @@ export default function InventoryPage() {
           capacity: MAX_STATION_CAPACITY,
           currentCount: 0,
         };
+    // Tính số lượng pin tối đa được phép có trong trạm (giới hạn mềm)
+    const maxLimit = MAX_BATTERIES_ALLOWED;
+    // Số lượng tối đa có thể chuyển vào (Giới hạn: MaxLimit - CurrentCount)
+    const maxSlotsForMove = Math.max(0, maxLimit - currentBatteryCount);
+
+    return {
+      ...baseInfo,
+      maxLimit: maxLimit,
+      maxSlotsForMove: maxSlotsForMove,
+    };
   }, [selectedStationId, stations, stationInventory]);
 
   const selectedStationName = currentStationInfo.name;
@@ -381,33 +392,6 @@ export default function InventoryPage() {
     );
   };
 
-  // Xử lý Pin lỗi VỀ KHO
-  // const handleMoveToWarehouse = async (record) => {
-  //   if (!selectedStationId) return showToast("warning", "Vui lòng chọn trạm!");
-
-  //   try {
-  //     await api.post("/station-inventory/move-to-warehouse", null, {
-  //       params: {
-  //         batteryId: record.id,
-  //         stationId: selectedStationId,
-  //       },
-  //     });
-  //     showToast(
-  //       "success",
-  //       `✅ Pin ${record.id} đã được chuyển về kho bảo trì.`
-  //     );
-  //     fetchStationInventory(selectedStationId); // Refresh Pin tại trạm
-  //     // Tải lại Pin Kho, sử dụng filter hiện tại nếu có
-  //     fetchWarehouseInventory(filterBatteryTypeId);
-  //   } catch (error) {
-  //     showToast(
-  //       "error",
-  //       error.response?.data ||
-  //         "Chuyển pin về kho bảo trì thất bại, vui lòng thử lại!"
-  //     );
-  //   }
-  // };
-
   // Mở Modal Chuyển Pin Tốt RA TRẠM
   const openMoveToStationModal = () => {
     if (!selectedStationId)
@@ -429,12 +413,11 @@ export default function InventoryPage() {
     }
 
     // Kiểm tra số lượng slot trống
-    const availableSlots =
-      currentStationInfo.capacity - currentStationInfo.currentCount;
-    if (availableSlots <= 0) {
+    const maxSlotsForMove = currentStationInfo.maxSlotsForMove;
+    if (maxSlotsForMove <= 0) {
       return showToast(
         "error",
-        `Trạm đã đầy (${currentStationInfo.currentCount}/${currentStationInfo.capacity} pin). Không thể chuyển thêm.`
+        `Trạm đã đạt giới hạn pin cho phép (${currentStationInfo.currentCount}/${currentStationInfo.maxLimit} pin) để chuyển pin tốt vào. Vui lòng chuyển pin lỗi ra trước.`
       );
     }
 
@@ -454,12 +437,11 @@ export default function InventoryPage() {
     const { batteryTypeId, quantity } = values;
 
     // Kiểm tra lại số slot trống lần cuối
-    const availableSlots =
-      currentStationInfo.capacity - currentStationInfo.currentCount;
-    if (quantity > availableSlots) {
+    const maxSlotsForMove = currentStationInfo.maxSlotsForMove; 
+    if (quantity > maxSlotsForMove) {
       showToast(
         "error",
-        `Số lượng pin muốn chuyển (${quantity}) vượt quá số slot trống (${availableSlots}). Vui lòng điều chỉnh.`
+        `Số lượng pin muốn chuyển (${quantity}) vượt quá số slot trống cho phép (${maxSlotsForMove} pin). Vui lòng điều chỉnh.`
       );
       return;
     }
@@ -810,8 +792,8 @@ export default function InventoryPage() {
       <Card
         title={
           selectedStationId
-            ? `Quản lý tồn kho pin tại ${selectedStationName} (${currentStationInfo.currentCount}/${currentStationInfo.capacity})`
-            : "Quản lý tồn kho pin tại trạm"
+            ? `Quản lý tồn kho pin tại ${selectedStationName} (${currentStationInfo.currentCount}/${currentStationInfo.capacity}) pin`
+            : `Quản lý tồn kho pin tại ${selectedStationName} (${currentStationInfo.currentCount}/${currentStationInfo.capacity}) pin`
         }
         extra={
           <Space>
@@ -855,15 +837,11 @@ export default function InventoryPage() {
       >
         <h4>
           {isAdmin && showAllStationBatteries
-            ? "Danh sách TẤT CẢ pin tại trạm:"
-            : "Danh sách pin cần bảo dưỡng hoặc lỗi tại trạm:"}
+            ? `Danh sách TẤT CẢ pin tại ${selectedStationName}`
+            : `Danh sách pin cần bảo dưỡng hoặc lỗi tại ${selectedStationName}`}
         </h4>
         <Table
           columns={stationColumns}
-          //dataSource={stationInventory}
-          // dataSource={stationInventory.filter(
-          //   (b) => b.status === "MAINTENANCE"
-          // )}
           dataSource={stationDataSource}
           loading={loading}
           rowKey="id"
@@ -906,7 +884,7 @@ export default function InventoryPage() {
                   {filterBatteryTypeId &&
                   filterBatteryTypeId === currentStationBatteryType?.id
                     ? `Đang lọc: ${batteryTypesMap[filterBatteryTypeId]}`
-                    : "Lọc pin theo loại pin"}
+                    : "Lọc theo loại pin"}
                 </Button>
 
                 {/* NÚT BỎ LỌC (Chỉ hiện khi đang lọc) */}
@@ -1046,7 +1024,7 @@ export default function InventoryPage() {
           <p>
             Trạm còn trống:{" "}
             <Tag color="green">
-              {currentStationInfo.capacity - currentStationInfo.currentCount}
+              {currentStationInfo.maxSlotsForMove}
             </Tag>{" "}
             pin
           </p>
@@ -1095,12 +1073,12 @@ export default function InventoryPage() {
               min={1}
               max={Math.min(
                 getAvailableCount(currentStationBatteryType?.id),
-                currentStationInfo.capacity - currentStationInfo.currentCount
+                currentStationInfo.maxSlotsForMove
               )}
               style={{ width: "100%" }}
               placeholder={`Nhập số lượng pin (Tối đa: ${Math.min(
                 getAvailableCount(currentStationBatteryType?.id),
-                currentStationInfo.capacity - currentStationInfo.currentCount
+                currentStationInfo.maxSlotsForMove
               )})`}
             />
           </Form.Item>
@@ -1115,7 +1093,7 @@ export default function InventoryPage() {
                 disabled={
                   !currentStationBatteryType?.id || // Không có loại pin của trạm
                   currentStationInfo.currentCount >=
-                    currentStationInfo.capacity ||
+                    currentStationInfo.maxLimit ||
                   moveForm.getFieldsError().some((err) => err.errors.length > 0) // Lỗi form
                 }
               >
