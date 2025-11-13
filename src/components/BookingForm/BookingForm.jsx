@@ -19,6 +19,7 @@ const BookingFormFields = ({
   const [isVehicleLoading, setIsVehicleLoading] = useState(true);
   const [selectedVehicleDetails, setSelectedVehicleDetails] = useState(null);
   const [preselectedStationName, setPreselectedStationName] = useState(null);
+  const [remainingSwaps, setRemainingSwaps] = useState(null);
 
   const fetchCompatibleStations = useCallback(async (vehicleId) => {
     if (!vehicleId) {
@@ -77,9 +78,9 @@ const BookingFormFields = ({
       }
     };
     fetchVehicles();
-  }, [preselectedVehicleId]);
+  }, [preselectedVehicleId, fetchCompatibleStations]);
 
-  // 🆕 Fetch tên trạm khi có preselectedStationId
+  // Fetch tên trạm khi có preselectedStationId
   useEffect(() => {
     if (preselectedStationId && compatibleStations.length > 0) {
       const station = compatibleStations.find((s) => s.id === preselectedStationId);
@@ -94,10 +95,12 @@ const BookingFormFields = ({
     form.setFieldsValue({ stationId: undefined }); // Reset station selection
     const selected = vehicles.find((v) => v.id === vehicleId);
     setSelectedVehicleDetails(selected);
+    setRemainingSwaps(selected?.remainingSwaps ?? null);
     if (vehicleId) {
       fetchCompatibleStations(vehicleId);
     } else {
       setCompatibleStations([]);
+      setRemainingSwaps(null);
     }
     // Gọi callback để component cha có thể cập nhật UI (ví dụ: Steps)
     if (onVehicleChange) {
@@ -140,12 +143,29 @@ const BookingFormFields = ({
         </Select>
       </Form.Item>
 
-      {selectedVehicleDetails && selectedVehicleDetails.plateNumber && (
+      {(selectedVehicleDetails && selectedVehicleDetails.plateNumber) || remainingSwaps !== null ? (
         <div style={{ marginBottom: 16, marginTop: -10 }}>
-          <Text strong>Biển số xe: </Text>
-          <Text type="secondary">{selectedVehicleDetails.plateNumber}</Text>
+          {/* Biển số xe */}
+          {selectedVehicleDetails && selectedVehicleDetails.plateNumber && (
+            <div style={{ marginBottom: 4 }}>
+              <Text strong>Biển số xe: </Text>
+              <Text type="secondary">{selectedVehicleDetails.plateNumber}</Text>
+            </div>
+          )}
+
+          {/* 💡 DÒNG MỚI: Số lần đổi pin còn lại */}
+          {remainingSwaps !== null && (
+            <div>
+              <Text strong>Số lần đổi pin còn lại: </Text>
+              <Text 
+                style={{ color: remainingSwaps > 0 ? '#52c41a' : '#f5222d' }} // Xanh lá nếu còn, Đỏ nếu hết
+              >
+                **{remainingSwaps}** lần
+              </Text>
+            </div>
+          )}
         </div>
-      )}
+      ) : null}
 
       <Form.Item
         name="stationId"

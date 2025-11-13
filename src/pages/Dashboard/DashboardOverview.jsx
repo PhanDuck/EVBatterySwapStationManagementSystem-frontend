@@ -27,8 +27,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import {
-  DollarCircleOutlined,
-  SwapOutlined,
+  CreditCardOutlined,
+  CalendarOutlined,
   UserOutlined,
   EnvironmentOutlined,
   ThunderboltOutlined,
@@ -267,7 +267,7 @@ export default function DashboardOverview() {
               value={overview?.totalRevenue || 0}
               formatter={(value) => formatCurrency(value)}
               valueStyle={{ color: "#cf1322", fontSize: "18px" }}
-              prefix={<DollarCircleOutlined style={{ color: "#cf1322" }} />}
+              prefix={<CreditCardOutlined style={{ color: "#cf1322" }} />}
             />
           </Card>
         </Col>
@@ -277,7 +277,7 @@ export default function DashboardOverview() {
               title="Tổng đặt lịch"
               value={overview?.totalTransactions || 0}
               valueStyle={{ color: "#722ed1", fontSize: "18px" }}
-              prefix={<SwapOutlined style={{ color: "#722ed1" }} />}
+              prefix={<CalendarOutlined style={{ color: "#722ed1" }} />}
             />
           </Card>
         </Col>

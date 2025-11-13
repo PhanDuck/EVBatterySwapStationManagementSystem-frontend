@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Card,
   Table,
@@ -10,6 +10,7 @@ import {
   Modal,
   Form,
   InputNumber,
+  Input,
 } from "antd";
 import {
   ReloadOutlined,
@@ -17,6 +18,7 @@ import {
   RollbackOutlined,
   SearchOutlined,
   EditOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
@@ -24,6 +26,7 @@ import { getCurrentRole } from "../../config/auth";
 import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
+const MAX_STATION_CAPACITY = 20;
 
 export default function InventoryPage() {
   const [loading, setLoading] = useState(false);
@@ -34,64 +37,143 @@ export default function InventoryPage() {
   const [selectedStationId, setSelectedStationId] = useState(null);
   const [filterBatteryTypeId, setFilterBatteryTypeId] = useState(null);
   const [isEditSOHModalVisible, setIsEditSOHModalVisible] = useState(false);
+  const [isMoveToStationModalVisible, setIsMoveToStationModalVisible] =
+    useState(false);
   const [currentBatteryToEdit, setCurrentBatteryToEdit] = useState(null);
   const [form] = Form.useForm();
+  const [moveForm] = Form.useForm();
+  const [showAllStationBatteries, setShowAllStationBatteries] = useState(false);
+
   const role = getCurrentRole();
   const upperRole = role ? role.toUpperCase() : null;
   const isAdmin = upperRole === "ADMIN";
 
+  // Lấy thông tin trạm hiện tại (bao gồm count)
+  const currentStationInfo = useMemo(() => {
+    const station = stations.find((s) => s.id === selectedStationId);
+    // Lấy số lượng pin thực tế đang có tại trạm (từ dữ liệu stationInventory đã tải)
+    const currentBatteryCount = stationInventory.length;
+
+    return station
+      ? {
+          id: station.id,
+          name: station.name,
+          capacity: MAX_STATION_CAPACITY, // Giả định Capacity luôn là 20
+          currentCount: currentBatteryCount,
+        }
+      : {
+          id: null,
+          name: "chưa chọn",
+          capacity: MAX_STATION_CAPACITY,
+          currentCount: 0,
+        };
+  }, [selectedStationId, stations, stationInventory]);
+
+  const selectedStationName = currentStationInfo.name;
+
+  // Loại pin hiện tại của trạm (Ưu tiên pin đã có ID Loại Pin)
+  const currentStationBatteryType = useMemo(() => {
+    // Tìm pin (Ưu tiên pin đã có ID Loại Pin)
+    const batteryWithTypeId = stationInventory.find((b) => b.batteryTypeId);
+    if (batteryWithTypeId) {
+      return {
+        id: batteryWithTypeId.batteryTypeId,
+        name: batteryTypesMap[batteryWithTypeId.batteryTypeId],
+      };
+    }
+    return null;
+  }, [stationInventory, batteryTypesMap]);
+
+  // Pin AVAILABLE trong kho (đã được tính số lượng) - Dùng cho Modal
+  const availableBatteryTypes = useMemo(() => {
+    const counts = warehouseInventory
+      .filter((b) => b.status === "AVAILABLE")
+      .reduce((acc, b) => {
+        acc[b.batteryTypeId] = (acc[b.batteryTypeId] || 0) + 1;
+        return acc;
+      }, {});
+
+    return Object.keys(counts).map((id) => ({
+      id: parseInt(id),
+      name: batteryTypesMap[parseInt(id)],
+      count: counts[id],
+    }));
+  }, [warehouseInventory, batteryTypesMap]);
+
+  // Lấy số lượng pin AVAILABLE theo loại (dùng cho rule của Form)
+  const getAvailableCount = useCallback(
+    (typeId) => {
+      if (!typeId) return 0;
+      return warehouseInventory.filter(
+        (b) => b.batteryTypeId === typeId && b.status === "AVAILABLE"
+      ).length;
+    },
+    [warehouseInventory]
+  );
+
   // --- 1. FUNCTIONS TẢI DỮ LIỆU ---
 
   // Tải tồn kho chung trong Kho
-  const fetchWarehouseInventory = useCallback(async (typeIdToFilter = null) => {
-    setLoading(true);
-    try {
-      let res;
-      let inventory = [];
-      
-      // --- Logic API ---
+  const fetchWarehouseInventory = useCallback(
+    async (typeIdToFilter = null) => {
+      setLoading(true);
+      try {
+        let res;
+        let inventory = [];
+
+        // --- Logic API ---
         if (!isAdmin) {
-            // STAFF: Chỉ tải pin AVAILABLE và bắt buộc phải có typeIdToFilter
-            if (!typeIdToFilter) {
-                // Nếu là Staff VÀ không có typeId để lọc -> Không tải, trả về rỗng
-                setWarehouseInventory([]);
-                showToast("warning", "Staff cần có Pin tại Trạm để xác định loại pin kho cần tải.");
-                return;
+          // STAFF: Chỉ tải pin AVAILABLE và bắt buộc phải có typeIdToFilter
+          if (!typeIdToFilter) {
+            // Nếu là Staff VÀ không có typeId để lọc -> Không tải, trả về rỗng
+            setWarehouseInventory([]);
+            if (currentStationInfo.id) {
+              // Chỉ show toast nếu đã chọn trạm
+              showToast(
+                "warning",
+                "Staff cần có Pin tại Trạm để xác định loại pin kho cần tải."
+              );
             }
-            // Staff tải pin AVAILABLE theo loại
-            res = await api.get(
-                `/station-inventory/available-by-type/${typeIdToFilter}`
-            );
+            return;
+          }
+          // Staff tải pin AVAILABLE theo loại
+          res = await api.get(
+            `/station-inventory/available-by-type/${typeIdToFilter}`
+          );
         } else {
-            // ADMIN: Luôn tải TOÀN BỘ kho (AVAILABLE & MAINTENANCE)
-            // Lọc sẽ được xử lý sau trên Client
-            res = await api.get("/station-inventory");
+          // ADMIN: Luôn tải TOÀN BỘ kho (AVAILABLE & MAINTENANCE)
+          res = await api.get("/station-inventory");
         }
 
-      // Xử lý response 
-      if (Array.isArray(res.data)) {
-        inventory = res.data;
-      } else if (res.data?.batteries && Array.isArray(res.data.batteries)) {
-        inventory = res.data.batteries;
-      }
+        // Xử lý response
+        if (Array.isArray(res.data)) {
+          inventory = res.data;
+        } else if (res.data?.batteries && Array.isArray(res.data.batteries)) {
+          inventory = res.data.batteries;
+        }
 
-      // --- Logic Lọc trên Client (Chỉ áp dụng cho ADMIN) ---
+        // --- Logic Lọc trên Client (Chỉ áp dụng cho ADMIN) ---
         let filteredInventory = inventory;
         if (isAdmin && typeIdToFilter) {
-            // Admin áp dụng lọc theo loại pin trên dữ liệu toàn bộ đã tải
-            filteredInventory = inventory.filter(
-                (item) => item.batteryTypeId === typeIdToFilter
-            );
+          // Admin áp dụng lọc theo loại pin trên dữ liệu toàn bộ đã tải
+          filteredInventory = inventory.filter(
+            (item) => item.batteryTypeId === typeIdToFilter
+          );
         }
 
-      setWarehouseInventory(filteredInventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
-    } catch (error) {
-      showToast("error", error.response?.data || "Tải tồn kho kho thất bại, vui lòng thử lại!");
-      setWarehouseInventory([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [isAdmin]);
+        setWarehouseInventory(filteredInventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
+      } catch (error) {
+        showToast(
+          "error",
+          error.response?.data || "Tải tồn kho kho thất bại, vui lòng thử lại!"
+        );
+        setWarehouseInventory([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isAdmin, currentStationInfo.id]
+  );
 
   // Tải danh sách trạm Staff quản lý
   const fetchManagedStations = useCallback(async () => {
@@ -99,9 +181,11 @@ export default function InventoryPage() {
     const currentUpperRole = currentRole ? currentRole.toUpperCase() : null;
 
     // Nếu không tìm thấy vai trò, dừng lại (Thêm kiểm tra an toàn)
-    if (!upperRole) {
-
-      showToast("error", "Không xác định được quyền người dùng. Vui lòng thử đăng nhập lại.");
+    if (!currentUpperRole) {
+      showToast(
+        "error",
+        "Không xác định được quyền người dùng. Vui lòng thử đăng nhập lại."
+      );
       setStations([]);
       return;
     }
@@ -134,7 +218,7 @@ export default function InventoryPage() {
       console.error(error);
       setStations([]);
     }
-  }, [fetchWarehouseInventory]);
+  }, []);
 
   // Tải Map Loại Pin (Tên, Dung lượng)
   const fetchBatteryTypes = useCallback(async () => {
@@ -148,19 +232,22 @@ export default function InventoryPage() {
       });
       setBatteryTypesMap(map);
     } catch (error) {
-      showToast("error", error.response?.data || "Tải loại pin thất bại, vui lòng thử lại!");
+      showToast(
+        "error",
+        error.response?.data || "Tải loại pin thất bại, vui lòng thử lại!"
+      );
     }
   }, []);
 
   // Tải Pin cần bảo dưỡng tại trạm đã chọn
   const fetchStationInventory = useCallback(async (stationId) => {
-    if (!stationId) return;
+    if (!stationId) {
+      setStationInventory([]);
+      return null;
+    }
     setLoading(true);
     try {
-      // API: GET /api/station/{id}/batteries/needs-maintenance
-      const res = await api.get(
-        `/station/${stationId}/batteries/needs-maintenance`
-      );
+      const res = await api.get(`/station/${stationId}/batteries`);
       // Xử lý response - có thể là mảng trực tiếp hoặc object có key batteries
       let inventory = Array.isArray(res.data)
         ? res.data
@@ -169,9 +256,17 @@ export default function InventoryPage() {
         : [];
 
       setStationInventory(inventory.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
-      return inventory.length > 0 ? inventory[0].batteryTypeId : null;
+      const typeId =
+        inventory.length > 0
+          ? inventory.find((b) => b.batteryTypeId)?.batteryTypeId
+          : null;
+      return typeId;
     } catch (error) {
-      showToast("error", error.response?.data || "Tải tồn kho trạm thất bại, vui lòng thử lại!");
+      console.error("Lỗi tải tồn kho trạm:", error);
+      showToast(
+        "error",
+        error.response?.data || "Tải tồn kho trạm thất bại, vui lòng thử lại!"
+      );
       setStationInventory([]);
       return null;
     } finally {
@@ -187,26 +282,42 @@ export default function InventoryPage() {
 
   // Effect chạy khi trạm được chọn thay đổi
   useEffect(() => {
+    setShowAllStationBatteries(false);
     if (selectedStationId) {
       const loadData = async () => {
         // 1. Tải pin trạm và lấy loại pin của trạm
         const stationTypeId = await fetchStationInventory(selectedStationId);
 
         // 2. Tải kho tổng
-        if (!isAdmin) {
-          setFilterBatteryTypeId(stationTypeId);
-          if (!stationTypeId) {
-            setWarehouseInventory([]);
-            return; // Dừng việc tải kho tổng
+        if (stationTypeId) {
+          if (!isAdmin) {
+            setFilterBatteryTypeId(stationTypeId);
+            fetchWarehouseInventory(stationTypeId);
+          } else {
+            setFilterBatteryTypeId(null);
+            fetchWarehouseInventory(null);
           }
-          fetchWarehouseInventory(stationTypeId);
         } else {
-          // ADMIN: Luôn thấy toàn bộ kho tổng
+          // Trạm không có pin
           setFilterBatteryTypeId(null);
-          fetchWarehouseInventory(null);
+          setWarehouseInventory([]); // Dọn kho nếu trạm trống pin
+          if (isAdmin) {
+            fetchWarehouseInventory(null);
+          } else {
+            // Staff không được xem kho nếu trạm chưa có pin
+            showToast(
+              "warning",
+              "Trạm chưa có pin để xác định loại pin kho cần tải."
+            );
+          }
         }
       };
       loadData();
+    } else {
+      // Khi không có trạm nào được chọn
+      setStationInventory([]);
+      setWarehouseInventory([]);
+      setFilterBatteryTypeId(null);
     }
   }, [
     selectedStationId,
@@ -217,32 +328,10 @@ export default function InventoryPage() {
 
   // --- 2. HÀM XỬ LÝ THAO TÁC MOVE VÀ LỌC ---
 
-  //Lấy Type ID của pin tại trạm đang chọn (để lọc)
-  const getBatteryTypeForCurrentStation = () => {
-    // Dựa vào pin đầu tiên trong danh sách pin cần bảo dưỡng
-    if (stationInventory.length === 0) return null;
-    return stationInventory[0].batteryTypeId;
-  };
-
-  //Xử lý LỌC Pin trong Kho theo loại Pin của Trạm
-  const handleFilterByStationType = () => {
-    const typeId = getBatteryTypeForCurrentStation();
-
-    if (!typeId) {
-      return showToast("warning", "Không có pin tại trạm để xác định loại pin cần lọc.");   
-    }
-
-    // Cập nhật state và gọi hàm tải dữ liệu mới
-    setFilterBatteryTypeId(typeId);
-    fetchWarehouseInventory(typeId);
-    showToast("success", `Đã lọc Pin Kho theo loại: ${batteryTypesMap[typeId]}.`);
-  };
-
-  // Xử lý Pin lỗi VỀ KHO
+  // Xử lý Pin về Kho (Dùng chung cho cả pin MAINTENANCE và AVAILABLE)
   const handleMoveToWarehouse = async (record) => {
     if (!selectedStationId) return showToast("warning", "Vui lòng chọn trạm!");
 
-    // API: POST /api/station-inventory/move-to-warehouse
     try {
       await api.post("/station-inventory/move-to-warehouse", null, {
         params: {
@@ -250,87 +339,195 @@ export default function InventoryPage() {
           stationId: selectedStationId,
         },
       });
-      showToast("success", `✅ Pin ${record.id} đã được chuyển về kho bảo trì.`);
-      fetchStationInventory(selectedStationId); // Refresh Pin tại trạm
-      // Tải lại Pin Kho, sử dụng filter hiện tại nếu có
-      fetchWarehouseInventory(filterBatteryTypeId);
+      showToast(
+        "success",
+        `✅ Pin ${record.id} đã được chuyển về kho bảo trì.`
+      );
+
+      // Cập nhật lại 2 bảng
+      fetchStationInventory(selectedStationId);
+      // Tải lại Pin Kho, Admin vẫn giữ logic không lọc (filter null) khi tải lại. Staff sẽ tự lọc trong fetchWarehouseInventory()
+      fetchWarehouseInventory(isAdmin ? null : filterBatteryTypeId);
     } catch (error) {
-      showToast("error", error.response?.data || "Chuyển pin về kho bảo trì thất bại, vui lòng thử lại!");
+      showToast(
+        "error",
+        error.response?.data ||
+          "Chuyển pin về kho bảo trì thất bại, vui lòng thử lại!"
+      );
     }
   };
+
+  //Xử lý LỌC Pin trong Kho theo loại Pin của Trạm
+  const handleFilterByStationType = () => {
+    if (!selectedStationId) {
+      return showToast("warning", "Vui lòng chọn trạm trước.");
+    }
+
+    const typeId = currentStationBatteryType?.id;
+
+    if (!typeId) {
+      return showToast(
+        "warning",
+        "Trạm chưa có pin để xác định loại pin cần lọc."
+      );
+    }
+
+    // Cập nhật state và gọi hàm tải dữ liệu mới
+    setFilterBatteryTypeId(typeId);
+    fetchWarehouseInventory(typeId);
+    showToast(
+      "success",
+      `Đã lọc Pin Kho theo loại: ${batteryTypesMap[typeId]}.`
+    );
+  };
+
+  // Xử lý Pin lỗi VỀ KHO
+  // const handleMoveToWarehouse = async (record) => {
+  //   if (!selectedStationId) return showToast("warning", "Vui lòng chọn trạm!");
+
+  //   try {
+  //     await api.post("/station-inventory/move-to-warehouse", null, {
+  //       params: {
+  //         batteryId: record.id,
+  //         stationId: selectedStationId,
+  //       },
+  //     });
+  //     showToast(
+  //       "success",
+  //       `✅ Pin ${record.id} đã được chuyển về kho bảo trì.`
+  //     );
+  //     fetchStationInventory(selectedStationId); // Refresh Pin tại trạm
+  //     // Tải lại Pin Kho, sử dụng filter hiện tại nếu có
+  //     fetchWarehouseInventory(filterBatteryTypeId);
+  //   } catch (error) {
+  //     showToast(
+  //       "error",
+  //       error.response?.data ||
+  //         "Chuyển pin về kho bảo trì thất bại, vui lòng thử lại!"
+  //     );
+  //   }
+  // };
 
   // Mở Modal Chuyển Pin Tốt RA TRẠM
-  // const openMoveToStationModal = async (typeId) => {
-  //   if (!selectedStationId) return message.error("Vui lòng chọn trạm!");
+  const openMoveToStationModal = () => {
+    if (!selectedStationId)
+      return showToast("warning", "Vui lòng chọn trạm trước.");
 
-  //   // Tải Pin Tốt có sẵn trong Kho theo loại
-  //   try {
-  //     // API: GET /api/station-inventory/available-by-type/{batteryTypeId}
-  //     const res = await api.get(
-  //       `/station-inventory/available-by-type/${typeId}`
-  //     );
-  //     setAvailableWarehouseBatteries(res.data || []);
-  //     setIsMoveToStationModalVisible(true);
-  //   } catch (err) {
-  //     message.error("Không thể tải pin tốt có sẵn trong kho.");
-  //     console.error(err);
-  //   }
-  // };
-
-  // Xử lý Pin Tốt RA TRẠM
-  const handleMoveToStation = async (batteryId, typeId) => {
-    if (!selectedStationId) return showToast("warning", "Vui lòng chọn trạm!");
-
-    // API: POST /api/station-inventory/move-to-station
-    try {
-      await api.post("/station-inventory/move-to-station", null, {
-        params: {
-          batteryId: batteryId,
-          stationId: selectedStationId,
-          batteryTypeId: typeId,
-        },
-      });
-      showToast("success", `✅ Pin ${batteryId} đã được chuyển ra trạm.`);
-      // Tải lại Pin Kho, sử dụng filter hiện tại nếu có
-      fetchStationInventory(selectedStationId);
-      fetchWarehouseInventory(filterBatteryTypeId);
-    } catch (error) {
-      showToast("error", error.response?.data || "Chuyển pin ra trạm thất bại, vui lòng thử lại!");
+    if (!currentStationBatteryType) {
+      return showToast(
+        "warning",
+        "Trạm chưa có pin để xác định loại pin cần chuyển."
+      );
     }
+
+    const availableCount = getAvailableCount(currentStationBatteryType.id);
+    if (availableCount === 0) {
+      return showToast(
+        "warning",
+        `Kho không có pin loại ${currentStationBatteryType.name} sẵn sàng (AVAILABLE) để chuyển ra trạm.`
+      );
+    }
+
+    // Kiểm tra số lượng slot trống
+    const availableSlots =
+      currentStationInfo.capacity - currentStationInfo.currentCount;
+    if (availableSlots <= 0) {
+      return showToast(
+        "error",
+        `Trạm đã đầy (${currentStationInfo.currentCount}/${currentStationInfo.capacity} pin). Không thể chuyển thêm.`
+      );
+    }
+
+    // Reset form và mở Modal
+    moveForm.resetFields();
+    moveForm.setFieldsValue({
+      batteryTypeId: currentStationBatteryType.id,
+      quantity: 1,
+    });
+
+    setIsMoveToStationModalVisible(true);
   };
 
-  // --- Xử lý Sửa SOH (Chỉ Admin) ---
-  // const handleEditSOH = async (record) => {
-  //   // Logic của Admin: Đánh dấu pin đã bảo trì xong và cập nhật SOH
-  //   // API: PATCH /api/station-inventory/{batteryId}/complete-maintenance
+  // Xử lý Pin Tốt RA TRẠM
+  const handleMoveToStationSubmit = async (values) => {
+    if (!selectedStationId) return showToast("warning", "Vui lòng chọn trạm!");
+    const { batteryTypeId, quantity } = values;
 
-  //   // Yêu cầu nhập SOH mới (giả lập prompt)
-  //   const newSOH = prompt(`Nhập SOH mới (0-100) cho Pin ID ${record.id} (Loại: ${batteryTypesMap[record.batteryTypeId]}):`);
+    // Kiểm tra lại số slot trống lần cuối
+    const availableSlots =
+      currentStationInfo.capacity - currentStationInfo.currentCount;
+    if (quantity > availableSlots) {
+      showToast(
+        "error",
+        `Số lượng pin muốn chuyển (${quantity}) vượt quá số slot trống (${availableSlots}). Vui lòng điều chỉnh.`
+      );
+      return;
+    }
 
-  //   const sohValue = newSOH ? parseFloat(newSOH) : null;
+    // 1. Lọc danh sách pin AVAILABLE theo loại pin đã chọn
+    const availableBatteries = warehouseInventory.filter(
+      (b) => b.batteryTypeId === batteryTypeId && b.status === "AVAILABLE"
+    );
 
-  //   if (sohValue === null || isNaN(sohValue) || sohValue < 0 || sohValue > 100) {
-  //       return message.error("SOH không hợp lệ. Vui lòng nhập giá trị từ 0 đến 100.");
-  //   }
+    if (availableBatteries.length < quantity) {
+      showToast(
+        "error",
+        `Kho chỉ còn ${availableBatteries.length} pin loại ${batteryTypesMap[batteryTypeId]} AVAILABLE.`
+      );
+      return;
+    }
+    // Cách 2: Chọn `quantity` pin đầu tiên (Đơn giản hơn, vẫn đảm bảo tính ngẫu nhiên nếu Backend không đảm bảo thứ tự)
+    const batteriesToMove = availableBatteries.slice(0, quantity); // Lấy N pin đầu tiên
 
-  //   try {
-  //       await api.patch(
-  //           `/station-inventory/${record.id}/complete-maintenance`,
-  //           null,
-  //           {
-  //               params: {
-  //                   newSOH: sohValue,
-  //               },
-  //           }
-  //       );
-  //       message.success(`✅ Pin ${record.id} đã hoàn tất bảo trì, SOH cập nhật: ${sohValue}%.`);
-  //       // Refresh Kho sau khi cập nhật
-  //       fetchWarehouseInventory(filterBatteryTypeId);
-  //   } catch (error) {
-  //       message.error("❌ Lỗi cập nhật SOH/Hoàn tất bảo trì.");
-  //       console.error("Lỗi API Cập nhật SOH:", error.response?.data || error.message);
-  //   }
-  // };
+    if (batteriesToMove.length === 0) {
+      showToast("warning", "Không tìm thấy pin AVAILABLE để chuyển.");
+      return;
+    }
+    setLoading(true);
+    let successCount = 0;
+    let failedCount = 0;
+    const typeName = batteryTypesMap[batteryTypeId];
+
+    // 3. Lặp và gọi API cho từng pin
+    for (const battery of batteriesToMove) {
+      try {
+        // API chỉ nhận batteryId, stationId, batteryTypeId
+        await api.post("/station-inventory/move-to-station", null, {
+          params: {
+            stationId: selectedStationId,
+            batteryId: battery.id, // <-- Gửi từng batteryId
+            batteryTypeId: batteryTypeId,
+          },
+        });
+        successCount++;
+      } catch (error) {
+        failedCount++;
+        console.error(
+          `Lỗi chuyển pin ${battery.id}:`,
+          error.response?.data || error.message
+        );
+      }
+    }
+
+    // 4. Xử lý kết quả
+    if (successCount > 0) {
+      showToast(
+        "success",
+        `✅ Đã chuyển thành công ${successCount} pin loại ${typeName} ra trạm.`
+      );
+    } else {
+      showToast(
+        "error",
+        `Chuyển pin ra trạm thất bại hoàn toàn (${failedCount} pin). Vui lòng kiểm tra log.`
+      );
+    }
+
+    setIsMoveToStationModalVisible(false);
+    fetchStationInventory(selectedStationId);
+    fetchWarehouseInventory(isAdmin ? null : filterBatteryTypeId);
+    setLoading(false);
+  };
+
   const handleEditSOH = (record) => {
     if (!isAdmin) return; // Đảm bảo chỉ Admin mới có thể mở
 
@@ -350,7 +547,6 @@ export default function InventoryPage() {
     const record = currentBatteryToEdit;
 
     try {
-      // API: PATCH /api/station-inventory/{batteryId}/complete-maintenance
       await api.patch(
         `/station-inventory/${record.id}/complete-maintenance`,
         null,
@@ -360,15 +556,18 @@ export default function InventoryPage() {
           },
         }
       );
-      showToast("success", `✅ Pin ${record.id} đã hoàn tất bảo trì, SOH cập nhật: ${newSOH}%.`);
+      showToast(
+        "success",
+        `✅ Pin ${record.id} đã hoàn tất bảo trì, SOH cập nhật: ${newSOH}%.`
+      );
       setIsEditSOHModalVisible(false); // Đóng modal
       // Refresh Kho sau khi cập nhật
       fetchWarehouseInventory(filterBatteryTypeId);
+      fetchStationInventory(selectedStationId);
     } catch (error) {
-      showToast("error", error.response?.data || "Lỗi cập nhật SOH/Hoàn tất bảo trì.");
-      console.error(
-        "Lỗi API Cập nhật SOH:",
-        error.response?.data || error.message
+      showToast(
+        "error",
+        error.response?.data || "Lỗi cập nhật SOH/Hoàn tất bảo trì."
       );
     }
   };
@@ -475,17 +674,18 @@ export default function InventoryPage() {
       width: FIXED_COL_WIDTH.ACTIONS,
       render: (_, record) => (
         <Space>
-          <Tooltip title="Chuyển pin lỗi này về kho bảo trì">
-            <Button
-              type="primary"
-              icon={<RollbackOutlined />}
-              onClick={() => handleMoveToWarehouse(record)} // Move To Warehouse
-              //danger
-              size="small"
-            >
-              Về Kho
-            </Button>
-          </Tooltip>
+          {record.status === "MAINTENANCE" && (
+            <Tooltip title="Chuyển pin lỗi này về kho bảo trì">
+              <Button
+                type="primary"
+                icon={<RollbackOutlined />}
+                onClick={() => handleMoveToWarehouse(record)} // Move To Warehouse
+                size="small"
+              >
+                Về Kho
+              </Button>
+            </Tooltip>
+          )}
         </Space>
       ),
     },
@@ -587,30 +787,8 @@ export default function InventoryPage() {
                 type="primary"
                 icon={<EditOutlined />}
                 size="small"
-                //setOpen={true}
               >
                 Cập nhật
-              </Button>
-            </Tooltip>
-          )}
-
-          {/* Nút "Ra Trạm" (Chỉ hiện cho AVAILABLE) */}
-          {record.status === "AVAILABLE" && (
-            <Tooltip
-              title={`Chuyển pin ${record.id} ra trạm ${
-                selectedStationId ? selectedStationId : "chưa chọn"
-              }`}
-            >
-              <Button
-                icon={<SendOutlined />}
-                onClick={() =>
-                  handleMoveToStation(record.id, record.batteryTypeId)
-                }
-                type="primary"
-                size="small"
-                disabled={!selectedStationId}
-              >
-                Ra trạm
               </Button>
             </Tooltip>
           )}
@@ -619,18 +797,22 @@ export default function InventoryPage() {
     },
   ];
 
-  const selectedStation = stations.find(
-    (station) => station.id === selectedStationId
-  );
-  const cardTitle = selectedStation
-  ? `Quản lý tồn kho pin tại ${selectedStation.name}`
-  : "Quản lý tồn kho pin tại trạm";
+  const stationDataSource = useMemo(() => {
+    if (isAdmin && showAllStationBatteries) {
+      return stationInventory; // Admin: Xem tất cả
+    }
+    return stationInventory.filter((b) => b.status === "MAINTENANCE"); // Staff: Chỉ xem MAINTENANCE
+  }, [stationInventory, isAdmin, showAllStationBatteries]);
 
   return (
     <div style={{ padding: "24px" }}>
       {/* CARD QUẢN LÝ TỒN KHO TẠI TRẠM */}
       <Card
-        title={cardTitle}
+        title={
+          selectedStationId
+            ? `Quản lý tồn kho pin tại ${selectedStationName} (${currentStationInfo.currentCount}/${currentStationInfo.capacity})`
+            : "Quản lý tồn kho pin tại trạm"
+        }
         extra={
           <Space>
             <Select
@@ -647,6 +829,18 @@ export default function InventoryPage() {
                 </Option>
               ))}
             </Select>
+            {/* NÚT CHUYỂN ĐỔI XEM TẤT CẢ/CHỈ BẢO TRÌ (CHỈ ADMIN) */}
+            {isAdmin && selectedStationId && (
+              <Button
+                icon={<EyeOutlined />}
+                onClick={() => setShowAllStationBatteries((prev) => !prev)}
+                type={showAllStationBatteries ? "primary" : "default"}
+              >
+                {showAllStationBatteries
+                  ? "Chỉ xem pin bảo trì"
+                  : "Xem tất cả pin tại trạm"}
+              </Button>
+            )}
             <Button
               icon={<ReloadOutlined />}
               onClick={() => {
@@ -659,10 +853,18 @@ export default function InventoryPage() {
         }
         style={{ marginBottom: "20px" }}
       >
-        <h4>Danh sách pin cần bảo dưỡng hoặc lỗi tại trạm đang chọn:</h4>
+        <h4>
+          {isAdmin && showAllStationBatteries
+            ? "Danh sách TẤT CẢ pin tại trạm:"
+            : "Danh sách pin cần bảo dưỡng hoặc lỗi tại trạm:"}
+        </h4>
         <Table
           columns={stationColumns}
-          dataSource={stationInventory}
+          //dataSource={stationInventory}
+          // dataSource={stationInventory.filter(
+          //   (b) => b.status === "MAINTENANCE"
+          // )}
+          dataSource={stationDataSource}
           loading={loading}
           rowKey="id"
           pagination={{
@@ -677,6 +879,21 @@ export default function InventoryPage() {
         title="Quản lý tồn kho pin trong kho bảo trì"
         extra={
           <Space>
+            {/* NÚT MỞ MODAL THÊM PIN RA TRẠM */}
+            <Button
+              icon={<SendOutlined />}
+              onClick={openMoveToStationModal}
+              type="default" // Màu default để phân biệt với nút lọc
+              disabled={
+                !selectedStationId ||
+                !currentStationBatteryType ||
+                currentStationInfo.currentCount >=
+                  currentStationInfo.capacity || // Đầy pin
+                getAvailableCount(currentStationBatteryType?.id) === 0
+              }
+            >
+              Chuyển pin ra trạm
+            </Button>
             {isAdmin && (
               <Space>
                 {/* NÚT LỌC PIN THEO LOẠI */}
@@ -684,11 +901,12 @@ export default function InventoryPage() {
                   onClick={handleFilterByStationType}
                   type={filterBatteryTypeId ? "primary" : "default"} // Đổi màu nếu đang lọc
                   icon={<SearchOutlined />}
-                  disabled={stationInventory.length === 0} // Vô hiệu hóa nếu không có pin ở trạm
+                  disabled={!selectedStationId} // Vô hiệu hóa nếu không có pin ở trạm
                 >
-                  {filterBatteryTypeId
-                    ? `Lọc theo: ${batteryTypesMap[filterBatteryTypeId]}`
-                    : "Lọc pin theo loại"}
+                  {filterBatteryTypeId &&
+                  filterBatteryTypeId === currentStationBatteryType?.id
+                    ? `Đang lọc: ${batteryTypesMap[filterBatteryTypeId]}`
+                    : "Lọc pin theo loại pin"}
                 </Button>
 
                 {/* NÚT BỎ LỌC (Chỉ hiện khi đang lọc) */}
@@ -709,8 +927,7 @@ export default function InventoryPage() {
             <Button
               icon={<ReloadOutlined />}
               onClick={() => {
-                setFilterBatteryTypeId(null); // Đảm bảo bỏ lọc khi tải lại thủ công
-                fetchWarehouseInventory(null);
+                fetchWarehouseInventory(isAdmin ? null : filterBatteryTypeId);
               }}
             >
               Tải lại pin kho
@@ -797,6 +1014,114 @@ export default function InventoryPage() {
                 Hoàn tất bảo trì & cập nhật
               </Button>
               <Button onClick={() => setIsEditSOHModalVisible(false)}>
+                Hủy
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* MODAL CHUYỂN PIN RA TRẠM (MỚI) */}
+      <Modal
+        title={`Chuyển pin AVAILABLE ra ${selectedStationName}`}
+        open={isMoveToStationModalVisible}
+        onCancel={() => setIsMoveToStationModalVisible(false)}
+        footer={null}
+      >
+        <Form
+          form={moveForm}
+          layout="vertical"
+          onFinish={handleMoveToStationSubmit}
+          initialValues={{ quantity: 1 }}
+        >
+          <Form.Item name="batteryTypeId" label="Loại Pin">
+            {/* Hiển thị loại pin dưới dạng Text/Tag, không cho phép chọn */}
+            <Tag color="blue" style={{ padding: "5px 10px", fontSize: "14px" }}>
+              {currentStationBatteryType?.name} (Kho còn:{" "}
+              {getAvailableCount(currentStationBatteryType?.id)} pin)
+            </Tag>
+            {/* Dùng Input để giữ giá trị trong Form nhưng bị ẩn */}
+            <Input type="hidden" />
+          </Form.Item>
+          <p>
+            Trạm còn trống:{" "}
+            <Tag color="green">
+              {currentStationInfo.capacity - currentStationInfo.currentCount}
+            </Tag>{" "}
+            pin
+          </p>
+
+          <Form.Item
+            name="quantity"
+            label="Số lượng Pin cần chuyển"
+            dependencies={["batteryTypeId"]}
+            rules={[
+              { required: true, message: "Vui lòng nhập số lượng!" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const typeId = currentStationBatteryType?.id;
+                  if (!typeId) {
+                    return Promise.reject(
+                      new Error("Không xác định được loại pin của trạm!")
+                    );
+                  }
+                  const maxInWarehouse = getAvailableCount(typeId);
+                  const maxAllowedToMove =
+                    currentStationInfo.capacity -
+                    currentStationInfo.currentCount;
+                  const overallMax = Math.min(maxInWarehouse, maxAllowedToMove);
+                  if (value === null || value === undefined) {
+                    return Promise.reject(new Error("Vui lòng nhập số lượng!"));
+                  }
+
+                  const numValue = Number(value);
+                  if (!Number.isInteger(numValue) || numValue < 1) {
+                    return Promise.reject(
+                      new Error("Số lượng phải là số nguyên dương.")
+                    );
+                  }
+
+                  if (numValue > overallMax) {
+                    return Promise.reject(
+                      new Error(`Số lượng tối đa là ${overallMax} pin!`)
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+          >
+            <InputNumber
+              min={1}
+              max={Math.min(
+                getAvailableCount(currentStationBatteryType?.id),
+                currentStationInfo.capacity - currentStationInfo.currentCount
+              )}
+              style={{ width: "100%" }}
+              placeholder={`Nhập số lượng pin (Tối đa: ${Math.min(
+                getAvailableCount(currentStationBatteryType?.id),
+                currentStationInfo.capacity - currentStationInfo.currentCount
+              )})`}
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<SendOutlined />}
+                loading={loading}
+                disabled={
+                  !currentStationBatteryType?.id || // Không có loại pin của trạm
+                  currentStationInfo.currentCount >=
+                    currentStationInfo.capacity ||
+                  moveForm.getFieldsError().some((err) => err.errors.length > 0) // Lỗi form
+                }
+              >
+                Xác nhận chuyển ra ({moveForm.getFieldValue("quantity")} pin)
+              </Button>
+              <Button onClick={() => setIsMoveToStationModalVisible(false)}>
                 Hủy
               </Button>
             </Space>

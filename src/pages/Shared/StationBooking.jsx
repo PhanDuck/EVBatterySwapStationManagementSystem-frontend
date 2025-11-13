@@ -34,7 +34,7 @@ import { showToast } from "../../Utils/toastHandler";
 dayjs.locale("vi");
 dayjs.extend(relativeTime);
 
-const { Title, Paragraph } = Typography;
+const { Title, Paragraph, Text } = Typography;
 const { Step } = Steps;
 
 function StationBookingPage() {
@@ -45,11 +45,11 @@ function StationBookingPage() {
   const [bookingDetails, setBookingDetails] = useState(null);
   const [searchParams] = useSearchParams();
 
-  // 🆕 Lấy vehicleId và stationId từ URL params
+  // Lấy vehicleId và stationId từ URL params
   const vehicleIdFromUrl = searchParams.get("vehicleId");
   const stationIdFromUrl = searchParams.get("stationId");
 
-  // 🆕 Tự động điền form nếu có URL params
+  // Tự động điền form nếu có URL params
   useEffect(() => {
     if (vehicleIdFromUrl) {
       form.setFieldsValue({
@@ -76,13 +76,15 @@ function StationBookingPage() {
     try {
       const res = await api.post("/booking", payload);
       const bookingTime = dayjs(values.bookingTime);
-      const expiryTime = bookingTime.add(3, 'hours');
+      const expiryTime = bookingTime.add(3, "hours");
+      const remainingSwaps = res.data.remainingSwaps;
       setBookingDetails({
         ...res.data,
-        vehicleName: `ID ${values.vehicleId}`, 
-        stationName: `ID ${values.stationId}`, 
+        vehicleName: `ID ${values.vehicleId}`,
+        stationName: `ID ${values.stationId}`,
         bookingTime: bookingTime,
         expiryTime: expiryTime,
+        remainingSwaps: remainingSwaps,
       });
       setBookingSuccess(true);
       showToast("success", "Đặt lịch thành công!");
@@ -106,7 +108,7 @@ function StationBookingPage() {
     }
   };
 
-  // 🆕 Hàm để truyền vehicleId từ URL xuống component con
+  // Hàm để truyền vehicleId từ URL xuống component con
   const getPreselectedVehicleId = () => {
     return vehicleIdFromUrl ? parseInt(vehicleIdFromUrl) : null;
   };
@@ -138,10 +140,39 @@ function StationBookingPage() {
                       Mã xác nhận:{" "}
                       <strong>{bookingDetails?.confirmationCode}</strong>
                     </Paragraph>
-                    <Paragraph>Lịch hẹn của bạn đã được lên lịch vào lúc <strong>{bookingDetails?.bookingTime.format('HH:mm DD/MM/YYYY')}</strong> ({bookingDetails?.bookingTime.fromNow()}).</Paragraph>
+                    <Paragraph>
+                      Lịch hẹn của bạn đã được lên lịch vào lúc{" "}
+                      <strong>
+                        {bookingDetails?.bookingTime.format("HH:mm DD/MM/YYYY")}
+                      </strong>{" "}
+                      ({bookingDetails?.bookingTime.fromNow()}).
+                    </Paragraph>
                     {bookingDetails?.expiryTime && (
-                      <Paragraph>Lịch hẹn của bạn sẽ <b>hết hạn</b> vào lúc <b>{bookingDetails.expiryTime.format('HH:mm DD/MM/YYYY')}</b> ({bookingDetails.expiryTime.fromNow(true)} nữa).</Paragraph>
+                      <Paragraph>
+                        Lịch hẹn của bạn sẽ <b>hết hạn</b> vào lúc{" "}
+                        <b>
+                          {bookingDetails.expiryTime.format("HH:mm DD/MM/YYYY")}
+                        </b>{" "}
+                        ({bookingDetails.expiryTime.fromNow(true)} nữa).
+                      </Paragraph>
                     )}
+                    {bookingDetails?.remainingSwaps !== undefined &&
+                      bookingDetails.remainingSwaps !== null && (
+                        <Paragraph style={{ marginTop: 8 }}>
+                          <Text strong>Số lần đổi pin còn lại: </Text>
+                          <Text
+                            style={{
+                              color:
+                                bookingDetails.remainingSwaps > 0
+                                  ? "#52c41a"
+                                  : "#f5222d",
+                              fontSize: "16px",
+                            }}
+                          >
+                            <b>{bookingDetails.remainingSwaps}</b> lần
+                          </Text>
+                        </Paragraph>
+                      )}
                     <Paragraph>
                       Pin của bạn đã được chuẩn bị xong, hãy đến lấy pin trong vòng <b>3 giờ</b> kể từ lúc đặt lịch.
                     </Paragraph>
