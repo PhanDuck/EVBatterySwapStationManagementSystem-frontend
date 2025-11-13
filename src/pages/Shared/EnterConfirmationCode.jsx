@@ -22,6 +22,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
+import { showToast } from "../../components/Shared/ToastNotification";
 
 export default function SwapAnimation() {
   const [code, setCode] = useState("");
@@ -149,13 +150,11 @@ export default function SwapAnimation() {
   //   Bước 1: Nhập Code -> Lấy thông tin Pin Mới
   // ----------------------------------------------------
   const handleGetNewBattery = async () => {
-    if (!code || code.length !== 6) {
-      return message.warning("⚠️ Vui lòng nhập đúng mã gồm 6 ký tự.");
+    if (!code || code.length !== 6) {  
+      return showToast("warning", "⚠️ Vui lòng nhập đúng mã gồm 6 ký tự.");
     }
     if (step > 1) {
-      return message.info(
-        "Mã đã được xác nhận. Vui lòng tiếp tục các bước đổi pin."
-      );
+      return showToast("success", "Mã đã được xác nhận. Vui lòng tiếp tục các bước đổi pin.");
     }
 
     setLoading(true);
@@ -172,13 +171,10 @@ export default function SwapAnimation() {
       });
       setConfirmedCode(code);
       setStep(2); // Chuyển sang bước "Cho pin vào"
-      message.success("✅ Xác nhận mã thành công! Sẵn sàng cho pin vào.");
+      showToast("success", "✅ Xác nhận mã thành công! Sẵn sàng cho pin vào.");
     } catch (error) {
       setTransactionInfo({ vehiclePlate: null, driverName: null });
-      message.error(
-        error?.response?.data?.message ||
-          "❌ Lấy thông tin pin mới không thành công!"
-      );
+      showToast("error", error.response?.data ||"❌ Lấy thông tin pin mới không thành công!");
       console.error("❌ Lỗi lấy pin mới:", error);
     } finally {
       setLoading(false);
@@ -203,17 +199,19 @@ export default function SwapAnimation() {
 
       setOldBattery(res.data);
       setStep(3); // Chuyển sang bước "Sẵn sàng Swap"
-      message.success({
-        content: "✅ Pin đã được cho vào. Đã lấy thông tin pin. Sẵn sàng đổi.",
-        key: "insert",
-        duration: 3,
-      });
+      showToast("success", "Pin đã được cho vào. Đã lấy thông tin pin. Sẵn sàng đổi.");
+      // message.success({
+      //   content: "✅ Pin đã được cho vào. Đã lấy thông tin pin. Sẵn sàng đổi.",
+      //   key: "insert",
+      //   duration: 3,
+      // });
     } catch (error) {
-      message.error({
-        content:
-          error?.response?.data?.message || "❌ Lấy thông tin pin cũ thất bại!",
-        key: "insert",
-      });
+      showToast("error", error.response?.data || "Lấy thông tin pin cũ thất bại!");
+      // message.error({
+      //   content:
+      //     error?.response?.data?.message || "❌ Lấy thông tin pin cũ thất bại!",
+      //   key: "insert",
+      // });
       console.error("❌ Lỗi lấy pin cũ:", error);
     } finally {
       setLoading(false);
@@ -234,8 +232,8 @@ export default function SwapAnimation() {
           params: { code: code },
         }
       );
-
-      message.success("🎉 Đổi pin thành công!");
+      
+      showToast("success", " Đổi pin thành công!");
       console.log("✅ Response API Swap:", res.data);
       // 1. Cột TRÁI (leftBatteryData) phải là Pin MỚI (newBatteryBeforeSwap) -> setOldBattery
     setOldBattery(newBatteryBeforeSwap);
@@ -245,9 +243,7 @@ export default function SwapAnimation() {
       setIsSwapped(true);
       setStep(4);
     } catch (error) {
-      message.error(
-        error?.response?.data?.message || "❌ Đổi không thành công!"
-      );
+      showToast("error",error.response?.data || "Đổi không thành công!");
       console.error("❌ Lỗi đổi:", error);
     } finally {
       setLoading(false);
@@ -265,7 +261,7 @@ export default function SwapAnimation() {
     setStep(1);
     setTransactionInfo({ vehiclePlate: null, driverName: null });
     setIsSwapped(false);
-    message.info("Vui lòng nhập mã xác nhận mới.");
+    showToast("warning", "Vui lòng nhập mã xác nhận mới.");
   };
 
   // Bước 5: Logic Hiển thị
