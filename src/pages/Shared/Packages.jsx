@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from "react";
 import api from "../../config/axios";
 import { getToken } from "../../config/auth";
-import { Await, useNavigate } from "react-router-dom";
+import { Await, useNavigate, Link } from "react-router-dom";
 import { showToast } from "../../Utils/toastHandler";
+import { Modal, Checkbox, Button } from "antd";
+import { CheckCircleOutlined, FileTextOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 
 function PackagesPage() {
   const [packages, setPackages] = useState([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedPackageId, setSelectedPackageId] = useState(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const fetchPackages = async () => {
     let res = await api.get("/service-package");
     setPackages(res.data || []);
@@ -45,12 +50,136 @@ function PackagesPage() {
       navigate("/login");
       return;
     } else {
-      handlePayMoMo(packageId);
+      // Mở modal thay vì gọi trực tiếp
+      setSelectedPackageId(packageId);
+      setAgreedToTerms(false);
+      setIsModalVisible(true);
     }
+  };
+
+  const handleAgreeAndProceed = () => {
+    if (!agreedToTerms) {
+      showToast("warning", "Vui lòng đồng ý với chính sách!");
+      return;
+    }
+    setIsModalVisible(false);
+    handlePayMoMo(selectedPackageId);
+  };
+
+  const handleModalCancel = () => {
+    setIsModalVisible(false);
+    setSelectedPackageId(null);
+    setAgreedToTerms(false);
+  };
+
+  const handleViewPolicy = () => {
+    window.open("/policy", "_blank");
   };
 
   return (
     <div>
+      {/* Modal Chính Sách - Tối Giản */}
+      <Modal
+        visible={isModalVisible}
+        onCancel={handleModalCancel}
+        footer={null}
+        width={600}
+        centered
+        bodyStyle={{ padding: "30px" }}
+        closable={true}
+      >
+        <div>
+          {/* Title */}
+          <h2 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "8px", color: "#000" }}>
+            Xác nhận điều khoản dịch vụ
+          </h2>
+          <p style={{ color: "#666", fontSize: "14px", marginBottom: "24px" }}>
+            Vui lòng đọc và đồng ý với chính sách trước khi tiếp tục thanh toán
+          </p>
+
+          {/* Divider */}
+          <div style={{ height: "1px", backgroundColor: "#e0e0e0", marginBottom: "24px" }}></div>
+
+          {/* Content */}
+          <div style={{ marginBottom: "24px" }}>
+            <p style={{ color: "#333", fontSize: "14px", lineHeight: "1.8", marginBottom: "16px" }}>
+              Bằng cách đăng ký gói dịch vụ, bạn đồng ý tuân thủ tất cả các điều khoản và chính sách của EV Battery Swap.
+            </p>
+
+            <div style={{ backgroundColor: "#f9f9f9", padding: "16px", borderRadius: "6px", marginBottom: "16px" }}>
+              <p style={{ color: "#333", fontSize: "13px", lineHeight: "1.8", margin: "0" }}>
+                • Pin là tài sản của công ty, bạn chỉ có quyền sử dụng<br />
+                • Bạn chịu trách nhiệm bảo quản pin theo hướng dẫn<br />
+                • Thanh toán qua MoMo, gói kích hoạt sau thanh toán<br />
+                • Không hoàn tiền sau khi thanh toán
+              </p>
+            </div>
+
+            <button
+              onClick={handleViewPolicy}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#0066cc",
+                cursor: "pointer",
+                textDecoration: "underline",
+                fontSize: "14px",
+                padding: "0",
+                fontWeight: "500",
+              }}
+            >
+              Xem chi tiết chính sách →
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: "1px", backgroundColor: "#e0e0e0", marginBottom: "24px" }}></div>
+
+          {/* Checkbox */}
+          <div style={{ marginBottom: "24px" }}>
+            <Checkbox
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+            >
+              <span style={{ color: "#333", fontSize: "14px" }}>
+                Tôi đã đọc và đồng ý với các điều khoản trên
+              </span>
+            </Checkbox>
+          </div>
+
+          {/* Buttons */}
+          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+            <Button
+              onClick={handleModalCancel}
+              style={{
+                height: "36px",
+                fontSize: "14px",
+                fontWeight: "500",
+                border: "1px solid #d9d9d9",
+                borderRadius: "4px",
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleAgreeAndProceed}
+              disabled={!agreedToTerms}
+              style={{
+                height: "36px",
+                fontSize: "14px",
+                fontWeight: "500",
+                backgroundColor: agreedToTerms ? "#000" : "#e0e0e0",
+                borderColor: agreedToTerms ? "#000" : "#e0e0e0",
+                color: "white",
+                borderRadius: "4px",
+              }}
+            >
+              Tiếp tục thanh toán
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       <div className="min w-full  flex items-center justify-center py-16 px-6 ">
         <div className="max-w-8xl w-7xl grid md:grid-cols-4 gap-8 ">
           {packages.slice(0, 12).map((plan, i) => (

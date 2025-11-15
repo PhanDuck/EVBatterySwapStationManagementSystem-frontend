@@ -344,19 +344,19 @@ const BatterySwapModal = ({
 
   const getColumns = () => {
     return [
-      { title: "ID Pin", dataIndex: "id", key: "id", width: 100 },
+      { title: "ID Pin", dataIndex: "id", key: "id", width: 80 },
       {
         title: "Loại Pin",
         dataIndex: "batteryTypeId",
         key: "batteryTypeId",
-        width: 200,
+        width: 250,
         render: (typeId) => batteryTypesMap[typeId] || "",
       },
       {
         title: "Tình trạng pin (%)",
         dataIndex: "stateOfHealth",
         key: "stateOfHealth",
-        width: 120,
+        width: 140,
         render: (soh) => {
           const sohValue = soh ? parseFloat(soh).toFixed(2) : "";
           return sohValue !== "" ? (
@@ -372,7 +372,7 @@ const BatterySwapModal = ({
         title: "Trạng thái",
         dataIndex: "status",
         key: "status",
-        width: 120,
+        width: 110,
         render: (status) => (
           <Tag color={status === "AVAILABLE" ? "green" : "orange"}>
             {status}
@@ -383,7 +383,7 @@ const BatterySwapModal = ({
         title: "Bảo trì lần cuối",
         dataIndex: "lastMaintenanceDate",
         key: "lastMaintenanceDate",
-        width: 150,
+        width: 140,
         render: (date) => (date ? new Date(date).toLocaleDateString() : ""),
       },
     ];
@@ -411,7 +411,7 @@ const BatterySwapModal = ({
       open={isVisible}
       onCancel={onCancel}
       footer={null}
-      width={1000}
+      width={1200}
       destroyOnClose={true}
     >
       <Space direction="vertical" style={{ width: "100%" }} size="middle">

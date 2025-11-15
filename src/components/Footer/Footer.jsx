@@ -1,9 +1,15 @@
 import { Col, Row } from "antd";
-import Paragraph from "antd/es/skeleton/Paragraph";
-import Title from "antd/es/skeleton/Title";
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const Footer = () => {
+  const navigate = useNavigate();
+
+  const handleNavigation = (path) => {
+    navigate(path);
+    window.scrollTo(0, 0);
+  };
+
   return (
     <div>
       <footer
@@ -41,147 +47,116 @@ const Footer = () => {
                   Battery Swap
                 </div>
               </div>
-              <Paragraph
+              <p
                 style={{ color: "rgba(255,255,255,0.6)", marginBottom: "12px" }}
               >
                 Hệ thống quản lý trạm đổi pin xe điện. Trải nghiệm đơn giản,
                 thân thiện.
-              </Paragraph>
+              </p>
             </Col>
-            <Col xs={12} sm={8} md={5}>
-              <Title level={5} style={{ color: "white", marginBottom: "20px" }}>
-                Dịch Vụ
-              </Title>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                <li style={{ marginBottom: "12px" }}>
-                  <a
-                    href="#"
-                    style={{
-                      color: "rgba(255,255,255,0.6)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Đổi Pin
-                  </a>
-                </li>
-                <li style={{ marginBottom: "12px" }}>
-                  <a
-                    href="#"
-                    style={{
-                      color: "rgba(255,255,255,0.6)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Sạc Pin
-                  </a>
-                </li>
-                <li style={{ marginBottom: "12px" }}>
-                  <a
-                    href="#"
-                    style={{
-                      color: "rgba(255,255,255,0.6)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Bảo Dưỡng
-                  </a>
-                </li>
-                <li style={{ marginBottom: "12px" }}>
-                  <a
-                    href="#"
-                    style={{
-                      color: "rgba(255,255,255,0.6)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Tư Vấn
-                  </a>
-                </li>
-              </ul>
+            <Col xs={24} md={8}>
+              <div>
+                <h5 style={{ color: "white", marginBottom: "20px" }}>
+                  Liên Kết Nhanh
+                </h5>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  <li style={{ marginBottom: "12px" }}>
+                    <a
+                      onClick={() => handleNavigation("/about")}
+                      style={{
+                        color: "rgba(255,255,255,0.6)",
+                        textDecoration: "none",
+                        cursor: "pointer",
+                        transition: "color 0.3s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.target.style.color = "rgba(255,255,255,1)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.target.style.color = "rgba(255,255,255,0.6)")
+                      }
+                    >
+                      Về Chúng Tôi
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: "12px" }}>
+                    <a
+                      onClick={() => handleNavigation("/stations/booking")}
+                      style={{
+                        color: "rgba(255,255,255,0.6)",
+                        textDecoration: "none",
+                        cursor: "pointer",
+                        transition: "color 0.3s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.target.style.color = "rgba(255,255,255,1)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.target.style.color = "rgba(255,255,255,0.6)")
+                      }
+                    >
+                      Đổi Pin
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: "12px" }}>
+                    <a
+                      onClick={() => handleNavigation("/policy")}
+                      style={{
+                        color: "rgba(255,255,255,0.6)",
+                        textDecoration: "none",
+                        cursor: "pointer",
+                        transition: "color 0.3s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.target.style.color = "rgba(255,255,255,1)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.target.style.color = "rgba(255,255,255,0.6)")
+                      }
+                    >
+                      Chính Sách
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </Col>
-            <Col xs={12} sm={8} md={5}>
-              <Title level={5} style={{ color: "white", marginBottom: "20px" }}>
-                Công Ty
-              </Title>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                <li style={{ marginBottom: "12px" }}>
-                  <a
-                    href="#"
-                    style={{
-                      color: "rgba(255,255,255,0.6)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Về Chúng Tôi
-                  </a>
-                </li>
-                <li style={{ marginBottom: "12px" }}>
-                  <a
-                    href="#"
-                    style={{
-                      color: "rgba(255,255,255,0.6)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Tuyển Dụng
-                  </a>
-                </li>
-                <li style={{ marginBottom: "12px" }}>
-                  <a
-                    href="#"
-                    style={{
-                      color: "rgba(255,255,255,0.6)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Đối Tác
-                  </a>
-                </li>
-                <li style={{ marginBottom: "12px" }}>
-                  <a
-                    href="#"
-                    style={{
-                      color: "rgba(255,255,255,0.6)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Tin Tức
-                  </a>
-                </li>
-              </ul>
-            </Col>
-            <Col xs={24} sm={8} md={6}>
-              <Title level={5} style={{ color: "white", marginBottom: "20px" }}>
-                Liên Hệ
-              </Title>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                <li
-                  style={{
-                    marginBottom: "12px",
-                    color: "rgba(255,255,255,0.6)",
-                  }}
-                >
-                  Email: contact@evbatteryswap.com
-                </li>
-                <li
-                  style={{
-                    marginBottom: "12px",
-                    color: "rgba(255,255,255,0.6)",
-                  }}
-                >
-                  Phone: +84 123 456 789
-                </li>
-                <li
-                  style={{
-                    marginBottom: "12px",
-                    color: "rgba(255,255,255,0.6)",
-                  }}
-                >
-                  Địa chỉ: 123 Nguyễn Văn Linh, Q.7, TP.HCM
-                </li>
-              </ul>
+            <Col xs={24} md={8}>
+              <div>
+                <h5 style={{ color: "white", marginBottom: "20px" }}>
+                  Liên Hệ
+                </h5>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  <li style={{ marginBottom: "12px" }}>
+                    <span style={{ color: "rgba(255,255,255,0.6)" }}>
+                      <strong>Hotline:</strong> 098104xxxx
+                    </span>
+                  </li>
+                  <li style={{ marginBottom: "12px" }}>
+                    <span style={{ color: "rgba(255,255,255,0.6)" }}>
+                      <strong>Email:</strong> support@evbatteryswap.com
+                    </span>
+                  </li>
+                  <li style={{ marginBottom: "12px" }}>
+                    <span style={{ color: "rgba(255,255,255,0.6)" }}>
+                      <strong>Website:</strong> https://evbatteryswapsystem.com/
+                    </span>
+                  </li>
+                </ul>
+              </div>
             </Col>
           </Row>
+          <div
+            style={{
+              borderTop: "1px solid rgba(255,255,255,0.1)",
+              marginTop: "40px",
+              paddingTop: "20px",
+              textAlign: "center",
+              color: "rgba(255,255,255,0.4)",
+              fontSize: "14px",
+            }}
+          >
+            <p>© 2025 EV Battery Swap. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>

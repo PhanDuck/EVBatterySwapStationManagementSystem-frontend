@@ -10,6 +10,7 @@ import Register from "../pages/Auth/Register";
 import Home from "../pages/Shared/Home";
 import About from "../pages/Shared/About";
 import Packages from "../pages/Shared/Packages";
+import Policy from "../pages/Shared/Policy";
 import NotFound from "../pages/Error/NotFound";
 import AdminDashboard from "../pages/Dashboard/AdminDashboard";
 import DriverDashboard from "../pages/Dashboard/DriverDashboard";
@@ -54,6 +55,7 @@ export default function AppRouter() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/packages" element={<Packages />} />
+          <Route path="/policy" element={<Policy />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/stations/nearby" element={<StationsNearbyPage />} />
           <Route path="/codeConfirm" element={<EnterConfirmationCode />} />

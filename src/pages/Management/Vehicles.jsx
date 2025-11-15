@@ -1449,37 +1449,35 @@ const VehiclePage = () => {
                   showSearch
                   optionFilterProp="label"
                 >
-                  {availableBatteries.map((battery) => (
-                    <Select.Option
-                      key={battery.id}
-                      value={battery.id}
-                      label={`Pin #${battery.id} - ${battery.model}`}
-                    >
-                      <div style={{ padding: "8px 0" }}>
-                        <div style={{ fontWeight: "bold" }}>
-                          Pin #{battery.id} - {battery.model}
-                        </div>
-                        <div style={{ fontSize: "12px", color: "#666" }}>
-                          Mức sạc:
-                          <Tag
-                            color={
-                              battery.chargeLevel > 70 ? "green" : "orange"
-                            }
-                          >
-                            {battery.chargeLevel}%
-                          </Tag>
-                          SOH:
-                          <Tag
-                            color={
-                              battery.stateOfHealth > 70 ? "green" : "orange"
-                            }
-                          >
-                            {battery.stateOfHealth}%
-                          </Tag>
-                        </div>
-                      </div>
-                    </Select.Option>
-                  ))}
+                   {availableBatteries.map((battery) => (
+                     <Select.Option
+                       key={battery.id}
+                       value={battery.id}
+                       label={`Pin #${battery.id} - ${battery.model}`}
+                     >
+                       <div style={{ padding: "8px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                         <div style={{ fontWeight: "bold", flex: 1 }}>
+                           Pin #{battery.id} - {battery.model}
+                         </div>
+                         <div style={{ fontSize: "12px", color: "#666", display: "flex", gap: "8px", whiteSpace: "nowrap" }}>
+                           <Tag
+                             color={
+                               battery.chargeLevel > 70 ? "green" : "orange"
+                             }
+                           >
+                             {battery.chargeLevel}%
+                           </Tag>
+                           <Tag
+                             color={
+                               battery.stateOfHealth > 70 ? "green" : "orange"
+                             }
+                           >
+                             {battery.stateOfHealth}%
+                           </Tag>
+                         </div>
+                       </div>
+                     </Select.Option>
+                   ))}
                 </Select>
                 {availableBatteries.length === 0 && !batteriesLoading && (
                   <p style={{ marginTop: 10, color: "red" }}>
@@ -1501,7 +1499,7 @@ const VehiclePage = () => {
           setSelectedBatteryForApprove(null);
           setAvailableBatteries([]);
         }}
-        width={500}
+        width={900}
         footer={[
           <Button
             key="cancel"
@@ -1547,44 +1545,31 @@ const VehiclePage = () => {
                   <Select
                     placeholder="Chọn pin phù hợp"
                     onChange={setSelectedBatteryForApprove}
+                    popupMatchSelectWidth={false}
+                    style={{ width: "100%" }}
+                    popupStyle={{ minWidth: "800px", maxHeight: "400px" }}
                   >
                     {availableBatteries.map((battery) => (
                       <Option
                         key={battery.id}
                         value={battery.id}
                         label={
-                          <Tooltip
-                            title={`Mức sạc: ${battery.chargeLevel}% | Tình trạng: ${battery.stateOfHealth}%`}
-                          >
-                            <span>
-                              Pin #{battery.id} - {battery.model}
-                            </span>
-                          </Tooltip>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                            <span>Pin #{battery.id} - {battery.model}</span>
+                            <div style={{ display: "flex", gap: "16px", whiteSpace: "nowrap", fontSize: "12px" }}>
+                              <span>Mức sạc: <Tag color={battery.chargeLevel > 70 ? "green" : "orange"}>{battery.chargeLevel}%</Tag></span>
+                              <span>Tình trạng: <Tag color={battery.stateOfHealth > 70 ? "green" : "orange"}>{battery.stateOfHealth}%</Tag></span>
+                            </div>
+                          </div>
                         }
                       >
-                        <div style={{ padding: "8px 0" }}>
-                          <div
-                            style={{ fontWeight: "bold", marginBottom: "4px" }}
-                          >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "8px 0" }}>
+                          <div style={{ fontWeight: "bold" }}>
                             Pin #{battery.id} - {battery.model}
                           </div>
-                          <div style={{ fontSize: "12px", color: "#666" }}>
-                            Mức sạc:
-                            <Tag
-                              color={
-                                battery.chargeLevel > 70 ? "green" : "orange"
-                              }
-                            >
-                              {battery.chargeLevel}%
-                            </Tag>
-                            Tình trạng:
-                            <Tag
-                              color={
-                                battery.stateOfHealth > 70 ? "green" : "orange"
-                              }
-                            >
-                              {battery.stateOfHealth}%
-                            </Tag>
+                          <div style={{ display: "flex", gap: "16px", whiteSpace: "nowrap", fontSize: "12px" }}>
+                            <span>Mức sạc: <Tag color={battery.chargeLevel > 70 ? "green" : "orange"}>{battery.chargeLevel}%</Tag></span>
+                            <span>Tình trạng: <Tag color={battery.stateOfHealth > 70 ? "green" : "orange"}>{battery.stateOfHealth}%</Tag></span>
                           </div>
                         </div>
                       </Option>
