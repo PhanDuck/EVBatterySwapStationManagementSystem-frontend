@@ -73,6 +73,10 @@ const VehiclePage = () => {
   const [selectedReplacementBattery, setSelectedReplacementBattery] =
     useState(null);
   const [isSwapping, setIsSwapping] = useState(false);
+  const [rejectReasonModalVisible, setRejectReasonModalVisible] = useState(false);
+  const [rejectingVehicleId, setRejectingVehicleId] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isRejectingVehicle, setIsRejectingVehicle] = useState(false);
 
   const user = (() => {
     try {
@@ -770,28 +774,19 @@ const VehiclePage = () => {
           >
             Duyệt
           </Button>
-          <Button
-            type="primary"
-            danger
-            icon={<CloseOutlined />}
-            size="small"
-            onClick={() => {
-              Modal.confirm({
-                title: "Từ chối xe",
-                content: "Nhập lý do từ chối:",
-                okText: "Từ chối",
-                cancelText: "Hủy",
-                onOk() {
-                  const reason = prompt("Lý do từ chối:");
-                  if (reason) {
-                    handleRejectVehicle(record.id, reason);
-                  }
-                },
-              });
-            }}
-          >
-            Từ chối
-          </Button>
+           <Button
+             type="primary"
+             danger
+             icon={<CloseOutlined />}
+             size="small"
+             onClick={() => {
+               setRejectingVehicleId(record.id);
+               setRejectReason("");
+               setRejectReasonModalVisible(true);
+             }}
+           >
+             Từ chối
+           </Button>
         </Space>
       ),
     },
@@ -1094,28 +1089,46 @@ const VehiclePage = () => {
     }
   };
 
-  // ❌ Từ chối xe
-  const handleRejectVehicle = async (vehicleId, reason) => {
-    try {
-      console.log("Rejecting vehicle:", vehicleId, "Reason:", reason);
-      const res = await api.put(`/vehicle/${vehicleId}/reject`, { reason });
-      console.log("Reject response:", res.data);
+   // ❌ Từ chối xe
+   const handleRejectVehicle = async (vehicleId, reason) => {
+     if (!reason || reason.trim() === "") {
+       message.error("Vui lòng nhập lý do từ chối!");
+       return;
+     }
 
-      showToast("success", "Đã từ chối xe!");
+     setIsRejectingVehicle(true);
+     try {
+       console.log("Rejecting vehicle:", vehicleId, "Reason:", reason);
+       const payload = { reason: reason.trim() };
+       console.log("Payload being sent:", JSON.stringify(payload));
+       
+       const res = await api.put(`/vehicle/${vehicleId}/reject`, payload);
+       console.log("Reject response:", res.data);
 
-      // Cập nhật danh sách xe chờ duyệt
-      setPendingVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+       showToast("success", "Đã từ chối xe!");
 
-      // Cập nhật danh sách xe chính - xóa xe bị từ chối
-      setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
-    } catch (error) {
-      console.error(
-        "Error rejecting vehicle:",
-        error.response?.data || error.message
-      );
-      showToast("error", error.response?.data?.message || "Lỗi khi từ chối xe");
-    }
-  };
+       // Cập nhật danh sách xe chờ duyệt
+       setPendingVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+
+       // Cập nhật danh sách xe chính - xóa xe bị từ chối
+       setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+
+       // Đóng modal
+       setRejectReasonModalVisible(false);
+       setRejectingVehicleId(null);
+       setRejectReason("");
+     } catch (error) {
+       console.error(
+         "Error rejecting vehicle - Full error:",
+         error
+       );
+       console.error("Error response:", error.response);
+       console.error("Error response data:", error.response?.data);
+       showToast("error", error.response?.data?.message || "Lỗi khi từ chối xe");
+     } finally {
+       setIsRejectingVehicle(false);
+     }
+   };
 
   const handleAdd = () => {
     setEditingVehicle(null);
@@ -1489,98 +1502,147 @@ const VehiclePage = () => {
           </Form>
         )}
       </Modal>
-      {/* Modal Duyệt xe và chọn pin */}
-      <Modal
-        title="Duyệt xe và chọn pin"
-        open={approveModalVisible}
-        onCancel={() => {
-          setApproveModalVisible(false);
-          setSelectedVehicleForApprove(null);
-          setSelectedBatteryForApprove(null);
-          setAvailableBatteries([]);
-        }}
-        width={900}
-        footer={[
-          <Button
-            key="cancel"
-            onClick={() => {
-              setApproveModalVisible(false);
-              setSelectedVehicleForApprove(null);
-              setSelectedBatteryForApprove(null);
-              setAvailableBatteries([]);
-            }}
-          >
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={isApprovingVehicle}
-            onClick={() => {
-              if (selectedVehicleForApprove) {
-                console.log(
-                  "Submit approve with vehicle:",
-                  selectedVehicleForApprove.id,
-                  "battery:",
-                  selectedBatteryForApprove
-                );
-                handleApproveVehicle(
-                  selectedVehicleForApprove.id,
-                  selectedBatteryForApprove
-                );
-              } else {
-                message.error("Vui lòng chọn xe để duyệt!");
-              }
-            }}
-          >
-            {isApprovingVehicle ? "Đang duyệt..." : "Duyệt xe"}
-          </Button>,
-        ]}
-      >
-        {selectedVehicleForApprove && (
-          <div>
-            <Form layout="vertical">
-              <Form.Item label="Chọn pin để gán ban đầu (Pin sẵn có)" required>
-                <Spin spinning={batteriesLoading}>
-                  <Select
-                    placeholder="Chọn pin phù hợp"
-                    onChange={setSelectedBatteryForApprove}
-                    popupMatchSelectWidth={false}
-                    style={{ width: "100%" }}
-                    popupStyle={{ minWidth: "800px", maxHeight: "400px" }}
-                  >
-                    {availableBatteries.map((battery) => (
-                      <Option
-                        key={battery.id}
-                        value={battery.id}
-                        label={
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                            <span>Pin #{battery.id} - {battery.model}</span>
-                            <div style={{ display: "flex", gap: "16px", whiteSpace: "nowrap", fontSize: "12px" }}>
-                              <span>Mức sạc: <Tag color={battery.chargeLevel > 70 ? "green" : "orange"}>{battery.chargeLevel}%</Tag></span>
-                              <span>Tình trạng: <Tag color={battery.stateOfHealth > 70 ? "green" : "orange"}>{battery.stateOfHealth}%</Tag></span>
-                            </div>
-                          </div>
-                        }
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "8px 0" }}>
-                          <div style={{ fontWeight: "bold" }}>
-                            Pin #{battery.id} - {battery.model}
-                          </div>
-                          <div style={{ display: "flex", gap: "16px", whiteSpace: "nowrap", fontSize: "12px" }}>
-                            <span>Mức sạc: <Tag color={battery.chargeLevel > 70 ? "green" : "orange"}>{battery.chargeLevel}%</Tag></span>
-                            <span>Tình trạng: <Tag color={battery.stateOfHealth > 70 ? "green" : "orange"}>{battery.stateOfHealth}%</Tag></span>
-                          </div>
-                        </div>
-                      </Option>
-                    ))}
-                  </Select>
-                </Spin>
-              </Form.Item>
-            </Form>
-          </div>
-        )}
-      </Modal>
+       {/* Modal Duyệt xe và chọn pin */}
+       <Modal
+         title="Duyệt xe và chọn pin"
+         open={approveModalVisible}
+         onCancel={() => {
+           setApproveModalVisible(false);
+           setSelectedVehicleForApprove(null);
+           setSelectedBatteryForApprove(null);
+           setAvailableBatteries([]);
+         }}
+         width={900}
+         footer={[
+           <Button
+             key="cancel"
+             onClick={() => {
+               setApproveModalVisible(false);
+               setSelectedVehicleForApprove(null);
+               setSelectedBatteryForApprove(null);
+               setAvailableBatteries([]);
+             }}
+           >
+             Hủy
+           </Button>,
+           <Button
+             key="submit"
+             type="primary"
+             loading={isApprovingVehicle}
+             onClick={() => {
+               if (selectedVehicleForApprove) {
+                 console.log(
+                   "Submit approve with vehicle:",
+                   selectedVehicleForApprove.id,
+                   "battery:",
+                   selectedBatteryForApprove
+                 );
+                 handleApproveVehicle(
+                   selectedVehicleForApprove.id,
+                   selectedBatteryForApprove
+                 );
+               } else {
+                 message.error("Vui lòng chọn xe để duyệt!");
+               }
+             }}
+           >
+             {isApprovingVehicle ? "Đang duyệt..." : "Duyệt xe"}
+           </Button>,
+         ]}
+       >
+         {selectedVehicleForApprove && (
+           <div>
+             <Form layout="vertical">
+               <Form.Item label="Chọn pin để gán ban đầu (Pin sẵn có)" required>
+                 <Spin spinning={batteriesLoading}>
+                   <Select
+                     placeholder="Chọn pin phù hợp"
+                     onChange={setSelectedBatteryForApprove}
+                     popupMatchSelectWidth={false}
+                     style={{ width: "100%" }}
+                     popupStyle={{ minWidth: "800px", maxHeight: "400px" }}
+                   >
+                     {availableBatteries.map((battery) => (
+                       <Option
+                         key={battery.id}
+                         value={battery.id}
+                         label={
+                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                             <span>Pin #{battery.id} - {battery.model}</span>
+                             <div style={{ display: "flex", gap: "16px", whiteSpace: "nowrap", fontSize: "12px" }}>
+                               <span>Mức sạc: <Tag color={battery.chargeLevel > 70 ? "green" : "orange"}>{battery.chargeLevel}%</Tag></span>
+                               <span>Tình trạng: <Tag color={battery.stateOfHealth > 70 ? "green" : "orange"}>{battery.stateOfHealth}%</Tag></span>
+                             </div>
+                           </div>
+                         }
+                       >
+                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "8px 0" }}>
+                           <div style={{ fontWeight: "bold" }}>
+                             Pin #{battery.id} - {battery.model}
+                           </div>
+                           <div style={{ display: "flex", gap: "16px", whiteSpace: "nowrap", fontSize: "12px" }}>
+                             <span>Mức sạc: <Tag color={battery.chargeLevel > 70 ? "green" : "orange"}>{battery.chargeLevel}%</Tag></span>
+                             <span>Tình trạng: <Tag color={battery.stateOfHealth > 70 ? "green" : "orange"}>{battery.stateOfHealth}%</Tag></span>
+                           </div>
+                         </div>
+                       </Option>
+                     ))}
+                   </Select>
+                 </Spin>
+               </Form.Item>
+             </Form>
+           </div>
+         )}
+       </Modal>
+       {/* Modal Từ chối xe */}
+       <Modal
+         title="Từ chối xe"
+         open={rejectReasonModalVisible}
+         onCancel={() => {
+           setRejectReasonModalVisible(false);
+           setRejectingVehicleId(null);
+           setRejectReason("");
+         }}
+         footer={[
+           <Button
+             key="cancel"
+             onClick={() => {
+               setRejectReasonModalVisible(false);
+               setRejectingVehicleId(null);
+               setRejectReason("");
+             }}
+             disabled={isRejectingVehicle}
+           >
+             Hủy
+           </Button>,
+           <Button
+             key="submit"
+             type="primary"
+             danger
+             loading={isRejectingVehicle}
+             onClick={() => {
+               if (rejectingVehicleId) {
+                 handleRejectVehicle(rejectingVehicleId, rejectReason);
+               }
+             }}
+           >
+             {isRejectingVehicle ? "Đang từ chối..." : "Từ chối xe"}
+           </Button>,
+         ]}
+       >
+         <Form layout="vertical">
+           <Form.Item label="Lý do từ chối" required>
+             <Input.TextArea
+               placeholder="Nhập lý do từ chối xe (sẽ được gửi đến email khách hàng)"
+               value={rejectReason}
+               onChange={(e) => setRejectReason(e.target.value)}
+               rows={4}
+               maxLength={500}
+               showCount
+             />
+           </Form.Item>
+         </Form>
+       </Modal>
     </div>
   );
 };
