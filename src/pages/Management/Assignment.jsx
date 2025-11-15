@@ -28,6 +28,7 @@ import { showToast } from "../../Utils/toastHandler";
 
 const STAFF_ROLE = "STAFF";
 const { Option } = Select;
+
 const AssignStaffModal = ({
   isModalVisible,
   onCancel,
@@ -41,7 +42,6 @@ const AssignStaffModal = ({
   // Xử lý Gán Staff
   const handleAssign = async (values) => {
     try {
-      // API: POST /api/staff-station-assignment
       await api.post("/staff-station-assignment", values);
       showToast(
         "success",  
@@ -50,6 +50,7 @@ const AssignStaffModal = ({
       onSuccess();
     } catch (error) {
       const message =
+        error.response?.data?.message ||
         error.response?.data ||
         "Phân quyền nhân viên thất bại, vui lòng thử lại!";
       showToast("error", message);
@@ -101,6 +102,7 @@ const AssignStaffModal = ({
                 .toLowerCase()
                 .includes(input.toLowerCase())
             }
+            loading={loading}
           >
             {/* Lọc danh sách chỉ lấy các user có authority (role) là STAFF */}
             {staffList
@@ -127,6 +129,7 @@ const AssignStaffModal = ({
                 .toLowerCase()
                 .includes(input.toLowerCase())
             }
+            loading={loading}
           >
             {stationList.map((station) => (
               <Option key={station.id} value={station.id}>
@@ -144,6 +147,7 @@ export default function AssignmentPage() {
   const [loading, setLoading] = useState(false);
   const [assignments, setAssignments] = useState([]);
   const [isAssignModalVisible, setIsAssignModalVisible] = useState(false);
+  const [auxLoading, setAuxLoading] = useState(false);
   const [allStaffs, setAllStaffs] = useState([]);
   const [allStations, setAllStations] = useState([]);
   const [searchStaffId, setSearchStaffId] = useState("");
@@ -172,12 +176,16 @@ export default function AssignmentPage() {
 
   // Tải danh sách Staff và Trạm (Cho Modal Gán và Ánh xạ tên)
   const fetchAuxiliaryData = useCallback(async () => {
+    setAuxLoading(true);
+    let success = true;
+
     // Tải Staff
     try {
       const staffRes = await api.get("/admin/user");
       const staffsFetched = Array.isArray(staffRes.data) ? staffRes.data : [];
       setAllStaffs(staffsFetched);
     } catch (error) {
+      success = false;
       const message =
         error.response?.data ||
         "Lấy danh sách nhân viên thất bại, vui lòng thử lại!";
@@ -192,16 +200,33 @@ export default function AssignmentPage() {
         : [];
       setAllStations(stationsFetched);
     } catch (error) {
+      success = false;
       const message =
         error.response?.data ||
         "Lấy danh sách trạm thất bại, vui lòng thử lại!";
       showToast("error", message);
     }
+
+    setAuxLoading(false); // Kết thúc loading cho dữ liệu phụ
+    return success;
   }, []);
+
+  // Xử lý mở Modal Phân quyền: Gọi API phụ nếu chưa có dữ liệu
+  const handleOpenAssignModal = async () => {
+    // Kiểm tra nếu chưa có dữ liệu Staff/Station hoặc danh sách rỗng
+    if (allStaffs.length === 0 || allStations.length === 0) {
+        const success = await fetchAuxiliaryData();
+        if (!success) {
+            // Nếu fetch thất bại, không mở modal
+            return;
+        }
+    }
+    setIsAssignModalVisible(true);
+  }
 
   // --- B. HÀM XỬ LÝ THAO TÁC DELETE ---
 
-  // Xử lý HỦY GÁN (DELETE /api/staff-station-assignment/staff/{staffId}/station/{stationId})
+  // Xử lý HỦY GÁN
   const handleUnassign = async (staffId, stationId) => {
     setLoading(true);
     try {
@@ -220,14 +245,12 @@ export default function AssignmentPage() {
         "Xóa phân quyền nhân viên thất bại, vui lòng thử lại!";
       showToast("error", message);
     }
-    setLoading(false);
   };
 
   // --- C. EFFECT CHẠY LẦN ĐẦU ---
   useEffect(() => {
     fetchAllAssignments();
-    fetchAuxiliaryData();
-  }, [fetchAllAssignments, fetchAuxiliaryData]);
+  }, [fetchAllAssignments]);
 
   // --- D. ÁNH XẠ DỮ LIỆU ĐỂ HIỂN THỊ TÊN, ID VÀ LỌC (SỬ DỤNG useMemo ĐỂ LỌC) ---
   const filteredAndMappedAssignments = useMemo(() => {
@@ -264,6 +287,7 @@ export default function AssignmentPage() {
       key: "id",
       sorter: (a, b) => a.id - b.id,
       render: (text) => <strong>{text}</strong>,
+      width: 50,
     },
     {
       title: (
@@ -280,6 +304,7 @@ export default function AssignmentPage() {
           <Tag color="blue">{text}</Tag>
         </Tooltip>
       ),
+      width: 200,
     },
     {
       title: (
@@ -296,6 +321,7 @@ export default function AssignmentPage() {
           <Tag color="green">{text}</Tag>
         </Tooltip>
       ),
+      width: 200,
     },
     {
       title: (
@@ -324,6 +350,7 @@ export default function AssignmentPage() {
           year: "numeric",
         });
       },
+      width: 150,
       // sorter: (a, b) => {
       //   const dateA = a.assignedAt// Sử dụng assignedAt để so sánh
       //   const dateB = b.assignedAt
@@ -334,6 +361,7 @@ export default function AssignmentPage() {
       title: "Thao tác",
       key: "actions",
       fixed: "right",
+      width: 100,
       render: (_, record) => (
         <Popconfirm
           title="Xác nhận xóa phân quyền này?"
@@ -369,8 +397,8 @@ export default function AssignmentPage() {
             <Button
               type="primary"
               icon={<UserAddOutlined />}
-              onClick={() => setIsAssignModalVisible(true)}
-              loading={loading}
+              onClick={handleOpenAssignModal}
+              loading={loading || auxLoading}
             >
               Phân quyền
             </Button>
@@ -378,7 +406,6 @@ export default function AssignmentPage() {
               icon={<ReloadOutlined />}
               onClick={() => {
                 fetchAllAssignments();
-                fetchAuxiliaryData();
               }}
               loading={loading}
             >
@@ -415,15 +442,14 @@ export default function AssignmentPage() {
         {/* Bảng Hiển thị Assignments */}
         <Table
           columns={columns}
-          // SỬ DỤNG DỮ LIỆU ĐÃ LỌC
           dataSource={filteredAndMappedAssignments}
           loading={loading}
-          rowKey={(record) => `${record.staffId}-${record.stationId}`}
+          rowKey={(record) => record.id || `${record.staffId}-${record.stationId}`}
           pagination={{
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} trên ${total} phân quyền`,
           }}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 700 }}
         />
       </Card>
 
@@ -437,7 +463,7 @@ export default function AssignmentPage() {
         }}
         staffList={allStaffs}
         stationList={allStations}
-        loading={loading}
+        loading={auxLoading}
       />
     </div>
   );

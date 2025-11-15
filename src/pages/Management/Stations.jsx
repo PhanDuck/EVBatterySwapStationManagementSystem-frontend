@@ -158,7 +158,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
 // Định nghĩa trạng thái của luồng đổi pin
 const SWAP_STEP = {
   SELECT_FAULTY: "SELECT_FAULTY", // Bước 1: Chọn pin lỗi tại trạm về kho
-  SELECT_GOOD: "SELECT_GOOD", // Bước 2: Chọn pin tốt trong kho ra trạm
+  //SELECT_GOOD: "SELECT_GOOD", // Bước 2: Chọn pin tốt trong kho ra trạm
 };
 
 /**
@@ -179,11 +179,13 @@ const BatterySwapModal = ({
   const [stationMaintenanceBatteries, setStationMaintenanceBatteries] =
     useState([]);
   const [selectedFaultyBatteryIds, setSelectedFaultyBatteryIds] = useState([]); // ID pin lỗi đã chọn
+  const [randomlySelectedGoodBatteries, setRandomlySelectedGoodBatteries] =
+        useState([]); // Pin tốt được chọn ngẫu nhiên
 
   // --- State cho BƯỚC 2: Chọn Pin tốt (Available)
-  const [warehouseAvailableBatteries, setWarehouseAvailableBatteries] =
-    useState([]);
-  const [selectedGoodBatteryIds, setSelectedGoodBatteryIds] = useState([]); // ID pin tốt đã chọn
+  // const [warehouseAvailableBatteries, setWarehouseAvailableBatteries] =
+  //   useState([]);
+  // const [selectedGoodBatteryIds, setSelectedGoodBatteryIds] = useState([]); // ID pin tốt đã chọn
 
   // Lấy ID loại pin của trạm (giả định trạm chỉ chứa 1 loại pin)
   const stationBatteryTypeId = useMemo(() => {
@@ -212,126 +214,136 @@ const BatterySwapModal = ({
     }
   }, []);
 
-  // Tải Pin tốt có sẵn trong Kho theo loại (BƯỚC 2)
-  const fetchAvailableWarehouseBatteries = useCallback(async (typeId) => {
-    if (!typeId) return;
-    setLoading(true);
-    try {
-      // API: GET /api/station-inventory/available-by-type/{batteryTypeId}
-      const res = await api.get(
-        `/station-inventory/available-by-type/${typeId}`
-      );
-      const batteries = Array.isArray(res.data?.batteries)
-        ? res.data.batteries
-        : [];
-      setWarehouseAvailableBatteries(
-        batteries
-          .filter((b) => b.status === "AVAILABLE")
-          .sort((a, b) => b.id - a.id)
-      );
-    } catch (error) {
-      handleApiError(error, "Tải pin tốt có sẵn trong kho!");
-      setWarehouseAvailableBatteries([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Effect chạy khi modal mở
   useEffect(() => {
     if (isVisible && station?.id) {
       setCurrentStep(SWAP_STEP.SELECT_FAULTY); // Reset bước khi mở
       setSelectedFaultyBatteryIds([]);
-      setSelectedGoodBatteryIds([]);
+      //setSelectedGoodBatteryIds([]);
+      setRandomlySelectedGoodBatteries([]);
       fetchMaintenanceBatteries(station.id);
     } else if (!isVisible) {
       setStationMaintenanceBatteries([]);
-      setWarehouseAvailableBatteries([]);
+      //setWarehouseAvailableBatteries([]);
     }
   }, [isVisible, station, fetchMaintenanceBatteries]);
 
-  // Effect chạy khi chuyển sang bước 2
-  useEffect(() => {
-    if (currentStep === SWAP_STEP.SELECT_GOOD && stationBatteryTypeId) {
-      fetchAvailableWarehouseBatteries(stationBatteryTypeId);
-    }
-  }, [currentStep, stationBatteryTypeId, fetchAvailableWarehouseBatteries]);
+  // --- LOGIC RANDOM VÀ SUBMIT ---
 
-  // --- LOGIC XỬ LÝ CHUYỂN BƯỚC VÀ SUBMIT ---
+    /**
+     * Hàm chọn ngẫu nhiên X pin đạt chuẩn (SOH > 90%)
+     * @param {number} typeId - Loại pin cần tìm
+     * @param {number} count - Số lượng pin cần chọn
+     * @returns {Array} - Mảng các đối tượng pin đã chọn ngẫu nhiên
+     */
+    const selectRandomGoodBatteries = async (typeId, count) => {
+        if (count === 0 || !typeId) return [];
+          const res = await api.get(
+              `/station-inventory/available-by-type/${typeId}`
+          );
+          
+          const responseData = res.data;
 
-  const handleNextStep = () => {
-    if (selectedFaultyBatteryIds.length === 0) {
-      return message.warning(
-        "Vui lòng chọn ít nhất 1 pin lỗi để chuyển về kho."
-      );
-    }
-    if (!stationBatteryTypeId) {
-      return message.error(
-        "Không xác định được loại pin của trạm để tìm pin thay thế."
-      );
-    }
-    setCurrentStep(SWAP_STEP.SELECT_GOOD);
-  };
+          // Lấy danh sách pin và đảm bảo nó là mảng
+          const allAvailableBatteries = Array.isArray(res.data?.batteries)
+              ? res.data.batteries
+              : [];
 
-  const handleBackToFaultySelection = () => {
-    setSelectedGoodBatteryIds([]); // Xóa lựa chọn pin tốt
-    setCurrentStep(SWAP_STEP.SELECT_FAULTY);
-  };
+          // 2. Lọc Pin Đạt Chuẩn (SOH > 90%)
+          let pool = allAvailableBatteries.filter(
+              (b) =>
+                  b.status === "AVAILABLE" && parseFloat(b.stateOfHealth) > 90
+          );
 
-  const handleCompleteSwap = async () => {
-    if (selectedFaultyBatteryIds.length !== selectedGoodBatteryIds.length) {
-      return message.error(
-        "Số lượng pin được chọn Về Kho và Ra Trạm phải bằng nhau!"
-      );
-    }
+          if (pool.length < count) {
+              throw new Error(
+                  `Chỉ tìm thấy ${pool.length} pin AVAILABLE (SOH > 90%) trong kho. Cần ${count} pin.`
+              );
+          }
 
-    const count = selectedFaultyBatteryIds.length;
-    if (count === 0) return;
+          // 3. Tiến hành chọn ngẫu nhiên
+          const selected = [];
+          while (selected.length < count && pool.length > 0) {
+              const randomIndex = Math.floor(Math.random() * pool.length);
+              selected.push(pool[randomIndex]);
+              // Xóa pin đã chọn khỏi pool để không chọn lại
+              pool.splice(randomIndex, 1);
+          }
+          return selected;
+    };
 
-    setLoading(true);
-    try {
-      // 1. Chuyển pin lỗi về kho (Move To Warehouse)
-      for (const batteryId of selectedFaultyBatteryIds) {
-        // API: POST /api/station-inventory/move-to-warehouse
-        await api.post("/station-inventory/move-to-warehouse", null, {
-          params: {
-            batteryId: batteryId,
-            stationId: station.id,
-          },
-        });
-      }
+    const handleNextStepAndCompleteSwap = async () => {
+        const count = selectedFaultyBatteryIds.length;
 
-      // 2. Chuyển pin tốt ra trạm (Move To Station)
-      for (const batteryId of selectedGoodBatteryIds) {
-        // API: POST /api/station-inventory/move-to-station
-        await api.post("/station-inventory/move-to-station", null, {
-          params: {
-            batteryId: batteryId,
-            stationId: station.id,
-            batteryTypeId: stationBatteryTypeId,
-          },
-        });
-      }
+        if (count === 0) {
+            return message.warning(
+                "Vui lòng chọn ít nhất 1 pin lỗi để chuyển về kho."
+            );
+        }
 
-      message.success(
-        `✅ Hoàn tất đổi ${count} pin. ${count} pin lỗi đã về kho, ${count} pin tốt đã ra trạm.`
-      );
-      onSwapSuccess();
-      onCancel();
-    } catch (error) {
-      message.error(
-        "❌ Lỗi trong quá trình đổi pin. Vui lòng kiểm tra lại. Vui lòng tải lại trang."
-      );
-      console.error("Lỗi Swap Pin:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (!stationBatteryTypeId) {
+            return message.error(
+                "Không xác định được loại pin của trạm để tìm pin thay thế."
+            );
+        }
+
+        setLoading(true);
+
+        try {
+            // --- BƯỚC 1: Chọn pin tốt ngẫu nhiên từ kho ---
+            
+            // Sử dụng logic random đã được ghi nhớ
+            const goodBatteriesToSwap = await selectRandomGoodBatteries(
+                stationBatteryTypeId,
+                count
+            );
+            
+            setRandomlySelectedGoodBatteries(goodBatteriesToSwap);
+
+            // --- BƯỚC 2: Thực hiện Chuyển pin lỗi về kho (Move To Warehouse) ---
+            for (const batteryId of selectedFaultyBatteryIds) {
+                // API: POST /api/station-inventory/move-to-warehouse
+                await api.post("/station-inventory/move-to-warehouse", null, {
+                    params: {
+                        batteryId: batteryId,
+                        stationId: station.id,
+                    },
+                });
+            }
+
+            // --- BƯỚC 3: Thực hiện Chuyển pin tốt ra trạm (Move To Station) ---
+            for (const goodBattery of goodBatteriesToSwap) {
+                // API: POST /api/station-inventory/move-to-station
+                await api.post("/station-inventory/move-to-station", null, {
+                    params: {
+                        batteryId: goodBattery.id,
+                        stationId: station.id,
+                        batteryTypeId: stationBatteryTypeId,
+                    },
+                });
+            }
+
+            message.success(
+                `✅ Hoàn tất đổi ${count} pin. ${count} pin lỗi đã về kho, ${count} pin tốt (ngẫu nhiên) đã ra trạm.`
+            );
+            onSwapSuccess();
+            onCancel();
+        } catch (error) {
+            // Xử lý lỗi từ API hoặc lỗi logic random
+            const errorMessage = error.message.includes("pin")
+                ? error.message // Hiển thị thông báo lỗi custom từ selectRandomGoodBatteries
+                : "❌ Lỗi trong quá trình đổi pin. Vui lòng kiểm tra console log.";
+            message.error(errorMessage);
+            console.error("Lỗi Swap Pin:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
   // --- CẤU HÌNH BẢNG (COLUMNS) ---
 
-  const getColumns = (type) => {
-    const baseColumns = [
+  const getColumns = () => {
+    return [
       { title: "ID Pin", dataIndex: "id", key: "id", width: 100 },
       {
         title: "Loại Pin",
@@ -367,22 +379,14 @@ const BatterySwapModal = ({
           </Tag>
         ),
       },
+      {
+        title: "Bảo trì lần cuối",
+        dataIndex: "lastMaintenanceDate",
+        key: "lastMaintenanceDate",
+        width: 150,
+        render: (date) => (date ? new Date(date).toLocaleDateString() : ""),
+      },
     ];
-
-    if (type === SWAP_STEP.SELECT_FAULTY) {
-      return [
-        ...baseColumns,
-        {
-          title: "Bảo trì lần cuối",
-          dataIndex: "lastMaintenanceDate",
-          key: "lastMaintenanceDate",
-          width: 150,
-          render: (date) => (date ? new Date(date).toLocaleDateString() : ""),
-        },
-      ];
-    }
-
-    return baseColumns;
   };
 
   // --- ROW SELECTION CONFIG ---
@@ -396,39 +400,14 @@ const BatterySwapModal = ({
     hideSelectAll: true,
   };
 
-  // BƯỚC 2: Chọn pin tốt (Giới hạn số lượng bằng số pin lỗi đã chọn)
-  const goodRowSelection = {
-    selectedRowKeys: selectedGoodBatteryIds,
-    onChange: (selectedKeys) => {
-      if (selectedKeys.length <= selectedFaultyBatteryIds.length) {
-        setSelectedGoodBatteryIds(selectedKeys);
-      } else {
-        message.warning(
-          `Chỉ được chọn ${selectedFaultyBatteryIds.length} pin để thay thế.`
-        );
-      }
-    },
-    hideSelectAll: true,
-    getCheckboxProps: (record) => ({
-      disabled: record.status !== "AVAILABLE",
-    }),
-  };
-
   // --- JSX Render Logic ---
 
-  const isNextButtonDisabled = selectedFaultyBatteryIds.length === 0;
-  const isCompleteButtonDisabled =
-    selectedGoodBatteryIds.length === 0 ||
-    selectedGoodBatteryIds.length !== selectedFaultyBatteryIds.length;
-
-  const currentTitle =
-    currentStep === SWAP_STEP.SELECT_FAULTY
-      ? `Bước 1: Chọn ${selectedFaultyBatteryIds.length} pin lỗi từ trạm về kho bảo trì`
-      : `Bước 2: Chọn pin tốt (${selectedGoodBatteryIds.length} pin) từ kho ra trạm (Chọn: ${selectedFaultyBatteryIds.length} pin)`;
+  const isNextButtonDisabled = selectedFaultyBatteryIds.length === 0 || loading;
+  const currentTitle = `Chọn ${selectedFaultyBatteryIds.length} pin lỗi từ trạm về kho bảo trì`;
 
   return (
     <Modal
-      title={`Quy trình đổi pin cho ${station?.name || ""}`}
+      title={`Quy trình đổi pin cho ${station?.name || ""} (Tự động cấp pin)`}
       open={isVisible}
       onCancel={onCancel}
       footer={null}
@@ -438,77 +417,52 @@ const BatterySwapModal = ({
       <Space direction="vertical" style={{ width: "100%" }} size="middle">
         <Alert
           message={currentTitle}
-          description={
-            currentStep === SWAP_STEP.SELECT_FAULTY
-              ? `Danh sách ${stationMaintenanceBatteries.length} pin cần bảo dưỡng/lỗi tại trạm. Vui lòng chọn pin để chuyển về kho.`
-              : `Danh sách ${warehouseAvailableBatteries.length} pin AVAILABLE trong kho (Loại: ${batteryTypesMap[stationBatteryTypeId]}).`
-          }
-          type={currentStep === SWAP_STEP.SELECT_FAULTY ? "warning" : "info"}
+          description={`Danh sách ${stationMaintenanceBatteries.length} pin cần bảo dưỡng/lỗi tại trạm. Vui lòng chọn pin. Pin tốt sẽ được TỰ ĐỘNG chọn ngẫu nhiên từ kho (SOH > 90%).`}
+          type={"warning"}
           showIcon
         />
         <Table
-          columns={getColumns(currentStep)}
-          dataSource={
-            currentStep === SWAP_STEP.SELECT_FAULTY
-              ? stationMaintenanceBatteries
-              : warehouseAvailableBatteries
-          }
-          rowSelection={
-            currentStep === SWAP_STEP.SELECT_FAULTY
-              ? faultyRowSelection
-              : goodRowSelection
-          }
+          columns={getColumns()}
+          dataSource={stationMaintenanceBatteries}
+          rowSelection={faultyRowSelection}
           loading={loading}
           rowKey="id"
-          //pagination={{ pageSize: 5 }}
         />
-        <Space style={{ justifyContent: "space-between", width: "100%" }}>
-          {currentStep === SWAP_STEP.SELECT_GOOD && (
-            <Button
-              onClick={handleBackToFaultySelection}
-              icon={<RollbackOutlined />}
-            >
-              Quay lại
-            </Button>
-          )}
-
-          <div style={{ marginLeft: "auto" }}>
-            {currentStep === SWAP_STEP.SELECT_FAULTY && (
-              <Button
-                type="primary"
-                onClick={handleNextStep}
-                disabled={isNextButtonDisabled}
-                icon={<SendOutlined />}
-              >
-                Tiếp tục (Chọn {selectedFaultyBatteryIds.length} pin ra trạm)
-              </Button>
-            )}
-            {currentStep === SWAP_STEP.SELECT_GOOD && (
-              <Tooltip
-                title={
-                  selectedFaultyBatteryIds.length !==
-                  selectedGoodBatteryIds.length
-                    ? `Cần chọn chính xác ${selectedFaultyBatteryIds.length} pin.`
-                    : "Thực hiện đổi pin"
-                }
-              >
-                <Button
-                  type="primary"
-                  onClick={handleCompleteSwap}
-                  disabled={isCompleteButtonDisabled}
-                  loading={loading}
-                  icon={<SendOutlined />}
-                  danger={!isCompleteButtonDisabled}
-                >
-                  Đổi {selectedGoodBatteryIds.length} Pin
-                </Button>
-              </Tooltip>
-            )}
-            <Button onClick={onCancel} style={{ marginLeft: 8 }}>
+        <Space style={{ justifyContent: "flex-end", width: "100%" }}>
+          <Button
+              type="primary"
+              onClick={handleNextStepAndCompleteSwap}
+              disabled={isNextButtonDisabled}
+              loading={loading}
+              icon={<SendOutlined />}
+          >
+              {loading
+                  ? `Đang thực hiện đổi ${selectedFaultyBatteryIds.length} pin...`
+                  : `Tiếp tục & Đổi ${selectedFaultyBatteryIds.length} Pin (Tự động)`}
+          </Button>
+          <Button onClick={onCancel} style={{ marginLeft: 8 }}>
               Đóng
-            </Button>
-          </div>
+          </Button>
         </Space>
+        
+        {/* Hiển thị kết quả chọn ngẫu nhiên nếu có lỗi hoặc để debug */}
+        {randomlySelectedGoodBatteries.length > 0 && (
+            <Alert
+                message={`Đã chọn ngẫu nhiên ${randomlySelectedGoodBatteries.length} pin TỐT từ kho (SOH > 90%) để thay thế.`}
+                description={
+                    <ul>
+                        {randomlySelectedGoodBatteries.map((b) => (
+                            <li key={b.id}>
+                                **Pin ID {b.id}** ({batteryTypesMap[b.batteryTypeId]}) - SOH: {parseFloat(b.stateOfHealth).toFixed(2)}%
+                            </li>
+                        ))}
+                    </ul>
+                }
+                type="success"
+                style={{ marginTop: 16 }}
+                showIcon
+            />
+        )}
       </Space>
     </Modal>
   );

@@ -44,6 +44,7 @@ export default function InventoryPage() {
   const [form] = Form.useForm();
   const [moveForm] = Form.useForm();
   const [showAllStationBatteries, setShowAllStationBatteries] = useState(false);
+  const [quantityToMove, setQuantityToMove] = useState(1);
 
   const role = getCurrentRole();
   const upperRole = role ? role.toUpperCase() : null;
@@ -116,7 +117,10 @@ export default function InventoryPage() {
     (typeId) => {
       if (!typeId) return 0;
       return warehouseInventory.filter(
-        (b) => b.batteryTypeId === typeId && b.status === "AVAILABLE"
+        (b) =>
+          b.batteryTypeId === typeId &&
+          b.status === "AVAILABLE" &&
+          parseFloat(b.stateOfHealth) > 90
       ).length;
     },
     [warehouseInventory]
@@ -428,6 +432,7 @@ export default function InventoryPage() {
       quantity: 1,
     });
 
+    setQuantityToMove(1);
     setIsMoveToStationModalVisible(true);
   };
 
@@ -437,7 +442,7 @@ export default function InventoryPage() {
     const { batteryTypeId, quantity } = values;
 
     // Kiểm tra lại số slot trống lần cuối
-    const maxSlotsForMove = currentStationInfo.maxSlotsForMove; 
+    const maxSlotsForMove = currentStationInfo.maxSlotsForMove;
     if (quantity > maxSlotsForMove) {
       showToast(
         "error",
@@ -446,38 +451,75 @@ export default function InventoryPage() {
       return;
     }
 
-    // 1. Lọc danh sách pin AVAILABLE theo loại pin đã chọn
-    const availableBatteries = warehouseInventory.filter(
-      (b) => b.batteryTypeId === batteryTypeId && b.status === "AVAILABLE"
-    );
+    setLoading(true);
+    let allAvailableBatteries = [];
 
-    if (availableBatteries.length < quantity) {
+    try {
+      // 1. GỌI API MỚI để lấy danh sách pin AVAILABLE theo loại
+      const res = await api.get(
+        `/station-inventory/available-by-type/${batteryTypeId}`
+      );
+
+      // Kiểm tra cấu trúc response (như trong hình API: data.batteries)
+      const rawBatteries =
+        res.data?.batteries && Array.isArray(res.data.batteries)
+          ? res.data.batteries
+          : [];
+
+      // 2. LỌC: Pin có status AVAILABLE VÀ SOH > 90%
+      allAvailableBatteries = rawBatteries.filter(
+        (b) => b.status === "AVAILABLE" && parseFloat(b.stateOfHealth) > 90
+      );
+    } catch (error) {
+      setLoading(false);
+      return showToast(
+        "error",
+        error.response?.data || "Lỗi khi tải danh sách pin tốt từ kho."
+      );
+    }
+
+    if (allAvailableBatteries.length < quantity) {
+      setLoading(false);
       showToast(
         "error",
-        `Kho chỉ còn ${availableBatteries.length} pin loại ${batteryTypesMap[batteryTypeId]} AVAILABLE.`
+        `Kho chỉ còn ${allAvailableBatteries.length} pin loại ${batteryTypesMap[batteryTypeId]} có SOH > 90% để chuyển. Vui lòng điều chỉnh số lượng.`
       );
       return;
     }
-    // Cách 2: Chọn `quantity` pin đầu tiên (Đơn giản hơn, vẫn đảm bảo tính ngẫu nhiên nếu Backend không đảm bảo thứ tự)
-    const batteriesToMove = availableBatteries.slice(0, quantity); // Lấy N pin đầu tiên
+
+    const batteriesToMove = [];
+    const availableBatteriesPool = [...allAvailableBatteries]; // Tạo bản sao để tránh thay đổi mảng gốc
+
+    // 3. CHỌN NGẪU NHIÊN 'quantity' pin
+    for (let i = 0; i < quantity; i++) {
+      const randomIndex = Math.floor(
+        Math.random() * availableBatteriesPool.length
+      );
+      const randomBattery = availableBatteriesPool[randomIndex];
+      batteriesToMove.push(randomBattery);
+      availableBatteriesPool.splice(randomIndex, 1); // Loại bỏ pin đã chọn khỏi pool
+    }
 
     if (batteriesToMove.length === 0) {
-      showToast("warning", "Không tìm thấy pin AVAILABLE để chuyển.");
+      setLoading(false);
+      showToast(
+        "warning",
+        "Không tìm thấy pin AVAILABLE có SOH > 90% để chuyển."
+      );
       return;
     }
-    setLoading(true);
+
     let successCount = 0;
     let failedCount = 0;
     const typeName = batteryTypesMap[batteryTypeId];
 
-    // 3. Lặp và gọi API cho từng pin
+    // 4. Lặp và gọi API cho từng pin
     for (const battery of batteriesToMove) {
       try {
-        // API chỉ nhận batteryId, stationId, batteryTypeId
         await api.post("/station-inventory/move-to-station", null, {
           params: {
             stationId: selectedStationId,
-            batteryId: battery.id, // <-- Gửi từng batteryId
+            batteryId: battery.id,
             batteryTypeId: batteryTypeId,
           },
         });
@@ -491,11 +533,11 @@ export default function InventoryPage() {
       }
     }
 
-    // 4. Xử lý kết quả
+    // 5. Xử lý kết quả
     if (successCount > 0) {
       showToast(
         "success",
-        `✅ Đã chuyển thành công ${successCount} pin loại ${typeName} ra trạm.`
+        `✅ Đã chuyển thành công ${successCount} pin loại ${typeName} (ngẫu nhiên) ra trạm.`
       );
     } else {
       showToast(
@@ -505,6 +547,7 @@ export default function InventoryPage() {
     }
 
     setIsMoveToStationModalVisible(false);
+    // Cập nhật lại 2 bảng
     fetchStationInventory(selectedStationId);
     fetchWarehouseInventory(isAdmin ? null : filterBatteryTypeId);
     setLoading(false);
@@ -673,6 +716,49 @@ export default function InventoryPage() {
     },
   ];
 
+  // HÀM SẮP XẾP TÙY CHỈNH CHO KHO (Theo ưu tiên SOH > 90%)
+  const customWarehouseSort = useCallback((data) => {
+    if (!Array.isArray(data) || data.length === 0) return [];
+
+    // Định nghĩa hàm so sánh
+    const compareFn = (a, b) => {
+      // Hàm phụ trợ để xác định mức độ ưu tiên của Status
+      const getPriority = (status) => {
+        if (status === "AVAILABLE") return 1; // Cao nhất
+        if (status === "MAINTENANCE") return 2; // Thấp hơn
+        return 99; // Các trạng thái khác (nếu có)
+      };
+
+      const priorityA = getPriority(a.status);
+      const priorityB = getPriority(b.status);
+
+      const sohA = parseFloat(a.stateOfHealth);
+      const sohB = parseFloat(b.stateOfHealth);
+
+      // 1. So sánh theo Trạng thái (Status)
+      if (priorityA !== priorityB) {
+        // Pin có Priority thấp hơn (số nhỏ hơn) sẽ được xếp trước
+        return priorityA - priorityB;
+      }
+
+      // 2. Nếu cùng Trạng thái, so sánh theo SOH (Giảm dần)
+      if (sohA !== sohB) {
+        // sohB - sohA sẽ xếp giảm dần (SOH cao hơn sẽ lên trước)
+        return sohB - sohA;
+      }
+
+      // 3. Nếu SOH cũng bằng nhau, dùng ID để phá vỡ thế hoà (Giảm dần)
+      return b.id - a.id;
+    };
+
+    // Tạo bản sao và sắp xếp
+    return [...data].sort(compareFn);
+  }, []);
+
+  const warehouseDataSource = useMemo(() => {
+    return customWarehouseSort(warehouseInventory);
+  }, [warehouseInventory, customWarehouseSort]);
+
   // Cột cho Bảng Tồn Kho Pin trong Kho
   const warehouseColumns = [
     {
@@ -681,7 +767,7 @@ export default function InventoryPage() {
       key: "id",
       width: FIXED_COL_WIDTH.PIN_ID,
       sorter: (a, b) => a.id - b.id,
-      defaultSortOrder: "descend",
+      //defaultSortOrder: "descend",
     },
     {
       title: "Dung tích pin",
@@ -920,7 +1006,7 @@ export default function InventoryPage() {
         </h4>
         <Table
           columns={warehouseColumns}
-          dataSource={warehouseInventory}
+          dataSource={warehouseDataSource}
           loading={loading}
           rowKey="id"
           pagination={{
@@ -1011,6 +1097,14 @@ export default function InventoryPage() {
           layout="vertical"
           onFinish={handleMoveToStationSubmit}
           initialValues={{ quantity: 1 }}
+          onValuesChange={(_, allValues) => {
+            if (
+              allValues.quantity !== undefined &&
+              allValues.quantity !== null
+            ) {
+              setQuantityToMove(allValues.quantity);
+            }
+          }}
         >
           <Form.Item name="batteryTypeId" label="Loại Pin">
             {/* Hiển thị loại pin dưới dạng Text/Tag, không cho phép chọn */}
@@ -1023,10 +1117,7 @@ export default function InventoryPage() {
           </Form.Item>
           <p>
             Trạm còn trống:{" "}
-            <Tag color="green">
-              {currentStationInfo.maxSlotsForMove}
-            </Tag>{" "}
-            pin
+            <Tag color="green">{currentStationInfo.maxSlotsForMove}</Tag> pin
           </p>
 
           <Form.Item
@@ -1097,7 +1188,7 @@ export default function InventoryPage() {
                   moveForm.getFieldsError().some((err) => err.errors.length > 0) // Lỗi form
                 }
               >
-                Xác nhận chuyển ra ({moveForm.getFieldValue("quantity")} pin)
+                Xác nhận chuyển ra ({quantityToMove} pin)
               </Button>
               <Button onClick={() => setIsMoveToStationModalVisible(false)}>
                 Hủy

@@ -70,7 +70,7 @@
 |-----|---------|----------|
 | 1 | **Chỉ user hiện tại** | Chỉ được cập nhật profile của chính mình |
 | 2 | **Email không trùng** | Nếu thay đổi email, phải kiểm tra email mới không trùng với user khác |
-| 3 | **Validate độ tuổi** | Nếu cập nhật dateOfBirth, tuổi phải từ **15-100 tuổi** |
+| 3 | **Validate độ tuổi** | Nếu cập nhật dateOfBirth, tuổi phải từ **16-100 tuổi** |
 | 4 | **Field optional** | Các field null sẽ không được cập nhật (giữ nguyên giá trị cũ) |
 | 5 | **Cho phép gender = null** | Nếu frontend gửi gender = "" (empty string), tự động chuyển thành null |
 
@@ -78,7 +78,7 @@
 ```java
 int age = Period.between(request.getDateOfBirth(), LocalDate.now()).getYears();
 if (age < 15 || age > 100) {
-    throw new IllegalArgumentException("Tuổi phải từ 15 đến 100 tuổi!");
+    throw new IllegalArgumentException("Tuổi phải từ 16 đến 100 tuổi!");
 }
 ```
 

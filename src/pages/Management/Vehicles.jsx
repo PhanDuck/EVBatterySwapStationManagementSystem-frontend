@@ -68,6 +68,11 @@ const VehiclePage = () => {
   const [selectedBatteryForApprove, setSelectedBatteryForApprove] =
     useState(null);
   const [drivers, setDrivers] = useState([]);
+  const [isSwapModalVisible, setIsSwapModalVisible] = useState(false);
+  const [vehicleToSwap, setVehicleToSwap] = useState(null);
+  const [selectedReplacementBattery, setSelectedReplacementBattery] =
+    useState(null);
+  const [isSwapping, setIsSwapping] = useState(false);
 
   const user = (() => {
     try {
@@ -84,6 +89,34 @@ const VehiclePage = () => {
     .toUpperCase();
   const isDriver = role === "DRIVER";
   const isAdmin = role === "ADMIN";
+
+  const fetchVehicles = async () => {
+    setLoading(true);
+
+    try {
+      // 1. Tải danh sách xe
+      const endpoint = isAdmin ? "/vehicle" : "/vehicle/my-vehicles";
+      const res = await api.get(endpoint);
+
+      const initialVehicleList = (
+        Array.isArray(res.data)
+          ? res.data
+          : res.data?.data && Array.isArray(res.data.data)
+          ? res.data.data
+          : []
+      ).sort((a, b) => b.id - a.id);
+
+      setVehicles(initialVehicleList);
+    } catch (error) {
+      showToast(
+        "error",
+        error.response?.data || "Lỗi tải danh sách phương tiện"
+      );
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // --- Component Modal Lịch sử Đổi Pin ---
   const VehicleSwapHistoryModal = React.memo(
@@ -150,7 +183,8 @@ const VehiclePage = () => {
               <Row justify="space-between" style={{ paddingBottom: 5 }}>
                 <Col>
                   <Text strong>
-                    <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc (%):
+                    <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc
+                    (%):
                   </Text>
                 </Col>
                 <Col>
@@ -165,7 +199,8 @@ const VehiclePage = () => {
               <Row justify="space-between">
                 <Col>
                   <Text strong>
-                    <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng pin (%):
+                    <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng
+                    pin (%):
                   </Text>
                 </Col>
                 <Col>
@@ -298,52 +333,30 @@ const VehiclePage = () => {
 
   // 🚗 Lấy danh sách vehicle
   useEffect(() => {
-    const fetchVehicles = async () => {
-      setLoading(true);
-
-      try {
-        // 1. Tải danh sách xe
-        const endpoint = isAdmin ? "/vehicle" : "/vehicle/my-vehicles";
-        const res = await api.get(endpoint);
-
-        const initialVehicleList = (
-          Array.isArray(res.data)
-            ? res.data
-            : res.data?.data && Array.isArray(res.data.data)
-            ? res.data.data
-            : []
-        ).sort((a, b) => b.id - a.id);
-
-        setVehicles(initialVehicleList);
-      } catch (error) {
-        showToast("error", error.response?.data || "Lỗi tải danh sách phương tiện");
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchVehicles();
   }, [isAdmin]);
 
   // 👥 Lấy danh sách tài xế (chỉ cho ADMIN)
   useEffect(() => {
     if (isAdmin) {
-          const fetchDrivers = async () => {
-            try {
-              const res = await api.get("/admin/user");
-              // Lọc chỉ lấy những user có role = DRIVER
-              const driverList = Array.isArray(res.data)
-                ? res.data.filter((u) => u.role === "DRIVER")
-                : [];
-              setDrivers(driverList.sort((a, b) => a.id - b.id));
-            } catch (error) {
-              showToast("error", error.response?.data || "Lỗi tải danh sách tài xế");
-            }
-          };
-          fetchDrivers();
+      const fetchDrivers = async () => {
+        try {
+          const res = await api.get("/admin/user");
+          // Lọc chỉ lấy những user có role = DRIVER
+          const driverList = Array.isArray(res.data)
+            ? res.data.filter((u) => u.role === "DRIVER")
+            : [];
+          setDrivers(driverList.sort((a, b) => a.id - b.id));
+        } catch (error) {
+          showToast(
+            "error",
+            error.response?.data || "Lỗi tải danh sách tài xế"
+          );
         }
-      }, [isAdmin]);
+      };
+      fetchDrivers();
+    }
+  }, [isAdmin]);
 
   // 🚗 Lấy danh sách xe chờ duyệt từ danh sách vehicles đã có
   useEffect(() => {
@@ -363,11 +376,85 @@ const VehiclePage = () => {
         const res = await api.get("/battery-type");
         setBatteryTypes(res.data || []);
       } catch (error) {
-        showToast("error", error.response?.data || "Lỗi tải danh sách loại pin");
+        showToast(
+          "error",
+          error.response?.data || "Lỗi tải danh sách loại pin"
+        );
       }
     };
     fetchBatteryTypes();
   }, []);
+
+  const handleSwapFaultyBattery = async (vehicle) => {
+    // 1. Lưu thông tin xe cần đổi pin
+    setVehicleToSwap(vehicle);
+    setSelectedReplacementBattery(null);
+    setIsSwapModalVisible(true);
+
+    // 2. Lấy batteryTypeId của pin hiện tại trên xe
+    const batteryTypeId = vehicle.batteryTypeId; // Lấy từ object vehicle
+
+    if (batteryTypeId) {
+      setBatteriesLoading(true);
+      try {
+        // Dùng API GET /api/station-inventory/available-by-type/{batteryTypeId}
+        const response = await api.get(
+          `/station-inventory/available-by-type/${batteryTypeId}`
+        );
+
+        // Lọc pin: Pin sẵn có (status: AVAILABLE) VÀ không phải pin hiện tại của xe
+        const available = response.data.batteries.filter(
+          (battery) => battery.id !== vehicle.currentBatteryId
+        );
+
+        setAvailableBatteries(available);
+      } catch (error) {
+        message.error("Lỗi khi tải danh sách pin thay thế!");
+        console.error(error);
+      } finally {
+        setBatteriesLoading(false);
+      }
+    } else {
+      message.warning("Xe chưa có loại pin được xác định!");
+    }
+  };
+
+  // Hàm gọi API đổi pin
+  const handleConfirmSwap = async () => {
+    if (!vehicleToSwap || !selectedReplacementBattery) {
+      message.error("Vui lòng chọn pin thay thế!");
+      return;
+    }
+
+    // Pin lỗi: Là pin hiện tại của xe
+    const faultyBatteryId = vehicleToSwap.currentBatteryId;
+
+    const payload = {
+      vehicleId: vehicleToSwap.id,
+      replacementBatteryId: selectedReplacementBattery,
+    };
+
+    setIsSwapping(true);
+    try {
+      await api.post("/battery/swap-faulty", payload);
+      message.success("Đã đổi pin lỗi thành công!");
+
+      // Cập nhật lại dữ liệu sau khi đổi pin
+      await fetchVehicles();
+
+      // Đóng Modal
+      setIsSwapModalVisible(false);
+      setVehicleToSwap(null);
+      setSelectedReplacementBattery(null);
+      setAvailableBatteries([]);
+    } catch (error) {
+      message.error(
+        `Lỗi đổi pin: ${error.response?.data?.message || error.message}`
+      );
+    } finally {
+      setIsSwapping(false);
+    }
+  };
 
   // 🔋 Lấy danh sách pin AVAILABLE trong kho theo batteryTypeId
   const fetchAvailableBatteries = async (batteryTypeId) => {
@@ -567,6 +654,20 @@ const VehiclePage = () => {
 
             {!isDriver && (
               <Space>
+                {/* Chỉ hiện nếu xe đang ACTIVE và có pin gán */}
+                <Button
+                  type="default"
+                  icon={<SwapOutlined />}
+                  size="small"
+                  onClick={() => handleSwapFaultyBattery(record)}
+                  style={{
+                    backgroundColor: "#fffbe5",
+                    borderColor: "#ffe58f",
+                  }} // Màu vàng nhẹ
+                  disabled={record.status !== "ACTIVE"}
+                >
+                  Đổi
+                </Button>
                 <Button
                   type="primary"
                   icon={<EditOutlined />}
@@ -779,7 +880,6 @@ const VehiclePage = () => {
           )
         );
         showToast("success", "Cập nhật phương tiện thành công!");
-        
       } else {
         // Logic CREATE - Bắt buộc có ảnh
         if (!imageFile || !(imageFile instanceof File)) {
@@ -841,8 +941,10 @@ const VehiclePage = () => {
       setVehicleImage(null);
       setImageFile(null);
     } catch (error) {
-
-      showToast("error", error.response?.data || "Lỗi lưu thông tin phương tiện");
+      showToast(
+        "error",
+        error.response?.data || "Lỗi lưu thông tin phương tiện"
+      );
       setIsSubmitting(false);
     }
   };
@@ -863,7 +965,10 @@ const VehiclePage = () => {
           );
           showToast("success", "Đã vô hiệu hóa phương tiện!");
         } catch (error) {
-          showToast("error", error.response?.data || "Lỗi vô hiệu hóa phương tiện");
+          showToast(
+            "error",
+            error.response?.data || "Lỗi vô hiệu hóa phương tiện"
+          );
         }
       },
     });
@@ -1140,7 +1245,6 @@ const VehiclePage = () => {
           </Spin>
         </Card>
       )}
-
       <Modal
         title={
           editingVehicle ? "Chỉnh sửa phương tiện" : "Đăng ký phương tiện mới"
@@ -1294,7 +1398,99 @@ const VehiclePage = () => {
           </Form.Item>
         </Form>
       </Modal>
-
+      {/* Modal Lịch sử Đổi Pin */}
+      <VehicleSwapHistoryModal
+        open={isHistoryModalVisible}
+        onClose={handleHistoryModalClose}
+        vehicleHistory={vehicleHistory}
+        loading={historyLoading}
+        vehicleId={selectedVehicleId}
+        userRole={role}
+      />
+      {/* --- Modal Đổi Pin Lỗi --- */}
+      <Modal
+        title={`Đổi Pin Lỗi cho xe: ${vehicleToSwap?.plateNumber}`}
+        open={isSwapModalVisible}
+        onCancel={() => setIsSwapModalVisible(false)}
+        width={500}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => setIsSwapModalVisible(false)}
+            disabled={isSwapping}
+          >
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={isSwapping}
+            onClick={handleConfirmSwap}
+            disabled={!selectedReplacementBattery}
+          >
+            {isSwapping ? "Đang đổi pin..." : "Xác nhận Đổi pin"}
+          </Button>,
+        ]}
+      >
+        {vehicleToSwap && (
+          <Form layout="vertical">
+            <Form.Item label="Pin hiện tại bị lỗi" style={{ marginBottom: 8 }}>
+              <Tag color="red">
+                Pin #{vehicleToSwap.currentBatteryId} -{" "}
+                {vehicleToSwap.currentBatteryModel}
+              </Tag>
+            </Form.Item>
+            <Form.Item label="Chọn Pin Thay Thế" required>
+              <Spin spinning={batteriesLoading}>
+                <Select
+                  placeholder="Chọn pin AVAILABLE để thay thế"
+                  onChange={setSelectedReplacementBattery}
+                  value={selectedReplacementBattery}
+                  showSearch
+                  optionFilterProp="label"
+                >
+                  {availableBatteries.map((battery) => (
+                    <Select.Option
+                      key={battery.id}
+                      value={battery.id}
+                      label={`Pin #${battery.id} - ${battery.model}`}
+                    >
+                      <div style={{ padding: "8px 0" }}>
+                        <div style={{ fontWeight: "bold" }}>
+                          Pin #{battery.id} - {battery.model}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#666" }}>
+                          Mức sạc:
+                          <Tag
+                            color={
+                              battery.chargeLevel > 70 ? "green" : "orange"
+                            }
+                          >
+                            {battery.chargeLevel}%
+                          </Tag>
+                          SOH:
+                          <Tag
+                            color={
+                              battery.stateOfHealth > 70 ? "green" : "orange"
+                            }
+                          >
+                            {battery.stateOfHealth}%
+                          </Tag>
+                        </div>
+                      </div>
+                    </Select.Option>
+                  ))}
+                </Select>
+                {availableBatteries.length === 0 && !batteriesLoading && (
+                  <p style={{ marginTop: 10, color: "red" }}>
+                    **Không có pin AVAILABLE phù hợp với loại pin này.**
+                  </p>
+                )}
+              </Spin>
+            </Form.Item>
+          </Form>
+        )}
+      </Modal>
       {/* Modal Duyệt xe và chọn pin */}
       <Modal
         title="Duyệt xe và chọn pin"
@@ -1400,16 +1596,6 @@ const VehiclePage = () => {
           </div>
         )}
       </Modal>
-
-      {/* Modal Lịch sử Đổi Pin */}
-      <VehicleSwapHistoryModal
-        open={isHistoryModalVisible}
-        onClose={handleHistoryModalClose}
-        vehicleHistory={vehicleHistory}
-        loading={historyLoading}
-        vehicleId={selectedVehicleId}
-        userRole={role}
-      />
     </div>
   );
 };
