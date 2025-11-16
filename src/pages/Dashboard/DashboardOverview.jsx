@@ -12,8 +12,6 @@ import {
   Skeleton,
 } from "antd";
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart,
@@ -25,7 +23,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts";
+}
+ from "recharts";
 import {
   CreditCardOutlined,
   CalendarOutlined,
@@ -40,7 +39,7 @@ import handleApiError from "../../Utils/handleApiError";
 const { Title } = Typography;
 
 // Màu sắc
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#4ECDC4", "#FF6B6B", "#45B7D1", "#C7F46D", "#779ECB"];
 const BATTERY_COLORS = {
   "Enhanced 54V-24Ah": "#FF6B6B",
   "Premium 52V-22Ah": "#4ECDC4",
@@ -181,7 +180,6 @@ export default function DashboardOverview() {
 
   const overview = dashboardData?.overview || {};
   const revenue = dashboardData?.revenue || {};
-  const transactions = dashboardData?.transactions || {};
   const users = dashboardData?.users || {};
   const stations = dashboardData?.stations || {};
   const batteries = dashboardData?.batteries || {};
@@ -198,7 +196,7 @@ export default function DashboardOverview() {
   const stationUtilizationData = (stations?.stationUtilizations || []).map(
     (station) => ({
       name: station.stationName.replace("Trạm Đổi Pin ", ""),
-      utilization: station.utilizationRate || 0,
+      utilization: station.utilizationRate || 0, // Giá trị này dùng làm kích thước lát cắt
       used: station.usedSlots || 0,
       total: station.totalSlots || 0,
     })
@@ -356,34 +354,39 @@ export default function DashboardOverview() {
         </Col>
       </Row>
 
-      {/* Station Utilization & Battery Distribution */}
+      {/* Station Utilization (PIE CHART) & Battery Distribution (PIE CHART) */}
       <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
         <Col xs={24} lg={12}>
           <Card title="Tỷ Lệ Sử Dụng Trạm" hoverable>
             {stationUtilizationData.length > 0 ? (
               <div style={{ width: "100%", height: 350 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stationUtilizationData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="name"
-                      angle={-45}
-                      textAnchor="end"
-                      height={100}
-                      interval={0}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis domain={[0, 100]} />
+                  <PieChart>
+                    <Pie
+                      data={stationUtilizationData}
+                      dataKey="utilization"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      fill="#8884d8"
+                      // **Đã xóa thuộc tính label và labelLine để tránh đè chữ**
+                      labelLine={false} 
+                    >
+                      {stationUtilizationData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
                     <Tooltip
-                      formatter={(value) => `${value}%`}
+                      formatter={(value) => [`${value.toFixed(2)}%`, "Tỷ Lệ"]}
                       labelFormatter={(label) => `Trạm: ${label}`}
                     />
-                    <Bar
-                      dataKey="utilization"
-                      fill="#8884d8"
-                      name="Tỷ Lệ (%)"
-                    />
-                  </BarChart>
+                    {/* Sử dụng Legend để hiển thị tên trạm */}
+                    <Legend layout="vertical" align="right" verticalAlign="middle" />
+                  </PieChart>
                 </ResponsiveContainer>
               </div>
             ) : (
@@ -418,7 +421,8 @@ export default function DashboardOverview() {
                         />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => `${value} pin`} />
+                    <Tooltip formatter={(value) => [`${value}`, "Số lượng pin"]} />
+                    <Legend layout="vertical" align="right" verticalAlign="middle" />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
