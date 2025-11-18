@@ -231,7 +231,7 @@ export default function AssignmentPage() {
     setLoading(true);
     try {
       await api.delete(
-        `${"/staff-station-assingment"}/staff/${staffId}/station/${stationId}`
+        `${"/staff-station-assignment"}/staff/${staffId}/station/${stationId}`
       );
 
       showToast(

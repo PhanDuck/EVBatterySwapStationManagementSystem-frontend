@@ -3,7 +3,6 @@ import {
   Card,
   Input,
   Button,
-  message,
   Row,
   Col,
   Typography,
@@ -22,7 +21,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
-import { showToast } from "../../utils/toastHandler";
+import { showToast } from "../../Utils/toastHandler";
 
 export default function SwapAnimation() {
   const [code, setCode] = useState("");
@@ -186,7 +185,6 @@ export default function SwapAnimation() {
   // ----------------------------------------------------
   const handleInsertNewBattery = async () => {
     setLoading(true);
-    message.loading({ content: "Đang cho pin vào...", key: "insert" });
 
     // Sau khi pin mới được "cho vào", ta gọi API để lấy thông tin pin cũ của khách hàng
     try {
@@ -200,18 +198,8 @@ export default function SwapAnimation() {
       setOldBattery(res.data);
       setStep(3); // Chuyển sang bước "Sẵn sàng Swap"
       showToast("success", "Pin đã được cho vào. Đã lấy thông tin pin. Sẵn sàng đổi.");
-      // message.success({
-      //   content: "✅ Pin đã được cho vào. Đã lấy thông tin pin. Sẵn sàng đổi.",
-      //   key: "insert",
-      //   duration: 3,
-      // });
     } catch (error) {
       showToast("error", error.response?.data || "Lấy thông tin pin cũ thất bại!");
-      // message.error({
-      //   content:
-      //     error?.response?.data?.message || "❌ Lấy thông tin pin cũ thất bại!",
-      //   key: "insert",
-      // });
       console.error("❌ Lỗi lấy pin cũ:", error);
     } finally {
       setLoading(false);
@@ -261,7 +249,7 @@ export default function SwapAnimation() {
     setStep(1);
     setTransactionInfo({ vehiclePlate: null, driverName: null });
     setIsSwapped(false);
-    showToast("warning", "Vui lòng nhập mã xác nhận mới.");
+    showToast("info", "Vui lòng nhập mã xác nhận mới.");
   };
 
   // Bước 5: Logic Hiển thị
@@ -320,7 +308,7 @@ export default function SwapAnimation() {
               const newCode = e.target.value;
               setCode(newCode);
               // Reset về bước 1 nếu code bị thay đổi khi đã xác nhận
-              if (step > 1 && newCode !== code) {
+              if (step > 1 && newCode !== confirmedCode) {
                 handleResetForNewSwap();
               }
             }}

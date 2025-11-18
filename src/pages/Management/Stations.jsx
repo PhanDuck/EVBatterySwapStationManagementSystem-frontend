@@ -407,7 +407,7 @@ const BatterySwapModal = ({
 
   return (
     <Modal
-      title={`Quy trình đổi pin cho ${station?.name || ""} (Tự động cấp pin)`}
+      title={`Quy trình đổi pin cho ${station?.name}`}
       open={isVisible}
       onCancel={onCancel}
       footer={null}
@@ -417,7 +417,7 @@ const BatterySwapModal = ({
       <Space direction="vertical" style={{ width: "100%" }} size="middle">
         <Alert
           message={currentTitle}
-          description={`Danh sách ${stationMaintenanceBatteries.length} pin cần bảo dưỡng/lỗi tại trạm. Vui lòng chọn pin. Pin tốt sẽ được TỰ ĐỘNG chọn ngẫu nhiên từ kho (SOH > 90%).`}
+          description={`Danh sách ${stationMaintenanceBatteries.length} pin cần bảo dưỡng/lỗi tại trạm. Vui lòng chọn pin. Pin tốt sẽ được tự động chọn ngẫu nhiên từ kho (Tình trạng > 90%).`}
           type={"warning"}
           showIcon
         />
