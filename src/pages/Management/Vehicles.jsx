@@ -20,6 +20,7 @@ import {
   Image,
   Tabs,
   Tooltip,
+  Statistic, // Dùng để hiển thị số liệu đẹp hơn
 } from "antd";
 import {
   PlusOutlined,
@@ -36,13 +37,190 @@ import {
   CheckOutlined,
   CloseOutlined,
   InfoCircleOutlined,
+  ClockCircleOutlined,
+  SyncOutlined, // Icon xoay xoay loading
+  SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
 import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
+
+// --- COMPONENT CON: Hiển thị thông báo xe đang chờ duyệt (PHIÊN BẢN PRO UI) ---
+const PendingVehicleAlert = ({ vehicle }) => {
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0 });
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const createdTime = new Date(vehicle.createdAt).getTime();
+      const twelveHoursInMillis = 12 * 60 * 60 * 1000; // 12 tiếng
+      const deadline = createdTime + twelveHoursInMillis;
+      const now = new Date().getTime();
+      const diff = deadline - now;
+
+      if (diff <= 0) {
+        setIsExpired(true);
+        setTimeLeft({ hours: 0, minutes: 0 });
+      } else {
+        const hours = Math.floor(
+          (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        );
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        setTimeLeft({ hours, minutes });
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 60000);
+    return () => clearInterval(timer);
+  }, [vehicle.createdAt]);
+
+  const formattedCreatedDate = new Date(vehicle.createdAt).toLocaleString(
+    "vi-VN",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }
+  );
+
+  // Style cho biển số xe giống thật
+  const plateStyle = {
+    border: "2px solid #333",
+    borderRadius: "4px",
+    padding: "2px 8px",
+    backgroundColor: "white",
+    color: "black",
+    fontWeight: "bold",
+    fontFamily: "monospace",
+    fontSize: "16px",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+  };
+
+  return (
+    <div
+      style={{
+        backgroundColor: "#fff",
+        border: "1px solid #e8e8e8",
+        borderRadius: "12px",
+        padding: "24px",
+        marginBottom: "24px",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)", // Đổ bóng nhẹ tạo chiều sâu
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Dải màu trang trí bên trái */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: "6px",
+          background: "linear-gradient(180deg, #faad14 0%, #ffec3d 100%)", // Màu vàng cam warning
+        }}
+      />
+
+      <Row gutter={[24, 24]} align="middle">
+        {/* Cột 1: Thông tin chính và Trạng thái */}
+        <Col xs={24} md={14}>
+          <Space direction="vertical" size={4} style={{ width: "100%" }}>
+            <Space align="center" style={{ marginBottom: 8 }}>
+              <Spin indicator={<SyncOutlined spin style={{ fontSize: 20, color: "#faad14" }} />} />
+              <Text strong style={{ fontSize: 18, color: "#faad14" }}>
+                Hồ sơ đăng ký đang được xét duyệt
+              </Text>
+            </Space>
+
+            <Title level={3} style={{ margin: "4px 0 8px 0" }}>
+              {vehicle.model}
+            </Title>
+
+            <Space size={16} align="center" wrap>
+              <div style={plateStyle}>{vehicle.plateNumber}</div>
+              <Text type="secondary">
+                <CalendarOutlined /> Đăng ký lúc: {formattedCreatedDate}
+              </Text>
+            </Space>
+          </Space>
+
+          {/* Phần chính sách - Làm gọn lại cho dễ đọc */}
+          <div
+            style={{
+              marginTop: 20,
+              padding: "16px",
+              backgroundColor: "#f9f9f9",
+              borderRadius: "8px",
+              border: "1px dashed #d9d9d9",
+            }}
+          >
+            <Text strong style={{ color: "#555" }}>
+              <InfoCircleOutlined /> Quy trình duyệt xe:
+            </Text>
+            <ul style={{ margin: "8px 0 0 20px", color: "#666", padding: 0 }}>
+              <li style={{ marginBottom: 4 }}>
+                Thời gian xử lý trung bình: <strong>30 phút</strong>.
+              </li>
+              <li style={{ marginBottom: 4 }}>
+                Hệ thống sẽ tự động hủy yêu cầu nếu quá <strong>12 tiếng</strong> không được duyệt.
+              </li>
+              <li>Kết quả sẽ được gửi thông báo qua email của bạn.</li>
+            </ul>
+          </div>
+        </Col>
+
+        {/* Cột 2: Đồng hồ đếm ngược (Điểm nhấn) */}
+        <Col xs={24} md={10} style={{ textAlign: "center" }}>
+          <div
+            style={{
+              backgroundColor: "#f2d338", 
+              padding: "20px",
+              borderRadius: "16px",
+              border: "1px solid #ffe58f",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: "1px" }}>
+              Thời gian còn lại
+            </Text>
+            
+            {isExpired ? (
+              <Title level={4} type="danger" style={{ margin: "10px 0" }}>
+                Đã hết hạn duyệt
+              </Title>
+            ) : (
+              <div style={{ margin: "10px 0" }}>
+                <Space align="baseline">
+                  <span style={{ fontSize: "48px", fontWeight: "bold", color: "#ff4d4f", lineHeight: 1 }}>
+                    {timeLeft.hours}
+                  </span>
+                  <span style={{ fontSize: "16px", color: "#888", marginRight: 10 }}>giờ</span>
+                  <span style={{ fontSize: "48px", fontWeight: "bold", color: "#ff4d4f", lineHeight: 1 }}>
+                    {String(timeLeft.minutes).padStart(2, '0')}
+                  </span>
+                  <span style={{ fontSize: "16px", color: "#888" }}>phút</span>
+                </Space>
+              </div>
+            )}
+
+            <Tag icon={<SafetyCertificateOutlined />} color={isExpired ? "red" : "orange"}>
+              {isExpired ? "Hệ thống đang hủy bỏ" : "Đang chờ Admin xác nhận"}
+            </Tag>
+          </div>
+        </Col>
+      </Row>
+    </div>
+  );
+};
 
 const VehiclePage = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -121,6 +299,14 @@ const VehiclePage = () => {
       setLoading(false);
     }
   };
+
+  // Lấy danh sách xe PENDING của riêng tài xế để hiển thị thông báo
+  const myPendingVehicles = useMemo(() => {
+    if (isDriver) {
+      return vehicles.filter((v) => v.status === "PENDING");
+    }
+    return [];
+  }, [vehicles, isDriver]);
 
   // --- Component Modal Lịch sử Đổi Pin ---
   const VehicleSwapHistoryModal = React.memo(
@@ -429,9 +615,6 @@ const VehiclePage = () => {
       message.error("Vui lòng chọn pin thay thế!");
       return;
     }
-
-    // Pin lỗi: Là pin hiện tại của xe
-    const faultyBatteryId = vehicleToSwap.currentBatteryId;
 
     const payload = {
       vehicleId: vehicleToSwap.id,
@@ -808,11 +991,6 @@ const VehiclePage = () => {
       //...(editingVehicle && isAdmin && { status: values.status }),
     };
 
-    // Thêm driverId nếu đang sửa và admin chọn tài xế
-    // if (editingVehicle && isAdmin && values.driverId) {
-    //   payload.driverId = values.driverId;
-    // }
-
     let endpoint = "";
 
     if (editingVehicle) {
@@ -1099,7 +1277,7 @@ const VehiclePage = () => {
      setIsRejectingVehicle(true);
      try {
        console.log("Rejecting vehicle:", vehicleId, "Reason:", reason);
-       const payload = { reason: reason.trim() };
+       const payload = { rejectionReason: reason.trim() };
        console.log("Payload being sent:", JSON.stringify(payload));
        
        const res = await api.put(`/vehicle/${vehicleId}/reject`, payload);
@@ -1256,6 +1434,15 @@ const VehiclePage = () => {
               />
             )}
           </Spin>
+
+          {/* 👇 HIỂN THỊ THÔNG BÁO XE ĐANG CHỜ DUYỆT Ở DƯỚI BẢNG XE */}
+          {isDriver && myPendingVehicles.length > 0 && (
+             <div style={{ marginTop: 24 }}>
+               {myPendingVehicles.map(vehicle => (
+                 <PendingVehicleAlert key={vehicle.id} vehicle={vehicle} />
+               ))}
+             </div>
+          )}
         </Card>
       )}
       <Modal
@@ -1305,45 +1492,6 @@ const VehiclePage = () => {
               ))}
             </Select>
           </Form.Item>
-
-          {/* {editingVehicle && isAdmin && (
-            <Form.Item
-              name="driverId"
-              label="Tài xế"
-              rules={[{ required: true, message: "Vui lòng chọn tài xế!" }]}
-            >
-              <Select placeholder="Chọn tài xế">
-                {drivers.map((driver) => (
-                  <Option key={driver.id} value={driver.id}>
-                    {driver.fullName} (ID: {driver.id})
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          )} */}
-
-          {/* {editingVehicle && isAdmin && (
-            <Form.Item
-              name="status"
-              label={
-                <Tooltip title="ACTIVE: Xe đang hoạt động, INACTIVE: Xe bị vô hiệu hóa">
-                  <Space>
-                    Trạng thái <InfoCircleOutlined />
-                  </Space>
-                </Tooltip>
-              }
-              rules={[{ required: true, message: "Vui lòng chọn trạng thái!" }]}
-            >
-              <Select placeholder="Chọn trạng thái">
-                <Option value="ACTIVE">
-                  <Tag color="green">ACTIVE</Tag>
-                </Option>
-                <Option value="INACTIVE">
-                  <Tag color="red">INACTIVE</Tag>
-                </Option>
-              </Select>
-            </Form.Item>
-          )} */}
 
           {!editingVehicle && (
             <Form.Item
@@ -1531,12 +1679,6 @@ const VehiclePage = () => {
              loading={isApprovingVehicle}
              onClick={() => {
                if (selectedVehicleForApprove) {
-                 console.log(
-                   "Submit approve with vehicle:",
-                   selectedVehicleForApprove.id,
-                   "battery:",
-                   selectedBatteryForApprove
-                 );
                  handleApproveVehicle(
                    selectedVehicleForApprove.id,
                    selectedBatteryForApprove

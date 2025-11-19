@@ -253,7 +253,12 @@ const RegisterPage = () => {
             />
             <label className="ml-2 text-sm text-gray-700">
               Tôi đồng ý với{" "}
-              <a href="#" className="text-blue-600 hover:text-blue-500">
+              <a 
+                href="/policy" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-500 underline"
+              >
                 Điều khoản & Chính sách
               </a>
             </label>

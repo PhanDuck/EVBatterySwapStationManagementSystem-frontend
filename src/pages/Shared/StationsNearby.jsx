@@ -1,6 +1,5 @@
 import React, { Fragment, useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-// 🆕 Thêm Tooltip và Button
 import {
   MapContainer,
   TileLayer,
@@ -8,27 +7,47 @@ import {
   Popup,
   useMap,
   Polyline,
-  Tooltip,
+  Tooltip as LeafletTooltip,
 } from "react-leaflet";
-import { Select, Card, Spin, Button, Space } from "antd";
+import {
+  Select,
+  Spin,
+  Button,
+  Space,
+  Tag,
+  Alert,
+  Typography,
+  List,
+  Avatar,
+  Divider,
+  Badge,
+  Tooltip,
+  Progress,
+} from "antd";
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   CalendarOutlined,
-} from "@ant-design/icons"; // Import icons
+  CarOutlined,
+  ThunderboltFilled,
+  EnvironmentOutlined,
+  SearchOutlined,
+  PhoneOutlined,
+  RightOutlined,
+  WarningOutlined,
+  SendOutlined,
+} from "@ant-design/icons";
 import api from "../../config/axios";
-import { getCurrentUser } from "../../config/auth";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import "./StationsNearby.css"; // Import CSS
 
 const { Option } = Select;
+const { Title, Text } = Typography;
 
-// 🔴 Cấu hình OSRM
+// --- CẤU HÌNH MAP & ICON ---
 const OSRM_BASE_URL = "https://router.project-osrm.org/route/v1";
 const ROUTING_PROFILE = "driving";
 
-// Custom Marker icon (Không đổi)
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -39,31 +58,167 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// Component để focus map tới vị trí mới (Không đổi)
+// --- STYLES (Đã sửa lỗi CSS tại đây) ---
+const styles = {
+  container: {
+    display: "flex",
+    height: "calc(100vh - 64px)",
+    position: "relative",
+    overflow: "hidden",
+    fontFamily: "'Inter', sans-serif",
+    backgroundColor: "#f0f2f5",
+  },
+  sidebar: {
+    width: 400,
+    height: "100%",
+    backgroundColor: "#ffffff",
+    boxShadow: "4px 0 12px rgba(0,0,0,0.05)",
+    zIndex: 1000,
+    display: "flex",
+    flexDirection: "column",
+    transition: "all 0.3s ease-in-out",
+    borderRight: "1px solid #e8e8e8",
+  },
+  sidebarCollapsed: {
+    width: 0,
+    overflow: "hidden",
+    opacity: 0,
+  },
+  sidebarHeader: {
+    padding: "24px",
+    backgroundColor: "#fff",
+    borderBottom: "1px solid #f0f0f0",
+    zIndex: 2,
+  },
+  sidebarContent: {
+    flex: 1,
+    overflowY: "auto",
+    padding: "0", 
+  },
+  // ITEM LIST: Sửa lỗi flexbox tại đây
+  stationListItem: {
+    padding: "16px 24px",
+    borderBottom: "1px solid #f0f0f0",
+    cursor: "pointer",
+    transition: "all 0.2s",
+    display: "flex", 
+    alignItems: "flex-start", // Căn hàng trên cùng để icon không bị lệch khi text dài
+    gap: "16px", // Khoảng cách cứng giữa icon và text
+  },
+  stationListItemHover: {
+    backgroundColor: "#fafafa",
+  },
+  stationListItemActive: {
+    backgroundColor: "#e6f7ff",
+    borderRight: "4px solid #1890ff", // Chuyển border sang phải cho lạ mắt
+  },
+  toggleButton: {
+    position: "absolute",
+    top: 24,
+    left: 24,
+    zIndex: 1001,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    transition: "left 0.3s ease-in-out",
+  },
+  vehicleCard: {
+    background: "linear-gradient(135deg, #003a8c 0%, #1890ff 100%)",
+    borderRadius: "12px",
+    padding: "20px",
+    color: "white",
+    boxShadow: "0 8px 20px rgba(24, 144, 255, 0.2)",
+    marginBottom: "24px",
+    position: "relative",
+    overflow: "hidden",
+  },
+  routeInfoBox: {
+    background: "rgba(0, 0, 0, 0.85)",
+    backdropFilter: "blur(4px)",
+    color: "#fff",
+    padding: "10px 20px",
+    borderRadius: "30px",
+    position: "absolute",
+    bottom: "30px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    zIndex: 1000,
+    boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    fontWeight: 500,
+    fontSize: "14px",
+  },
+  popupContent: {
+    minWidth: "260px",
+  },
+};
+
+// --- CSS OVERRIDES CHO POPUP ---
+const GlobalPopupStyles = () => (
+  <style>{`
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      padding: 0;
+      overflow: hidden;
+      border: none;
+    }
+    .leaflet-popup-content {
+      margin: 0 !important;
+      width: auto !important;
+    }
+    .leaflet-popup-tip {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    a.leaflet-popup-close-button {
+      color: #999 !important;
+      font-size: 20px !important;
+      top: 8px !important;
+      right: 8px !important;
+      padding: 4px !important;
+    }
+    a.leaflet-popup-close-button:hover {
+      color: #333 !important;
+      background: #f5f5f5;
+      border-radius: 50%;
+    }
+    /* Custom Scrollbar cho Sidebar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1; 
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #ccc; 
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #999; 
+    }
+  `}</style>
+);
+
+// --- HELPER FUNCTIONS ---
 function FlyToLocation({ position }) {
   const map = useMap();
   useEffect(() => {
-    if (position) map.flyTo(position, 14, { duration: 1.5 });
+    if (position) map.flyTo(position, 15, { duration: 1.5 });
   }, [position]);
   return null;
 }
 
-// 🆕 Hàm tiện ích để định dạng
 const formatDistance = (meters) => {
-  if (meters < 1000) {
-    return `${Math.round(meters)} m`;
-  }
+  if (meters < 1000) return `${Math.round(meters)} m`;
   return `${(meters / 1000).toFixed(1)} km`;
 };
 
 const formatTime = (seconds) => {
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes} phút`;
-  }
+  if (minutes < 60) return `${minutes} phút`;
   const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  return `${hours} giờ ${remainingMinutes} phút`;
+  const remMin = minutes % 60;
+  return `${hours} giờ ${remMin}p`;
 };
 
 const StationsNearby = () => {
@@ -78,490 +233,370 @@ const StationsNearby = () => {
   const [mapCenter, setMapCenter] = useState([10.762622, 106.660172]);
   const [routeCoordinates, setRouteCoordinates] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(true); // State cho sidebar
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
 
   const markerRefs = useRef({});
   const navigate = useNavigate();
 
-  // 🆕 Fetch vehicles của driver
+  // Fetch Data
   useEffect(() => {
-    const fetchVehicles = async () => {
+    const initData = async () => {
+      setLoading(true);
       try {
-        const res = await api.get("/vehicle/my-vehicles");
-        setVehicles(res.data || []);
-        // Tự động chọn xe đầu tiên nếu có
-        if (res.data && res.data.length > 0) {
-          setSelectedVehicle(res.data[0].id);
+        const [vehiclesRes, stationsRes] = await Promise.all([
+          api.get("/vehicle/my-vehicles"),
+          api.get("/station"),
+        ]);
+        setVehicles(vehiclesRes.data || []);
+        if (vehiclesRes.data && vehiclesRes.data.length > 0) {
+          setSelectedVehicle(vehiclesRes.data[0].id);
         }
+        setStations(stationsRes.data || []);
       } catch (err) {
-        console.error("Lỗi khi tải danh sách xe:", err);
-      }
-    };
-    fetchVehicles();
-  }, []);
-
-  // ... (fetchStations useEffect giữ nguyên)
-  useEffect(() => {
-    const fetchStations = async () => {
-      try {
-        const res = await api.get("/station");
-        setStations(res.data);
-      } catch (err) {
-        console.error("Lỗi khi tải trạm:", err);
+        console.error("Error loading data:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchStations();
+    initData();
   }, []);
 
-  // ... (Geolocation useEffect giữ nguyên)
+  // Geolocation
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const newPosition = [
-            position.coords.latitude,
-            position.coords.longitude,
-          ];
-          setUserGeoPosition(newPosition);
-          setMapCenter(newPosition);
+          const pos = [position.coords.latitude, position.coords.longitude];
+          setUserGeoPosition(pos);
+          setMapCenter(pos);
         },
-        (error) => {
-          console.warn(`Lỗi Geolocation (${error.code}): ${error.message}`);
-        },
+        (err) => console.warn("Geolocation error:", err),
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
-    } else {
-      console.log("Trình duyệt không hỗ trợ Geolocation.");
     }
   }, []);
 
-  // 🆕 Cập nhật hàm tính toán đường đi
+  // Routing
   const getRoute = async (origin, destination) => {
     setRouteCoordinates(null);
-    setRouteInfo(null); // 🆕 Reset thông tin đường đi
-
+    setRouteInfo(null);
     const start = `${origin[1]},${origin[0]}`;
     const end = `${destination[1]},${destination[0]}`;
-
-    const coordinates = `${start};${end}`;
-    const url = `${OSRM_BASE_URL}/${ROUTING_PROFILE}/${coordinates}?overview=full&geometries=geojson`;
-
+    const url = `${OSRM_BASE_URL}/${ROUTING_PROFILE}/${start};${end}?overview=full&geometries=geojson`;
     try {
       const res = await fetch(url);
-
-      if (!res.ok) {
-        throw new Error(`OSRM API thất bại với status ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error("OSRM error");
       const data = await res.json();
-
-      if (data.routes && data.routes.length > 0) {
+      if (data.routes?.length > 0) {
         const route = data.routes[0];
-
-        // Lấy tọa độ
-        const coordinatesList = route.geometry.coordinates.map((coord) => [
-          coord[1],
-          coord[0],
-        ]);
-        setRouteCoordinates(coordinatesList);
-
-        // 🆕 Lấy thông tin khoảng cách và thời gian
-        setRouteInfo({
-          distance: route.distance, // meters
-          duration: route.duration, // seconds
-        });
+        setRouteCoordinates(route.geometry.coordinates.map((c) => [c[1], c[0]]));
+        setRouteInfo({ distance: route.distance, duration: route.duration });
       } else {
-        alert("Không tìm thấy tuyến đường.");
+        alert("Không tìm thấy đường đi.");
       }
     } catch (error) {
-      console.error("Lỗi khi tính toán đường đi OSRM:", error);
-      alert("Có lỗi khi tính toán đường đi. Vui lòng thử lại sau.");
+      console.error(error);
     }
   };
 
-  // Hàm xử lý khi bấm nút Chỉ Đường (Không đổi)
   const handleDirectionsClick = (station) => {
     if (!userGeoPosition) {
-      alert(
-        "Vui lòng cho phép truy cập vị trí (Geolocation) để tính toán đường đi."
-      );
+      alert("Cần quyền truy cập vị trí để chỉ đường.");
       return;
     }
-
     setSelectedStation(station);
     getRoute(userGeoPosition, [station.latitude, station.longitude]);
-
-    const ref = markerRefs.current[station.id];
-    if (ref) ref.closePopup();
+    markerRefs.current[station.id]?.closePopup();
   };
 
-  // Hàm xóa đường đi
   const clearRoute = () => {
     setRouteCoordinates(null);
-    setRouteInfo(null); // 🆕 Xóa thông tin đường đi
+    setRouteInfo(null);
     setSelectedStation(null);
   };
 
-  // 🆕 Hàm chuyển sang trang booking với xe và trạm đã chọn
   const handleBookingClick = (station) => {
     if (!selectedVehicle) {
-      alert("Vui lòng chọn xe trước!");
+      alert("Vui lòng chọn xe!");
       return;
     }
-    navigate(
-      `/stations/booking?vehicleId=${selectedVehicle}&stationId=${station.id}`
-    );
+    if (selectedVehicleData?.status === "PENDING") return;
+    navigate(`/stations/booking?vehicleId=${selectedVehicle}&stationId=${station.id}`);
   };
 
-  // 🆕 Lấy thông tin xe được chọn
-  const selectedVehicleData = useMemo(() => {
-    return vehicles.find((v) => v.id === selectedVehicle);
-  }, [vehicles, selectedVehicle]);
+  // Computed Data
+  const selectedVehicleData = useMemo(
+    () => vehicles.find((v) => v.id === selectedVehicle),
+    [vehicles, selectedVehicle]
+  );
 
-  // 🆕 Lọc trạm phù hợp với loại pin của xe (hoặc tất cả trạm nếu không có xe)
   const compatibleStations = useMemo(() => {
-    if (!selectedVehicleData) {
-      // Nếu không có xe được chọn, hiển thị tất cả trạm
-      return stations;
-    }
-    // Nếu có xe, chỉ hiển thị trạm phù hợp
+    if (!selectedVehicleData) return stations;
     return stations.filter((s) => s.batteryTypeId === selectedVehicleData.batteryTypeId);
-
   }, [stations, selectedVehicleData]);
 
-  // ... (useMemo cho cities, districts, filteredStations giữ nguyên)
-  const cities = useMemo(() => {
-    return [...new Set(compatibleStations.map((s) => s.city))];
-  }, [compatibleStations]);
+  const cities = useMemo(() => [...new Set(compatibleStations.map((s) => s.city))], [compatibleStations]);
+  const districts = useMemo(() => selectedCity ? [...new Set(compatibleStations.filter((s) => s.city === selectedCity).map((s) => s.district))] : [], [compatibleStations, selectedCity]);
+  const filteredStations = useMemo(() => compatibleStations.filter((s) => (!selectedCity || s.city === selectedCity) && (!selectedDistrict || s.district === selectedDistrict)), [compatibleStations, selectedCity, selectedDistrict]);
 
-  const districts = useMemo(() => {
-    return selectedCity
-      ? [
-          ...new Set(
-            compatibleStations
-              .filter((s) => s.city === selectedCity)
-              .map((s) => s.district)
-          ),
-        ]
-      : [];
-  }, [compatibleStations, selectedCity]);
-
-  const filteredStations = useMemo(() => {
-    return compatibleStations.filter(
-      (s) =>
-        (!selectedCity || s.city === selectedCity) &&
-        (!selectedDistrict || s.district === selectedDistrict)
+  if (loading)
+    return (
+      <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "#f0f2f5" }}>
+        <Spin size="large" tip="Đang tải hệ thống..." />
+      </div>
     );
-  }, [compatibleStations, selectedCity, selectedDistrict]);
-
-  if (loading) return <Spin tip="Đang tải dữ liệu trạm..." />;
 
   return (
     <Fragment>
-      <div style={{ display: "flex", height: "90vh", position: "relative" }}>
-        {/* Nút Toggle CỐ ĐỊNH */}
+      <GlobalPopupStyles />
+      <div style={styles.container}>
+        {/* Button Toggle */}
         <Button
-          type="primary"
-          icon={
-            isSidebarVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />
-          }
+          type="default"
+          shape="circle"
+          icon={isSidebarVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+          size="large"
           onClick={() => setIsSidebarVisible(!isSidebarVisible)}
-          className="sidebar-toggle-button"
+          style={{ ...styles.toggleButton, left: isSidebarVisible ? 420 : 24 }}
         />
 
-        {/* Sidebar */}
-        {isSidebarVisible && (
-          <Card
-            title={
-              <div
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  color: "#1890ff",
-                  textAlign: "center",
-                  marginTop: "16px",
-                }}
-              >
-                <h1>Hệ thống trạm</h1>
-              </div>
-            }
-            style={{
-              width: 300,
-              transition: "width 0.3s ease, padding 0.3s ease",
-              flexShrink: 0,
-              zIndex: 999,
-            }}
-          >
-            {/* 🆕 Chọn xe */}
-            {vehicles.length > 0 ? (
-              <>
-                <p>
-                  <strong>Chọn xe của bạn:</strong>
-                </p>
-                <Select
-                  style={{ width: "100%", marginBottom: 16 }}
-                  placeholder="Chọn xe"
-                  value={selectedVehicle}
-                  onChange={(v) => {
-                    setSelectedVehicle(v);
-                    clearRoute();
-                  }}
-                  allowClear
-                >
-                  {vehicles.map((vehicle) => (
-                    <Option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.model} ({vehicle.plateNumber})
-                    </Option>
-                  ))}
-                </Select>
+        {/* SIDEBAR */}
+        <div style={{ ...styles.sidebar, ...(isSidebarVisible ? {} : styles.sidebarCollapsed) }}>
+          <div style={styles.sidebarHeader}>
+            <Title level={3} style={{ margin: 0, fontWeight: 700, letterSpacing: "-0.5px", color: "#001529" }}>Trạm đổi pin</Title>
+            <Text type="secondary" style={{ fontSize: "13px" }}>Hệ thống trạm sạc thông minh</Text>
+          </div>
 
-                {/* 🆕 Hiển thị thông tin xe được chọn */}
-                {selectedVehicleData && (
-                  <Card
-                    size="small"
-                    style={{ marginBottom: 16, backgroundColor: "#f0f5ff" }}
+          <div style={styles.sidebarContent}>
+            <div style={{ padding: "24px 24px 0 24px" }}>
+              {/* Card chọn xe */}
+              {vehicles.length > 0 ? (
+                <>
+                  <Select
+                    style={{ width: "100%", marginBottom: 16 }}
+                    value={selectedVehicle}
+                    onChange={(v) => { setSelectedVehicle(v); clearRoute(); }}
+                    size="large"
+                    variant="filled" // Style mới của Antd 5.x
                   >
-                    <p style={{ margin: 0, fontSize: "12px" }}>
-                      <strong>Loại pin:</strong> {selectedVehicleData.model}
-                    </p>
-                  </Card>
-                )}
+                    {vehicles.map((vehicle) => (
+                      <Option key={vehicle.id} value={vehicle.id} label={vehicle.model}>
+                        <Space>
+                          {vehicle.model}
+                          <span style={{ color: "#999", fontSize: "12px" }}>({vehicle.plateNumber})</span>
+                          {vehicle.status === "PENDING" && <Tag color="orange" bordered={false}>Chờ duyệt</Tag>}
+                        </Space>
+                      </Option>
+                    ))}
+                  </Select>
 
-                {/* 🆕 Hiển thị "Trạm phù hợp cho xe của bạn" */}
-                {selectedVehicleData && (
-                  <p style={{ marginBottom: 8 }}>
-                    <strong style={{ color: "#52c41a" }}>
-                      ✓ Trạm phù hợp cho xe của bạn ({compatibleStations.length})
-                    </strong>
-                  </p>
-                )}
-              </>
-            ) : (
-              <Card
-                size="small"
-                style={{ marginBottom: 16, backgroundColor: "#fff7e6" }}
-              >
-                <p style={{ margin: 0, fontSize: "12px", color: "#ad6800" }}>
-                  <strong>ℹ️ Bạn chưa đăng ký xe nào.</strong> Bạn vẫn có thể xem các trạm trên bản đồ, nhưng không thể đặt lịch.
-                </p>
-              </Card>
-            )}
-
-            {/* 🆕 Hiển thị "Tất cả trạm" khi không chọn xe */}
-            {!selectedVehicleData && (
-              <p style={{ marginBottom: 8 }}>
-                <strong style={{ color: "#1890ff" }}>
-                  📍 Tất cả trạm ({compatibleStations.length})
-                </strong>
-              </p>
-            )}
-
-            <p>
-              <strong>Thành phố:</strong>
-            </p>
-            <Select
-              style={{ width: "100%", marginBottom: 10 }}
-              placeholder="Chọn thành phố"
-              allowClear
-              onChange={(v) => {
-                setSelectedCity(v);
-                setSelectedDistrict(null);
-                clearRoute();
-              }}
-            >
-              {cities.map((city) => (
-                <Option key={city} value={city}>
-                  {city}
-                </Option>
-              ))}
-            </Select>
-
-            <p>
-              <strong>Quận / Huyện:</strong>
-            </p>
-            <Select
-              style={{ width: "100%" }}
-              placeholder="Chọn quận / huyện"
-              allowClear
-              value={selectedDistrict}
-              onChange={(v) => {
-                setSelectedDistrict(v);
-                clearRoute();
-              }}
-              disabled={!selectedCity}
-            >
-              {districts.map((d) => (
-                <Option key={d} value={d}>
-                  {d}
-                </Option>
-              ))}
-            </Select>
-
-            <p style={{ marginTop: 16 }}>
-              <strong>Danh sách trạm:</strong> ({filteredStations.length})
-            </p>
-            <ul
-              style={{
-                maxHeight: 300,
-                overflowY: "auto",
-                paddingLeft: 16,
-              }}
-            >
-              {filteredStations.map((s) => (
-                <li
-                  key={s.id}
-                  onClick={() => {
-                    setSelectedStation(s);
-                    setMapCenter([s.latitude, s.longitude]);
-                    setTimeout(() => {
-                      const ref = markerRefs.current[s.id];
-                      if (ref) ref.openPopup();
-                    }, 100);
-                  }}
-                  style={{
-                    cursor: "pointer",
-                    marginBottom: 8,
-                    color: selectedStation?.id === s.id ? "#fa541c" : "#1890ff",
-                    fontWeight:
-                      selectedStation?.id === s.id ? "bold" : "normal",
-                  }}
-                >
-                  📍 {s.name} ({s.district})
-                </li>
-              ))}
-            </ul>
-
-            <div style={{ marginTop: "1rem", textAlign: "center" }}>
-              <Button
-                type="default"
-                danger
-                onClick={clearRoute}
-                disabled={!routeCoordinates}
-              >
-                Xóa Chỉ Đường
-              </Button>
-              {routeInfo && (
-                <p
-                  style={{
-                    fontSize: "14px",
-                    marginTop: "10px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Tổng: {formatDistance(routeInfo.distance)} (
-                  {formatTime(routeInfo.duration)})
-                </p>
+                  {selectedVehicleData && (
+                    <div style={{
+                       ...styles.vehicleCard,
+                       background: selectedVehicleData.status === "PENDING" ? "linear-gradient(135deg, #d48806 0%, #faad14 100%)" : styles.vehicleCard.background
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                        <Text strong style={{ color: "rgba(255,255,255,0.85)", textTransform: "uppercase", fontSize: "11px", letterSpacing: "1px" }}>Thông tin xe</Text>
+                        <CarOutlined style={{ fontSize: "20px", color: "white", opacity: 0.9 }} />
+                      </div>
+                      <Title level={3} style={{ color: "white", margin: 0, fontWeight: 700 }}>{selectedVehicleData.model}</Title>
+                      <div style={{ fontSize: "15px", color: "rgba(255,255,255,0.9)", fontFamily: "monospace", marginTop: 4 }}>
+                        {selectedVehicleData.plateNumber}
+                      </div>
+                      <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                         <Tag color={selectedVehicleData.status === "PENDING" ? "warning" : "success"} style={{ border: "none", fontWeight: 600 }}>
+                            {selectedVehicleData.status === "PENDING" ? "CHỜ DUYỆT" : "ACTIVE"}
+                         </Tag>
+                         <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.8)" }}>• {selectedVehicleData.batteryTypeName}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Alert message="Chưa có xe" description="Vui lòng đăng ký xe để tìm trạm." type="warning" showIcon />
               )}
-            </div>
-          </Card>
-        )}
 
-        {/* Map */}
-        <div style={{ flex: 1, position: "relative", height: "100%" }}>
-          <MapContainer
-            center={mapCenter}
-            zoom={12}
-            style={{ height: "100%", width: "100%" }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-
-            {/* 🔴 VẼ ĐƯỜNG ĐI (Polyline) */}
-            {routeCoordinates && (
-              <Polyline
-                positions={routeCoordinates}
-                color="#007bff"
-                weight={5}
-                opacity={0.8}
-              >
-                {routeInfo && (
-                  <Tooltip
-                    direction="center"
-                    permanent={true}
-                    className="route-tooltip"
-                  >
-                    {formatDistance(routeInfo.distance)} |{" "}
-                    {formatTime(routeInfo.duration)}
-                  </Tooltip>
+              {/* Bộ lọc */}
+              <div style={{ marginBottom: 20 }}>
+                 <Text strong style={{ display: "block", marginBottom: 8, fontSize: "13px", color: "#555" }}>KHU VỰC TÌM KIẾM</Text>
+                 <Space.Compact block size="large">
+                  <Select style={{ width: "50%" }} placeholder="Tỉnh/TP" allowClear onChange={(v) => { setSelectedCity(v); setSelectedDistrict(null); clearRoute(); }} variant="filled">
+                    {cities.map((c) => <Option key={c} value={c}>{c}</Option>)}
+                  </Select>
+                  <Select style={{ width: "50%" }} placeholder="Quận/Huyện" allowClear value={selectedDistrict} onChange={(v) => { setSelectedDistrict(v); clearRoute(); }} disabled={!selectedCity} variant="filled">
+                    {districts.map((d) => <Option key={d} value={d}>{d}</Option>)}
+                  </Select>
+                </Space.Compact>
+              </div>
+              
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 24 }}>
+                <Text type="secondary" style={{ fontSize: "12px", fontWeight: 600, textTransform: "uppercase" }}>
+                  Kết quả ({filteredStations.length})
+                </Text>
+                {routeCoordinates && (
+                  <Button type="link" danger onClick={clearRoute} size="small" style={{ padding: 0 }}>
+                    Xóa chỉ đường
+                  </Button>
                 )}
+              </div>
+            </div>
+
+            {/* Danh sách trạm - Fix lỗi flexbox */}
+            <List
+              dataSource={filteredStations}
+              renderItem={(item) => (
+                <div
+                  style={{
+                    ...styles.stationListItem,
+                    ...(selectedStation?.id === item.id ? styles.stationListItemActive : {}),
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = selectedStation?.id === item.id ? "#e6f7ff" : "#fafafa"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = selectedStation?.id === item.id ? "#e6f7ff" : "white"}
+                  onClick={() => {
+                    setSelectedStation(item);
+                    setMapCenter([item.latitude, item.longitude]);
+                    setTimeout(() => markerRefs.current[item.id]?.openPopup(), 100);
+                  }}
+                >
+                  {/* Avatar: thêm flexShrink: 0 để không bị bóp méo */}
+                  <Avatar
+                    shape="square"
+                    size={48}
+                    icon={<ThunderboltFilled style={{ fontSize: 24 }} />}
+                    style={{
+                      backgroundColor: item.currentBatteryCount > 0 ? "#f6ffed" : "#fff1f0",
+                      color: item.currentBatteryCount > 0 ? "#52c41a" : "#f5222d",
+                      border: "1px solid #f0f0f0",
+                      flexShrink: 0, // QUAN TRỌNG: Giữ nguyên kích thước avatar
+                    }}
+                  />
+                  
+                  {/* Content: thêm minWidth: 0 để text tự xuống dòng */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Text strong style={{ fontSize: "15px", color: "#262626", marginBottom: 2, display: "block" }} ellipsis={{ tooltip: item.name }}>
+                      {item.name}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: "13px", display: "block", marginBottom: 6, lineHeight: "1.4" }}>
+                      {item.location}
+                    </Text>
+                    <Space size={0} split={<Divider type="vertical" />}>
+                       <span style={{ fontSize: "12px", color: item.currentBatteryCount > 0 ? "#389e0d" : "#cf1322", fontWeight: 500 }}>
+                          {item.currentBatteryCount} pin
+                       </span>
+                       <span style={{ fontSize: "12px", color: "#8c8c8c" }}>{item.district}</span>
+                    </Space>
+                  </div>
+                </div>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* MAP AREA */}
+        <div style={{ flex: 1, position: "relative" }}>
+          <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%" }} zoomControl={false}>
+            <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+            {routeCoordinates && (
+              <Polyline positions={routeCoordinates} color="#1890ff" weight={6} opacity={0.8}>
+                {routeInfo && <LeafletTooltip sticky>{formatDistance(routeInfo.distance)} - {formatTime(routeInfo.duration)}</LeafletTooltip>}
               </Polyline>
             )}
 
-            {/* Marker cho vị trí người dùng (Geolocation) */}
             {userGeoPosition && (
-              <Marker
-                position={userGeoPosition}
-                icon={L.divIcon({
-                  className: "user-geo-icon",
-                  html: '<div style="background-color: #007bff; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>',
+              <Marker position={userGeoPosition} icon={L.divIcon({
+                  className: "user-pulse",
+                  html: `<div style="background-color: #1890ff; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(24, 144, 255, 0.4);"></div>`,
                   iconSize: [20, 20],
-                })}
-              >
-                <Popup>
-                  <strong>📍 Vị trí của bạn</strong> <br /> (Điểm bắt đầu chỉ
-                  đường)
-                </Popup>
+                })}>
               </Marker>
             )}
 
-            {selectedStation && (
-              <FlyToLocation
-                position={[selectedStation.latitude, selectedStation.longitude]}
-              />
-            )}
-
-            {/* Markers Trạm */}
             {filteredStations.map((s) => (
-              <Marker
-                key={s.id}
-                position={[s.latitude, s.longitude]}
-                ref={(ref) => (markerRefs.current[s.id] = ref)}
-              >
-                <Popup>
-                  <strong>{s.name}</strong> <br />
-                  📍 {s.location} <br />
-                  ☎️ {s.contactInfo} <br />⚡ Pin hiện có:{" "}
-                  {s.currentBatteryCount} / {s.capacity}
-                  <div
-                    style={{
-                      marginTop: "8px",
-                      borderTop: "1px solid #eee",
-                      paddingTop: "8px",
-                    }}
-                  >
-                    <Space direction="vertical" style={{ width: "100%" }}>
-                      <Button
-                        type="primary"
-                        size="small"
-                        onClick={() => handleDirectionsClick(s)}
-                        disabled={!userGeoPosition}
-                        style={{ width: "100%" }}
-                      >
-                        {userGeoPosition
-                          ? "Chỉ Đường Đến Đây"
-                          : "Đang chờ vị trí..."}
-                      </Button>
-                      <Button
-                        type="primary"
-                        icon={<CalendarOutlined />}
-                        size="small"
-                        onClick={() => handleBookingClick(s)}
-                        disabled={!selectedVehicle}
-                        style={{ width: "100%" }}
-                        title={!selectedVehicle ? "Vui lòng chọn xe để đặt lịch" : ""}
-                      >
-                        Đặt Lịch Đổi Pin
-                      </Button>
-                    </Space>
+              <Marker key={s.id} position={[s.latitude, s.longitude]} ref={(ref) => (markerRefs.current[s.id] = ref)}>
+                <Popup maxWidth={300} closeButton={true}>
+                  {/* --- XỊN HÓA POPUP CONTENT --- */}
+                  <div style={styles.popupContent}>
+                    <div style={{ padding: "16px 16px 12px 16px", borderBottom: "1px solid #f0f0f0" }}>
+                      <Title level={5} style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: 700 }}>{s.name}</Title>
+                      <div style={{ display: "flex", gap: "6px", alignItems: "start", marginTop: "6px" }}>
+                        <EnvironmentOutlined style={{ marginTop: "3px", color: "#1890ff" }} />
+                        <Text style={{ fontSize: "13px", color: "#555", lineHeight: 1.3 }}>{s.location}</Text>
+                      </div>
+                      <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "6px" }}>
+                        <PhoneOutlined style={{ color: "#52c41a" }} />
+                        <Text style={{ fontSize: "13px", color: "#555", fontWeight: 500 }}>{s.contactInfo}</Text>
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "16px", backgroundColor: "#fafafa" }}>
+                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: "12px" }}>
+                          <span style={{ color: "#888", textTransform: "uppercase", fontWeight: 600 }}>Trạng thái Pin</span>
+                          <span style={{ fontWeight: 700, color: s.currentBatteryCount > 0 ? "#52c41a" : "#ff4d4f" }}>
+                             {s.currentBatteryCount}/{s.capacity}
+                          </span>
+                       </div>
+                       <Progress 
+                          percent={(s.currentBatteryCount / s.capacity) * 100} 
+                          showInfo={false} 
+                          strokeColor={s.currentBatteryCount > 0 ? "#52c41a" : "#ff4d4f"} 
+                          trailColor="#e8e8e8"
+                          size="small"
+                          style={{ marginBottom: 0 }}
+                       />
+                    </div>
+
+                    <div style={{ padding: "12px 16px", display: "flex", gap: "12px" }}>
+                       <Button 
+                          block 
+                          onClick={() => handleDirectionsClick(s)}
+                          disabled={!userGeoPosition}
+                          style={{ borderColor: "#1890ff", color: "#1890ff" }}
+                       >
+                          <SendOutlined /> Chỉ đường
+                       </Button>
+                       
+                       <Tooltip title={selectedVehicleData?.status === "PENDING" ? "Xe đang chờ duyệt" : !selectedVehicle ? "Chọn xe trước" : ""}>
+                         <Button 
+                            type="primary" 
+                            block 
+                            onClick={() => handleBookingClick(s)}
+                            disabled={!selectedVehicle || selectedVehicleData?.status === "PENDING"}
+                            style={{ background: "#1890ff", boxShadow: "0 2px 4px rgba(24,144,255,0.3)" }}
+                         >
+                            <CalendarOutlined /> Đặt lịch
+                         </Button>
+                       </Tooltip>
+                    </div>
                   </div>
                 </Popup>
               </Marker>
             ))}
+
+            {selectedStation && <FlyToLocation position={[selectedStation.latitude, selectedStation.longitude]} />}
           </MapContainer>
+
+          {routeInfo && (
+            <div style={styles.routeInfoBox}>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                 <span style={{ fontSize: "11px", opacity: 0.7, textTransform: "uppercase" }}>Thời gian</span>
+                 <span style={{ fontSize: "16px", fontWeight: "bold", color: "#40a9ff" }}>{formatTime(routeInfo.duration)}</span>
+              </div>
+              <Divider type="vertical" style={{ height: "24px", borderColor: "rgba(255,255,255,0.2)" }} />
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                 <span style={{ fontSize: "11px", opacity: 0.7, textTransform: "uppercase" }}>Khoảng cách</span>
+                 <span style={{ fontSize: "16px" }}>{formatDistance(routeInfo.distance)}</span>
+              </div>
+              <Button 
+                type="text" 
+                shape="circle" 
+                icon={<WarningOutlined />} 
+                onClick={clearRoute} 
+                size="small" 
+                style={{ marginLeft: "8px", color: "#ff7875" }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </Fragment>

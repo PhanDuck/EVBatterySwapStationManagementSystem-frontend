@@ -2,20 +2,21 @@ import React from "react";
 import { Row, Col, Card, Button, Affix } from "antd";
 
 const Policy = () => {
+  // 1. Mảng Mục Lục (tableOfContents) đã được chuẩn hóa ID
   const tableOfContents = [
-    { id: "1", title: "Định Nghĩa & Phạm Vi Áp Dụng" },
-    { id: "2", title: "Người Sử Dụng Dịch Vụ" },
-    { id: "3", title: "Thời Hạn Dịch Vụ" },
-    { id: "4", title: "Phạm Vi Dịch Vụ Pin" },
-    { id: "5", title: "Phí Dịch Vụ" },
-    { id: "6", title: "Quyền Sở Hữu Pin" },
-    { id: "7", title: "Nghĩa Vụ Người Dùng" },
-    { id: "8", title: "Tạm Ngưng & Gián Đoạn Dịch Vụ" },
-    { id: "9", title: "Chấm Dứt Hợp Đồng" },
-    { id: "10", title: "Miễn Trừ Trách Nhiệm" },
-    { id: "11", title: "Bồi Thường" },
-    { id: "12", title: "Điều Khoản Khác" },
-    { id: "phuluc-a", title: "PHỤ LỤC A: Miễn Trừ Bồi Thường Pin" },
+    { id: "section-1", title: "Định Nghĩa & Phạm Vi Áp Dụng" },
+    { id: "section-2", title: "Người Sử Dụng Dịch Vụ" },
+    { id: "section-3", title: "Thời Hạn Dịch Vụ" },
+    { id: "section-4", title: "Phạm Vi Dịch Vụ Pin" },
+    { id: "section-5", title: "Phí Dịch Vụ" },
+    { id: "section-6", title: "Quyền Sở Hữu Pin" },
+    { id: "section-7", title: "Nghĩa Vụ Người Dùng" },
+    { id: "section-8", title: "Tạm Ngưng & Gián Đoạn Dịch Vụ" }, // Đã sửa lỗi: "8" -> "section-8"
+    { id: "section-9", title: "Chấm Dứt Hợp Đồng" },           // Đã sửa lỗi: "9" -> "section-9"
+    { id: "section-10", title: "Miễn Trừ Trách Nhiệm" },      // Đã sửa lỗi: "10" -> "section-10"
+    { id: "section-11", title: "Bồi Thường" },               // Đã sửa lỗi: "11" -> "section-11"
+    { id: "section-12", title: "Điều Khoản Khác" },           // Đã sửa lỗi: "12" -> "section-12"
+    { id: "phuluc-a", title: "PHỤ LỤC A: Miễn Trừ Bồi Thường Pin" }, // ID giữ nguyên nhưng cần đảm bảo khớp với nội dung
     { id: "phuluc-b", title: "PHỤ LỤC B: Quy Tắc Bảo Quản Pin" },
     { id: "phuluc-c", title: "PHỤ LỤC C: Tiêu Chuẩn Bồi Thường Pin" },
   ];
@@ -123,7 +124,7 @@ const Policy = () => {
             </div>
 
             {/* Section 1 */}
-            <h2 id="1" style={sectionStyle}>1. ĐỊNH NGHĨA & PHẠM VI ÁP DỤNG</h2>
+            <h2 id="section-1" style={sectionStyle}>1. ĐỊNH NGHĨA & PHẠM VI ÁP DỤNG</h2>
             <h3 style={subsectionStyle}>1.1. Định Nghĩa</h3>
             <p style={textStyle}>
               Hợp đồng Dịch Vụ Pin Thông Minh EV Battery Swap (sau đây gọi là "<strong>Hợp Đồng</strong>") được ký kết giữa:
@@ -144,13 +145,12 @@ const Policy = () => {
               <ul style={{ marginLeft: "20px", marginTop: "10px", marginBottom: "0" }}>
                 <li style={listItemStyle}>Khi tài xế/người dùng muốn sử dụng dịch vụ hệ thống của chúng tôi, <strong>BẮT BUỘC PHẢI SỬ DỤNG</strong> dịch vụ thuê pin do chúng tôi cung cấp.</li>
                 <li style={listItemStyle}><strong>KHÔNG ĐƯỢC SỬ DỤNG</strong> pin chính chủ của xe (pin gốc đi kèm xe) để tham gia dịch vụ đổi pin tại các trạm.</li>
-                <li style={listItemStyle}>Pin chính chủ của xe phải được <strong>GỬI VÀO KHO</strong> của hệ thống hoặc <strong>TRẢ LẠI</strong> cho nhà cung cấp dịch vụ khi đăng ký tham gia.</li>
                 <li style={listItemStyle}>Mọi pin được sử dụng trong hệ thống đều thuộc quyền sở hữu của nhà cung cấp dịch vụ.</li>
               </ul>
             </div>
 
             {/* Section 2 */}
-            <h2 id="2" style={sectionStyle}>2. NGƯỜI SỬ DỤNG DỊCH VỤ</h2>
+            <h2 id="section-2" style={sectionStyle}>2. NGƯỜI SỬ DỤNG DỊCH VỤ</h2>
             <h3 style={subsectionStyle}>2.1. Định Nghĩa Người Sử Dụng</h3>
             <p style={textStyle}>Người sử dụng là cá nhân hoặc tổ chức:</p>
             <ul style={{ marginLeft: "20px", marginBottom: "15px" }}>
@@ -165,7 +165,7 @@ const Policy = () => {
             </p>
 
             {/* Section 3 */}
-            <h2 id="3" style={sectionStyle}>3. THỜI HẠN DỊCH VỤ</h2>
+            <h2 id="section-3" style={sectionStyle}>3. THỜI HẠN DỊCH VỤ</h2>
             <h3 style={subsectionStyle}>3.1. Thời Hạn Gói Dịch Vụ</h3>
             <p style={textStyle}>
               Thời hạn dịch vụ được tính từ <strong>ngày kích hoạt gói</strong> đến <strong>ngày hết hạn</strong> theo gói dịch vụ đã mua (thường là 30 ngày).
@@ -177,7 +177,7 @@ const Policy = () => {
             </p>
 
             {/* Section 4 */}
-            <h2 id="4" style={sectionStyle}>4. PHẠM VI DỊCH VỤ PIN</h2>
+            <h2 id="section-4" style={sectionStyle}>4. PHẠM VI DỊCH VỤ PIN</h2>
             <h3 style={subsectionStyle}>4.1. Cung Cấp Pin Ban Đầu</h3>
             <p style={textStyle}>Khi bắt đầu dịch vụ, nhà cung cấp hoặc đại diện sẽ:</p>
             <ul style={{ marginLeft: "20px", marginBottom: "15px" }}>
@@ -194,7 +194,7 @@ const Policy = () => {
             </ol>
 
             {/* Section 5 */}
-            <h2 id="5" style={sectionStyle}>5. PHÍ DỊCH VỤ</h2>
+            <h2 id="section-5" style={sectionStyle}>5. PHÍ DỊCH VỤ</h2>
             <h3 style={subsectionStyle}>5.1. Cấu Trúc Phí</h3>
             <p style={textStyle}><strong>Phí Cơ Bản (Basic Fee)</strong>: Theo gói dịch vụ đã chọn, bao gồm:</p>
             <ul style={{ marginLeft: "20px", marginBottom: "15px" }}>
@@ -203,7 +203,7 @@ const Policy = () => {
             </ul>
 
             {/* Section 6 */}
-            <h2 id="6" style={sectionStyle}>6. QUYỀN SỞ HỮU PIN</h2>
+            <h2 id="section-6" style={sectionStyle}>6. QUYỀN SỞ HỮU PIN</h2>
             <h3 style={subsectionStyle}>6.1. Pin Chỉ Thuộc Về Nhà Cung Cấp</h3>
             <p style={textStyle}>Người dùng <strong>THỪA NHẬN</strong> và <strong>ĐỒNG Ý</strong>:</p>
             <ul style={{ marginLeft: "20px", marginBottom: "15px" }}>
@@ -214,7 +214,7 @@ const Policy = () => {
             </ul>
 
             {/* Section 7 */}
-            <h2 id="7" style={sectionStyle}>7. NGHĨA VỤ NGƯỜI DÙNG</h2>
+            <h2 id="section-7" style={sectionStyle}>7. NGHĨA VỤ NGƯỜI DÙNG</h2>
             <h3 style={subsectionStyle}>7.1. Bảo Quản Pin</h3>
             <p style={textStyle}>Người dùng phải:</p>
             <ul style={{ marginLeft: "20px", marginBottom: "15px" }}>
@@ -233,7 +233,126 @@ const Policy = () => {
               </ol>
             </div>
 
-            {/* Phụ Lục B */}
+            {/* Section 8 - Đã sửa ID */}
+            <h2 id="section-8" style={sectionStyle}>8. TẠM NGƯNG & GIÁN ĐOẠN DỊCH VỤ</h2>
+            <h3 style={subsectionStyle}>8.1. Tạm Ngưng Dịch Vụ</h3>
+            <p style={textStyle}>Nhà cung cấp dịch vụ có quyền tạm ngưng dịch vụ trong các trường hợp:</p>
+            <ul style={{ marginLeft: "20px", marginBottom: "15px" }}>
+              <li style={listItemStyle}>Người dùng vi phạm nghiêm trọng các điều khoản trong hợp đồng.</li>
+              <li style={listItemStyle}>Người dùng không thanh toán phí dịch vụ đúng hạn.</li>
+              <li style={listItemStyle}>Có dấu hiệu sử dụng pin không đúng mục đích hoặc gây hư hại.</li>
+              <li style={listItemStyle}>Bảo trì hệ thống hoặc nâng cấp công nghệ.</li>
+            </ul>
+
+            <h3 style={subsectionStyle}>8.2. Thông Báo Tạm Ngưng</h3>
+            <p style={textStyle}>
+              Nhà cung cấp dịch vụ sẽ thông báo trước <strong>ít nhất 24 giờ</strong> cho người dùng về việc tạm ngưng dịch vụ (trừ trường hợp khẩn cấp).
+            </p>
+
+            {/* Section 9 - Đã sửa ID */}
+            <h2 id="section-9" style={sectionStyle}>9. CHẤM DỨT HỢP ĐỒNG</h2>
+            <h3 style={subsectionStyle}>9.1. Chấm Dứt Theo Yêu Cầu</h3>
+            <p style={textStyle}>Người dùng có thể chấm dứt hợp đồng bằng cách:</p>
+            <ul style={{ marginLeft: "20px", marginBottom: "15px" }}>
+              <li style={listItemStyle}>Thông báo bằng văn bản trước <strong>7 ngày</strong>.</li>
+              <li style={listItemStyle}>Trả lại toàn bộ pin đang sử dụng về kho của nhà cung cấp.</li>
+              <li style={listItemStyle}>Thanh toán đầy đủ các khoản phí còn nợ (nếu có).</li>
+            </ul>
+
+            <h3 style={subsectionStyle}>9.2. Chấm Dứt Do Vi Phạm</h3>
+            <p style={textStyle}>
+              Nhà cung cấp dịch vụ có quyền chấm dứt hợp đồng ngay lập tức nếu người dùng vi phạm nghiêm trọng các điều khoản.
+            </p>
+
+            {/* Section 10 - Đã sửa ID */}
+            <h2 id="section-10" style={sectionStyle}>10. MIỄN TRỪ TRÁCH NHIỆM</h2>
+            <h3 style={subsectionStyle}>10.1. Trường Hợp Bất Khả Kháng</h3>
+            <p style={textStyle}>Nhà cung cấp dịch vụ không chịu trách nhiệm trong các trường hợp:</p>
+            <ul style={{ marginLeft: "20px", marginBottom: "15px" }}>
+              <li style={listItemStyle}>Thiên tai, hỏa hoạn, lũ lụt, động đất.</li>
+              <li style={listItemStyle}>Chiến tranh, bạo loạn, khủng bố.</li>
+              <li style={listItemStyle}>Sự cố lưới điện quốc gia.</li>
+              <li style={listItemStyle}>Các quy định pháp luật mới có hiệu lực.</li>
+            </ul>
+
+            <h3 style={subsectionStyle}>10.2. Giới Hạn Trách Nhiệm</h3>
+            <p style={textStyle}>
+              Trách nhiệm tối đa của nhà cung cấp dịch vụ không vượt quá <strong>tổng giá trị phí dịch vụ</strong> mà người dùng đã thanh toán trong 12 tháng gần nhất.
+            </p>
+
+            {/* Section 11 - Đã sửa ID */}
+            <h2 id="section-11" style={sectionStyle}>11. BỒI THƯỜNG</h2>
+            <h3 style={subsectionStyle}>11.1. Nguyên Tắc Bồi Thường</h3>
+            <p style={textStyle}>Người dùng phải bồi thường thiệt hại khi:</p>
+            <ul style={{ marginLeft: "20px", marginBottom: "15px" }}>
+              <li style={listItemStyle}>Vi phạm quy tắc bảo quản pin gây hư hại.</li>
+              <li style={listItemStyle}>Sử dụng pin sai mục đích.</li>
+              <li style={listItemStyle}>Làm mất hoặc hư hỏng pin do lỗi chủ quan.</li>
+            </ul>
+
+            <h3 style={subsectionStyle}>11.2. Cách Thức Bồi Thường</h3>
+            <p style={textStyle}>
+              Bồi thường bằng tiền mặt theo <strong>Tiêu Chuẩn Bồi Thường Pin</strong> tại <strong>PHỤ LỤC C</strong>.
+            </p>
+
+            {/* Section 12 - Đã sửa ID */}
+            <h2 id="section-12" style={sectionStyle}>12. ĐIỀU KHOẢN KHÁC</h2>
+            <h3 style={subsectionStyle}>12.1. Sửa Đổi Hợp Đồng</h3>
+            <p style={textStyle}>
+              Mọi sửa đổi, bổ sung hợp đồng phải được thực hiện bằng <strong>văn bản</strong> và có sự đồng ý của cả hai bên.
+            </p>
+
+            <h3 style={subsectionStyle}>12.2. Giải Quyết Tranh Chấp</h3>
+            <p style={textStyle}>
+              Các tranh chấp phát sinh sẽ được giải quyết thông qua <strong>thương lượng</strong>. Nếu không thành, sẽ đưa ra <strong>Tòa án có thẩm quyền</strong> tại Việt Nam.
+            </p>
+
+            <h3 style={subsectionStyle}>12.3. Hiệu Lực</h3>
+            <p style={textStyle}>
+              Hợp đồng có hiệu lực từ ngày ký và áp dụng cho đến khi chấm dứt theo quy định.
+            </p>
+
+            {/* Phụ Lục A - ID đã được chuẩn hóa */}
+            <h2 id="phuluc-a" style={sectionStyle}>PHỤ LỤC A: MIỄN TRỪ BỒI THƯỜNG PIN</h2>
+            <h3 style={subsectionStyle}>A.1. Các Trường Hợp Miễn Trừ</h3>
+            <p style={textStyle}>Người dùng <strong>KHÔNG PHẢI BỒI THƯỜNG</strong> trong các trường hợp sau:</p>
+
+            <div style={{ backgroundColor: "#e8f5e8", padding: "15px", borderRadius: "8px", marginBottom: "20px", borderLeft: "4px solid #4caf50" }}>
+              <strong style={{ color: "#2e7d32" }}>1. Hao Mòn Tự Nhiên</strong>
+              <ul style={{ marginLeft: "20px", marginTop: "8px", marginBottom: "15px" }}>
+                <li style={listItemStyle}>Pin giảm dung lượng theo thời gian sử dụng bình thường (SOH giảm dưới 70% sau 2 năm).</li>
+                <li style={listItemStyle}>Hao mòn do chu kỳ sạc/xả bình thường.</li>
+              </ul>
+
+              <strong style={{ color: "#2e7d32" }}>2. Lỗi Kỹ Thuật Từ Nhà Sản Xuất</strong>
+              <ul style={{ marginLeft: "20px", marginTop: "8px", marginBottom: "15px" }}>
+                <li style={listItemStyle}>Pin bị lỗi do thiết kế hoặc chế tạo.</li>
+                <li style={listItemStyle}>Hư hỏng do linh kiện bên trong pin.</li>
+              </ul>
+
+              <strong style={{ color: "#2e7d32" }}>3. Sự Cố Hệ Thống</strong>
+              <ul style={{ marginLeft: "20px", marginTop: "8px", marginBottom: "15px" }}>
+                <li style={listItemStyle}>Hư hỏng do lỗi phần mềm quản lý pin.</li>
+                <li style={listItemStyle}>Sự cố tại trạm đổi pin gây hư hại.</li>
+              </ul>
+
+              <strong style={{ color: "#2e7d32" }}>4. Bất Khả Kháng</strong>
+              <ul style={{ marginLeft: "20px", marginTop: "8px", marginBottom: "0" }}>
+                <li style={listItemStyle}>Thiên tai, hỏa hoạn, lũ lụt.</li>
+                <li style={listItemStyle}>Tai nạn giao thông không do lỗi người dùng.</li>
+              </ul>
+            </div>
+
+            <h3 style={subsectionStyle}>A.2. Quy Trình Xác Định</h3>
+            <p style={textStyle}>Khi có sự cố, nhà cung cấp dịch vụ sẽ:</p>
+            <ol style={{ marginLeft: "20px", marginBottom: "15px" }}>
+              <li style={listItemStyle}>Kiểm tra kỹ thuật pin trong vòng <strong>48 giờ</strong>.</li>
+              <li style={listItemStyle}>Xác định nguyên nhân hư hỏng.</li>
+              <li style={listItemStyle}>Thông báo kết quả cho người dùng trong vòng <strong>7 ngày</strong>.</li>
+              <li style={listItemStyle}>Nếu thuộc trường hợp miễn trừ, người dùng không phải bồi thường.</li>
+            </ol>
+
+            {/* Phụ Lục B - ID đã được chuẩn hóa */}
             <h2 id="phuluc-b" style={sectionStyle}>PHỤ LỤC B: QUY TẮC BẢO QUẢN PIN</h2>
             <h3 style={subsectionStyle}>B.1. Các Yêu Cầu Bảo Quản</h3>
             <p style={textStyle}>Người dùng <strong>PHẢI</strong> tuân thủ các quy tắc sau:</p>
@@ -276,7 +395,7 @@ const Policy = () => {
               </ul>
             </div>
 
-            {/* Phụ Lục C */}
+            {/* Phụ Lục C - ID đã được chuẩn hóa */}
             <h2 id="phuluc-c" style={sectionStyle}>PHỤ LỤC C: TIÊU CHUẨN BỒI THƯỜNG PIN</h2>
             <h3 style={subsectionStyle}>C.1. Về Pin</h3>
             <p style={textStyle}>
