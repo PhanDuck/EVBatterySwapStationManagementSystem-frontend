@@ -36,6 +36,7 @@ import {
   RightOutlined,
   WarningOutlined,
   SendOutlined,
+  UserOutlined, // Icon cho khách
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import L from "leaflet";
@@ -58,22 +59,26 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// --- STYLES (Đã sửa lỗi CSS tại đây) ---
+// --- STYLES (Đã sửa Z-Index để không đè Header) ---
 const styles = {
   container: {
     display: "flex",
-    height: "calc(100vh - 64px)",
+    // Sử dụng chiều cao 100% của phần còn lại, trừ header (giả sử header cao khoảng 70-80px)
+    // Nếu header sticky, ta cần padding-top hoặc z-index xử lý
+    height: "calc(100vh - 80px)", 
     position: "relative",
     overflow: "hidden",
     fontFamily: "'Inter', sans-serif",
     backgroundColor: "#f0f2f5",
+    marginTop: "0px", 
   },
   sidebar: {
     width: 400,
     height: "100%",
     backgroundColor: "#ffffff",
     boxShadow: "4px 0 12px rgba(0,0,0,0.05)",
-    zIndex: 1000,
+    // 👇 QUAN TRỌNG: Giảm zIndex xuống 900 (thấp hơn Header là 1000)
+    zIndex: 900, 
     display: "flex",
     flexDirection: "column",
     transition: "all 0.3s ease-in-out",
@@ -95,28 +100,28 @@ const styles = {
     overflowY: "auto",
     padding: "0", 
   },
-  // ITEM LIST: Sửa lỗi flexbox tại đây
   stationListItem: {
     padding: "16px 24px",
     borderBottom: "1px solid #f0f0f0",
     cursor: "pointer",
     transition: "all 0.2s",
     display: "flex", 
-    alignItems: "flex-start", // Căn hàng trên cùng để icon không bị lệch khi text dài
-    gap: "16px", // Khoảng cách cứng giữa icon và text
+    alignItems: "flex-start", 
+    gap: "16px", 
   },
   stationListItemHover: {
     backgroundColor: "#fafafa",
   },
   stationListItemActive: {
     backgroundColor: "#e6f7ff",
-    borderRight: "4px solid #1890ff", // Chuyển border sang phải cho lạ mắt
+    borderRight: "4px solid #1890ff", 
   },
   toggleButton: {
     position: "absolute",
     top: 24,
     left: 24,
-    zIndex: 1001,
+    // 👇 Button này phải cao hơn Sidebar một chút nhưng thấp hơn Header
+    zIndex: 901, 
     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
     transition: "left 0.3s ease-in-out",
   },
@@ -126,6 +131,16 @@ const styles = {
     padding: "20px",
     color: "white",
     boxShadow: "0 8px 20px rgba(24, 144, 255, 0.2)",
+    marginBottom: "24px",
+    position: "relative",
+    overflow: "hidden",
+  },
+  guestCard: {
+    background: "linear-gradient(135deg, #8c8c8c 0%, #595959 100%)", // Màu xám cho khách
+    borderRadius: "12px",
+    padding: "20px",
+    color: "white",
+    boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)",
     marginBottom: "24px",
     position: "relative",
     overflow: "hidden",
@@ -140,7 +155,7 @@ const styles = {
     bottom: "30px",
     left: "50%",
     transform: "translateX(-50%)",
-    zIndex: 1000,
+    zIndex: 900, // Thấp hơn Header
     boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
     display: "flex",
     alignItems: "center",
@@ -153,7 +168,7 @@ const styles = {
   },
 };
 
-// --- CSS OVERRIDES CHO POPUP ---
+// --- CSS OVERRIDES ---
 const GlobalPopupStyles = () => (
   <style>{`
     .leaflet-popup-content-wrapper {
@@ -167,35 +182,15 @@ const GlobalPopupStyles = () => (
       margin: 0 !important;
       width: auto !important;
     }
-    .leaflet-popup-tip {
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    /* Sửa z-index của map để nằm dưới header */
+    .leaflet-container {
+        z-index: 0; 
     }
-    a.leaflet-popup-close-button {
-      color: #999 !important;
-      font-size: 20px !important;
-      top: 8px !important;
-      right: 8px !important;
-      padding: 4px !important;
-    }
-    a.leaflet-popup-close-button:hover {
-      color: #333 !important;
-      background: #f5f5f5;
-      border-radius: 50%;
-    }
-    /* Custom Scrollbar cho Sidebar */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f1f1; 
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #ccc; 
-      border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #999; 
-    }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #999; }
   `}</style>
 );
 
@@ -238,27 +233,39 @@ const StationsNearby = () => {
   const markerRefs = useRef({});
   const navigate = useNavigate();
 
-  // Fetch Data
+  // 🔄 Fetch Data (Đã tách riêng để không bị chặn nếu không login)
   useEffect(() => {
-    const initData = async () => {
+    const loadData = async () => {
       setLoading(true);
+      
+      // 1. Luôn tải danh sách trạm (Public)
       try {
-        const [vehiclesRes, stationsRes] = await Promise.all([
-          api.get("/vehicle/my-vehicles"),
-          api.get("/station"),
-        ]);
-        setVehicles(vehiclesRes.data || []);
-        if (vehiclesRes.data && vehiclesRes.data.length > 0) {
-          setSelectedVehicle(vehiclesRes.data[0].id);
-        }
+        const stationsRes = await api.get("/station");
         setStations(stationsRes.data || []);
       } catch (err) {
-        console.error("Error loading data:", err);
+        console.error("Lỗi tải trạm:", err);
+      }
+
+      // 2. Thử tải danh sách xe (Private - Có thể fail nếu là Guest)
+      try {
+        const vehiclesRes = await api.get("/vehicle/my-vehicles");
+        const vData = vehiclesRes.data || [];
+        setVehicles(vData);
+        
+        // Tự động chọn xe đầu tiên nếu có
+        if (vData.length > 0) {
+          setSelectedVehicle(vData[0].id);
+        }
+      } catch (err) {
+        // Nếu lỗi (401, v.v.), coi như là Guest/Chưa có xe
+        console.log("Người dùng chưa đăng nhập hoặc chưa có xe (Chế độ Khách)");
+        setVehicles([]); 
       } finally {
         setLoading(false);
       }
     };
-    initData();
+
+    loadData();
   }, []);
 
   // Geolocation
@@ -317,7 +324,7 @@ const StationsNearby = () => {
 
   const handleBookingClick = (station) => {
     if (!selectedVehicle) {
-      alert("Vui lòng chọn xe!");
+      alert("Vui lòng đăng nhập và chọn xe để đặt lịch!");
       return;
     }
     if (selectedVehicleData?.status === "PENDING") return;
@@ -330,8 +337,9 @@ const StationsNearby = () => {
     [vehicles, selectedVehicle]
   );
 
+  // 🎯 Logic lọc trạm: Nếu chưa chọn xe (Khách) -> Hiện tất cả. Nếu có xe -> Lọc theo pin.
   const compatibleStations = useMemo(() => {
-    if (!selectedVehicleData) return stations;
+    if (!selectedVehicleData) return stations; // Khách xem tất cả
     return stations.filter((s) => s.batteryTypeId === selectedVehicleData.batteryTypeId);
   }, [stations, selectedVehicleData]);
 
@@ -341,7 +349,7 @@ const StationsNearby = () => {
 
   if (loading)
     return (
-      <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "#f0f2f5" }}>
+      <div style={{ height: "calc(100vh - 80px)", display: "flex", justifyContent: "center", alignItems: "center", background: "#f0f2f5" }}>
         <Spin size="large" tip="Đang tải hệ thống..." />
       </div>
     );
@@ -369,15 +377,17 @@ const StationsNearby = () => {
 
           <div style={styles.sidebarContent}>
             <div style={{ padding: "24px 24px 0 24px" }}>
-              {/* Card chọn xe */}
+              
+              {/* 🚗 KHU VỰC HIỂN THỊ XE HOẶC CHẾ ĐỘ KHÁCH */}
               {vehicles.length > 0 ? (
                 <>
+                  {/* Có xe: Hiện Select Box */}
                   <Select
                     style={{ width: "100%", marginBottom: 16 }}
                     value={selectedVehicle}
                     onChange={(v) => { setSelectedVehicle(v); clearRoute(); }}
                     size="large"
-                    variant="filled" // Style mới của Antd 5.x
+                    variant="filled"
                   >
                     {vehicles.map((vehicle) => (
                       <Option key={vehicle.id} value={vehicle.id} label={vehicle.model}>
@@ -413,7 +423,20 @@ const StationsNearby = () => {
                   )}
                 </>
               ) : (
-                <Alert message="Chưa có xe" description="Vui lòng đăng ký xe để tìm trạm." type="warning" showIcon />
+                // 👤 Không có xe (Khách/Chưa login): Hiện Card Chế độ Khách
+                <div style={styles.guestCard}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                        <Text strong style={{ color: "rgba(255,255,255,0.85)", textTransform: "uppercase", fontSize: "11px", letterSpacing: "1px" }}>Chế độ khách</Text>
+                        <UserOutlined style={{ fontSize: "20px", color: "white", opacity: 0.9 }} />
+                      </div>
+                      <Title level={3} style={{ color: "white", margin: "0 0 8px 0", fontWeight: 700 }}>Tất Cả Trạm</Title>
+                      <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: "13px" }}>
+                         Bạn đang xem toàn bộ trạm trên hệ thống.
+                      </Text>
+                      <div style={{ marginTop: 16 }}>
+                         <Button type="default" size="small" ghost onClick={() => navigate("/login")}>Đăng nhập để đặt lịch</Button>
+                      </div>
+                </div>
               )}
 
               {/* Bộ lọc */}
@@ -441,7 +464,7 @@ const StationsNearby = () => {
               </div>
             </div>
 
-            {/* Danh sách trạm - Fix lỗi flexbox */}
+            {/* Danh sách trạm */}
             <List
               dataSource={filteredStations}
               renderItem={(item) => (
@@ -458,7 +481,6 @@ const StationsNearby = () => {
                     setTimeout(() => markerRefs.current[item.id]?.openPopup(), 100);
                   }}
                 >
-                  {/* Avatar: thêm flexShrink: 0 để không bị bóp méo */}
                   <Avatar
                     shape="square"
                     size={48}
@@ -467,11 +489,10 @@ const StationsNearby = () => {
                       backgroundColor: item.currentBatteryCount > 0 ? "#f6ffed" : "#fff1f0",
                       color: item.currentBatteryCount > 0 ? "#52c41a" : "#f5222d",
                       border: "1px solid #f0f0f0",
-                      flexShrink: 0, // QUAN TRỌNG: Giữ nguyên kích thước avatar
+                      flexShrink: 0, 
                     }}
                   />
                   
-                  {/* Content: thêm minWidth: 0 để text tự xuống dòng */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <Text strong style={{ fontSize: "15px", color: "#262626", marginBottom: 2, display: "block" }} ellipsis={{ tooltip: item.name }}>
                       {item.name}
@@ -515,7 +536,6 @@ const StationsNearby = () => {
             {filteredStations.map((s) => (
               <Marker key={s.id} position={[s.latitude, s.longitude]} ref={(ref) => (markerRefs.current[s.id] = ref)}>
                 <Popup maxWidth={300} closeButton={true}>
-                  {/* --- XỊN HÓA POPUP CONTENT --- */}
                   <div style={styles.popupContent}>
                     <div style={{ padding: "16px 16px 12px 16px", borderBottom: "1px solid #f0f0f0" }}>
                       <Title level={5} style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: 700 }}>{s.name}</Title>
@@ -556,7 +576,7 @@ const StationsNearby = () => {
                           <SendOutlined /> Chỉ đường
                        </Button>
                        
-                       <Tooltip title={selectedVehicleData?.status === "PENDING" ? "Xe đang chờ duyệt" : !selectedVehicle ? "Chọn xe trước" : ""}>
+                       <Tooltip title={!selectedVehicle ? "Vui lòng chọn xe để đặt lịch" : selectedVehicleData?.status === "PENDING" ? "Xe chờ duyệt" : ""}>
                          <Button 
                             type="primary" 
                             block 
