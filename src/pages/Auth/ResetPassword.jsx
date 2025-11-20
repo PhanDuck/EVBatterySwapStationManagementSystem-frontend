@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Card, Form, Input, Button, message } from "antd";
+import { Card, Form, Input, Button } from "antd";
 import api from "../../config/axios";
 import { showToast } from "../../Utils/toastHandler";
 

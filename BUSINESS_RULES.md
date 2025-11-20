@@ -297,8 +297,8 @@ newSub.setStatus(ACTIVE);
 | 9 | **Tìm pin phù hợp** | Pin phải: AVAILABLE, chargeLevel ≥ 95%, stateOfHealth ≥ 70%, cùng loại với xe |
 | 10 | **Ưu tiên pin tốt nhất** | Sort theo: health cao nhất → charge cao nhất |
 | 11 | **Đặt trước pin** | Pin: status = `PENDING`, reservedForBooking = booking |
-| 12 | **Thời gian hết hạn reservation** | reservationExpiry = bookingTime + 30 phút |
-| 13 | **Tự động CONFIRMED** | status = `CONFIRMED` (không cần admin duyệt nữa) |
+| 12 | **Thời gian hết hạn reservaItion** | reservationExpiry = bookingTime + 30 phút |
+| 13 | **Tự động CONFRMED** | status = `CONFIRMED` (không cần admin duyệt nữa) |
 | 14 | **Tạo confirmationCode** | Mã 6 ký tự random để driver quét tại trạm |
 | 15 | **Gửi email xác nhận** | Email chứa confirmationCode, thông tin trạm, thời gian |
 
@@ -1062,10 +1062,6 @@ if (resultCode == 0) { // Thành công
 | Chức năng | Endpoint | Quyền |
 |-----------|----------|-------|
 | Xem tất cả xe | GET /api/vehicle | ✅ |
-| Phê duyệt xe | POST /api/vehicle/{id}/approve | ✅ |
-| Từ chối xe | POST /api/vehicle/{id}/reject | ✅ |
-| Xóa xe | DELETE /api/vehicle/{id} | ✅ |
-| Cập nhật xe (full) | PUT /api/vehicle/{id} | ✅ |
 | Xem tất cả booking | GET /api/booking | ✅ |
 | Xem tất cả swap transaction | GET /api/swap-transaction | ✅ |
 | Xóa gói | DELETE /api/driver-subscription/{id} | ❌ |

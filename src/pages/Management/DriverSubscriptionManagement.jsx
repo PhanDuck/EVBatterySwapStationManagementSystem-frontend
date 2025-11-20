@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Card,
   Table,
@@ -7,7 +7,6 @@ import {
   Form,
   Input,
   Select,
-  DatePicker,
   Space,
   Tag,
   Spin,
@@ -16,78 +15,70 @@ import {
   Divider,
   Alert,
 } from "antd";
-import {
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  ReloadOutlined,
-} from "@ant-design/icons";
+import { ArrowUpOutlined, ReloadOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
 import { getCurrentUser } from "../../config/auth";
 import { showToast } from "../../Utils/toastHandler";
+
 const { Option } = Select;
 const { Title, Text } = Typography;
 
 export default function DriverSubscriptionManagement() {
-  const [data, setData] = useState([]);
-  const [drivers, setDrivers] = useState([]);
-  const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [search, setSearch] = useState("");
-  const [currentUser, setCurrentUser] = useState(null);
+ 
+  const [data, setData] = useState([]); 
+  const [drivers, setDrivers] = useState([]); 
+  const [packages, setPackages] = useState([]); 
+  const [loading, setLoading] = useState(false); 
+  const [submitting, setSubmitting] = useState(false); 
+  const [search, setSearch] = useState(""); 
+  const [currentUser, setCurrentUser] = useState(null); 
 
+  // --- STATE QUẢN LÝ MODAL ---
   const [isUpgradeModalVisible, setIsUpgradeModalVisible] = useState(false);
   const [isRenewalModalVisible, setIsRenewalModalVisible] = useState(false);
 
-  const [selectedSubscription, setSelectedSubscription] = useState(null);
-  const [targetPackageId, setTargetPackageId] = useState(null);
+  // --- STATE QUẢN LÝ LỰA CHỌN & TÍNH TOÁN ---
+  const [selectedSubscription, setSelectedSubscription] = useState(null);  //gói đang dùng
+  const [targetPackageId, setTargetPackageId] = useState(null); // ID gói cước target mới 
 
-  const [calculation, setCalculation] = useState(null);
+  const [calculation, setCalculation] = useState(null); 
   const [renewalCalculation, setRenewalCalculation] = useState(null);
-
   const [isCalculating, setIsCalculating] = useState(false);
-  const [isCalculatingRenewal, setIsCalculatingRenewal] = useState(false);
+  const [isCalculatingRenewal, setIsCalculatingRenewal] = useState(false); 
 
   const role = currentUser?.role;
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Lấy user từ localStorage thay vì gọi API
       const user = getCurrentUser();
       setCurrentUser(user);
       const userRole = user?.role;
-
       const apiCalls = [
         userRole === "DRIVER"
-          ? api.get("/driver-subscription/my-subscriptions")
-          : api.get("/subscription/all-subscriptions"),
-        api.get("/service-package"),
+          ? api.get("/driver-subscription/my-subscriptions") 
+          : api.get("/subscription/all-subscriptions"),      
+        api.get("/service-package"),                       
       ];
-
       if (userRole !== "DRIVER") {
         apiCalls.push(api.get("/users/role/DRIVER"));
       }
 
-      const [subscriptionRes, packageRes, driverRes] = await Promise.all(
-        apiCalls
-      );
+      // Chạy song song các API
+      const [subscriptionRes, packageRes, driverRes] = await Promise.all(apiCalls);
 
-      // Xử lý response data - có thể là array hoặc object với property data
+      // Xử lý dữ liệu trả về (đề phòng cấu trúc API khác nhau)
       let subscriptions = [];
       if (Array.isArray(subscriptionRes?.data)) {
         subscriptions = subscriptionRes.data;
-      } else if (
-        subscriptionRes?.data?.data &&
-        Array.isArray(subscriptionRes.data.data)
-      ) {
+      } else if (subscriptionRes?.data?.data && Array.isArray(subscriptionRes.data.data)) {
         subscriptions = subscriptionRes.data.data;
       } else if (subscriptionRes?.data) {
         subscriptions = [subscriptionRes.data];
       }
 
-      setData(subscriptions.sort((a, b) => b.id - a.id));
+      setData(subscriptions.sort((a, b) => b.id - a.id)); // Sắp xếp mới nhất lên đầu
       setPackages(Array.isArray(packageRes?.data) ? packageRes.data : []);
 
       if (userRole !== "DRIVER" && driverRes) {
@@ -104,29 +95,44 @@ export default function DriverSubscriptionManagement() {
     fetchData();
   }, []);
 
-  const driverName = (id) => {
+  /**
+   * Hàm 2: Lấy tên tài xế hiển thị
+   * Chức năng: Map từ ID tài xế sang Tên (Dùng useCallback để tối ưu cho useMemo)   ##
+   */
+  const driverName = useCallback((id) => {
     if (role === "DRIVER") return currentUser?.fullName;
     return drivers.find((d) => d.id === id)?.fullName || `ID: ${id}`;
-  };
+  }, [role, currentUser, drivers]);
 
-  const packageName = (id) =>
-    packages.find((p) => p.id === id)?.name || `ID: ${id}`;
+  /**
+   * Hàm 3: Lấy tên gói cước hiển thị
+   * Chức năng: Map từ ID gói sang Tên gói (Dùng useCallback để tối ưu cho useMemo)  ##
+   */
+  const packageName = useCallback((id) => {
+    return packages.find((p) => p.id === id)?.name || `ID: ${id}`;
+  }, [packages]);
 
   const currentPackage = useMemo(() => {
     return packages.find((p) => p.id === selectedSubscription?.packageId);
   }, [selectedSubscription, packages]);
 
+  /**
+   * Hàm 5: Lọc dữ liệu bảng
+   * Chức năng: Filter dữ liệu theo từ khóa tìm kiếm (Driver name hoặc Package name)
+   */
   const filteredData = useMemo(() => {
-    if (role === "DRIVER") return data;
+    if (role === "DRIVER") return data; //api lọc sẵn data theo driver rồi
     return data.filter(
       (item) =>
-        driverName(item.driverId)
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        packageName(item.packageId).toLowerCase().includes(search.toLowerCase())
+        driverName(item.driverId).toLowerCase().includes(search.toLowerCase()) ||
+        packageName(item.packageId).toLowerCase().includes(search.toLowerCase()) //không phân biệt hoa thường
     );
-  }, [data, search, drivers, packages, role]);
+  }, [data, search, role, driverName, packageName]);  // Memoized để tránh tính toán lại không cần thiết
 
+  /**
+   * Hàm 6: Mở modal nâng cấp
+   * Chức năng: Reset state tạm và hiển thị modal
+   */
   const openUpgradeModal = (record) => {
     setSelectedSubscription(record);
     setIsUpgradeModalVisible(true);
@@ -137,6 +143,7 @@ export default function DriverSubscriptionManagement() {
   const handleUpgradePackageSelect = async (newPackageId) => {
     setTargetPackageId(newPackageId);
     if (!selectedSubscription) return;
+    
     setIsCalculating(true);
     setCalculation(null);
     try {
@@ -148,12 +155,14 @@ export default function DriverSubscriptionManagement() {
       });
       setCalculation(res.data);
     } catch (error) {
-      showToast("error", error.response?.data || "Tính toán chi phí nâng cấp thất bại, vui lòng thử lại!");
+      showToast("error", error.response?.data || "Tính toán chi phí nâng cấp thất bại!");
     } finally {
       setIsCalculating(false);
     }
   };
 
+  //Gọi API momo tạo giao dịch thanh toán và redirect
+   
   const handleConfirmUpgrade = async () => {
     if (calculation && !calculation.canUpgrade) {
       showToast("error", "Không thể nâng cấp. Vui lòng kiểm tra lại các điều kiện.");
@@ -163,24 +172,23 @@ export default function DriverSubscriptionManagement() {
       showToast("warning", "Vui lòng chọn một gói để nâng cấp.");
       return;
     }
+
     setSubmitting(true);
     try {
-      const redirectUrl = encodeURIComponent(
-        window.location.origin + "/payment/result"
-      );
+      const redirectUrl = encodeURIComponent(window.location.origin + "/payment/result");
       const res = await api.post(
         `/driver-subscription/upgrade/initiate?newPackageId=${targetPackageId}&redirectUrl=${redirectUrl}`
       );
 
       if (res.data?.paymentUrl) {
-        window.location.href = res.data.paymentUrl;
+        window.location.href = res.data.paymentUrl; // Chuyển hướng sang trang thanh toán
       } else {
         showToast("success", "Yêu cầu nâng cấp đã được xử lý!");
         setIsUpgradeModalVisible(false);
         fetchData();
       }
     } catch (error) {
-      showToast("error", error.response?.data || "Bắt đầu nâng cấp thất bại, vui lòng thử lại!");
+      showToast("error", error.response?.data || "Bắt đầu nâng cấp thất bại!");
     } finally {
       setSubmitting(false);
     }
@@ -190,12 +198,8 @@ export default function DriverSubscriptionManagement() {
     setSelectedSubscription(record);
     setIsRenewalModalVisible(true);
     setRenewalCalculation(null);
-
-    // Tự động set gói hiện tại làm gói gia hạn
     const currentPackageId = record.packageId;
     setTargetPackageId(currentPackageId);
-
-    // Tự động gọi API calculate cho gói hiện tại
     setIsCalculatingRenewal(true);
     try {
       const res = await api.get("/driver-subscription/renewal/calculate", {
@@ -203,12 +207,14 @@ export default function DriverSubscriptionManagement() {
       });
       setRenewalCalculation(res.data);
     } catch (error) {
-      showToast("error", error.response?.data || "Tính toán chi phí gia hạn thất bại, vui lòng thử lại!");
+      showToast("error", error.response?.data || "Tính toán chi phí gia hạn thất bại!");
     } finally {
       setIsCalculatingRenewal(false);
     }
   };
 
+  //Gọi API momo thanh toán gia hạn
+   
   const handleConfirmRenewal = async () => {
     if (!targetPackageId) {
       showToast("warning", "Vui lòng chọn một gói để gia hạn.");
@@ -216,14 +222,11 @@ export default function DriverSubscriptionManagement() {
     }
     setSubmitting(true);
     try {
-      const redirectUrl = encodeURIComponent(
-        window.location.origin + "/payment/result"
-      );
+      const redirectUrl = encodeURIComponent(window.location.origin + "/payment/result");
       const res = await api.post(
         `/driver-subscription/renewal/initiate?renewalPackageId=${targetPackageId}&redirectUrl=${redirectUrl}`
       );
 
-      // Sửa lại để kiểm tra "payUrl" thay vì "paymentUrl"
       if (res.data && res.data.payUrl) {
         window.location.href = res.data.payUrl;
       } else {
@@ -232,12 +235,13 @@ export default function DriverSubscriptionManagement() {
         fetchData();
       }
     } catch (error) {
-      showToast("error", error.response?.data || "Bắt đầu gia hạn thất bại, vui lòng thử lại!");
+      showToast("error", error.response?.data || "Bắt đầu gia hạn thất bại!");
     } finally {
       setSubmitting(false);
     }
   };
 
+  
   const columns = [
     {
       title: "ID",
@@ -252,7 +256,7 @@ export default function DriverSubscriptionManagement() {
             title: "Driver",
             dataIndex: "driverId",
             key: "driverId",
-            render: driverName,
+            render: driverName, // Sử dụng hàm đã memoized
           },
         ]
       : []),
@@ -260,7 +264,7 @@ export default function DriverSubscriptionManagement() {
       title: "Gói",
       dataIndex: "packageId",
       key: "packageId",
-      render: packageName,
+      render: packageName, // Sử dụng hàm đã memoized
     },
     {
       title: "Ngày đăng kí",
@@ -316,23 +320,10 @@ export default function DriverSubscriptionManagement() {
   ];
 
   const renderCalculationDetails = () => {
-    const formatCurrency = (value) => {
-      if (typeof value !== "number") return "";
-      return `${value.toLocaleString()} đ`;
-    };
-
-    const formatSwaps = (value) => {
-      if (typeof value !== "number") return "";
-      return value;
-    };
-
+    const formatCurrency = (value) => (typeof value === "number" ? `${value.toLocaleString()} đ` : "");
+    const formatSwaps = (value) => (typeof value === "number" ? value : "");
     const alertType = calculation?.canUpgrade ? "success" : "error";
-
-    const alertMessage = () => {
-      return calculation?.canUpgrade
-        ? "Bạn đủ điều kiện để nâng cấp"
-        : "KHÔNG THỂ NÂNG CẤP";
-    };
+    const alertMessage = calculation?.canUpgrade ? "Bạn đủ điều kiện để nâng cấp" : "KHÔNG THỂ NÂNG CẤP";
 
     return (
       <Spin spinning={isCalculating}>
@@ -341,65 +332,30 @@ export default function DriverSubscriptionManagement() {
             <Title level={5}>Chi tiết thay đổi gói cước</Title>
             <List itemLayout="horizontal">
               <List.Item>
-                <List.Item.Meta
-                  title="Gói hiện tại"
-                  description={calculation.currentPackageName}
-                />
+                <List.Item.Meta title="Gói hiện tại" description={calculation.currentPackageName} />
               </List.Item>
               <List.Item>
-                <List.Item.Meta
-                  title="Gói mới"
-                  description={calculation.newPackageName}
-                />
+                <List.Item.Meta title="Gói mới" description={calculation.newPackageName} />
               </List.Item>
               <List.Item>
-                <List.Item.Meta
-                  title="Số lượt đổi còn lại"
-                  description={formatSwaps(calculation.remainingSwaps)}
-                />
+                <List.Item.Meta title="Số lượt đổi còn lại" description={formatSwaps(calculation.remainingSwaps)} />
               </List.Item>
             </List>
             <Divider />
-            <div
-              style={{
-                backgroundColor: "#e6f7ff",
-                border: "2px solid #1890ff",
-                borderRadius: "6px",
-                padding: "16px",
-                marginBottom: "16px",
-              }}
-            >
-              <Text strong style={{ fontSize: "1.1em", color: "#0050b3" }}>
-                Tổng tiền thanh toán:{" "}
-              </Text>
-              <Text
-                strong
-                style={{
-                  fontSize: "1.3em",
-                  color: "#0050b3",
-                  marginLeft: "8px",
-                }}
-              >
+            <div style={{ backgroundColor: "#e6f7ff", border: "2px solid #1890ff", borderRadius: "6px", padding: "16px", marginBottom: "16px" }}>
+              <Text strong style={{ fontSize: "1.1em", color: "#0050b3" }}>Tổng tiền thanh toán: </Text>
+              <Text strong style={{ fontSize: "1.3em", color: "#0050b3", marginLeft: "8px" }}>
                 {formatCurrency(calculation.totalPaymentRequired)}
               </Text>
             </div>
             <Alert
-              message={
-                <Text strong style={{ fontSize: "1.1em" }}>
-                  {alertMessage()}
-                </Text>
-              }
-              description={
-                !calculation?.canUpgrade ? calculation.message : null
-              }
+              message={<Text strong style={{ fontSize: "1.1em" }}>{alertMessage}</Text>}
+              description={!calculation?.canUpgrade ? calculation.message : null}
               type={alertType}
               showIcon
             />
             {calculation.recommendation && (
-              <Text
-                type="secondary"
-                style={{ marginTop: 10, display: "block" }}
-              >
+              <Text type="secondary" style={{ marginTop: 10, display: "block" }}>
                 Gợi ý: {calculation.recommendation}
               </Text>
             )}
@@ -409,11 +365,9 @@ export default function DriverSubscriptionManagement() {
     );
   };
 
+
   const renderRenewalCalculationDetails = () => {
-    const formatCurrency = (value) => {
-      if (typeof value !== "number") return "";
-      return `${value.toLocaleString()} đ`;
-    };
+    const formatCurrency = (value) => (typeof value === "number" ? `${value.toLocaleString()} đ` : "");
 
     return (
       <Spin spinning={isCalculatingRenewal}>
@@ -422,54 +376,24 @@ export default function DriverSubscriptionManagement() {
             <Title level={5}>Chi tiết gia hạn</Title>
             <List itemLayout="horizontal">
               <List.Item>
-                <List.Item.Meta
-                  title="Tên gói gia hạn"
-                  description={renewalCalculation.renewalPackageName}
-                />
+                <List.Item.Meta title="Tên gói gia hạn" description={renewalCalculation.renewalPackageName} />
               </List.Item>
               <List.Item>
-                <List.Item.Meta
-                  title="Giá gốc"
-                  description={formatCurrency(renewalCalculation.originalPrice)}
-                />
+                <List.Item.Meta title="Giá gốc" description={formatCurrency(renewalCalculation.originalPrice)} />
               </List.Item>
               <List.Item>
-                <List.Item.Meta
-                  title="Số tiền được giảm"
-                  description={formatCurrency(renewalCalculation.totalDiscount)}
-                />
+                <List.Item.Meta title="Số tiền được giảm" description={formatCurrency(renewalCalculation.totalDiscount)} />
               </List.Item>
             </List>
             <Divider />
-            <div
-              style={{
-                backgroundColor: "#f6ffed",
-                border: "2px solid #52c41a",
-                borderRadius: "6px",
-                padding: "16px",
-                marginBottom: "16px",
-              }}
-            >
-              <Text strong style={{ fontSize: "1.1em", color: "#274e0f" }}>
-                Tổng tiền thanh toán:{" "}
-              </Text>
-              <Text
-                strong
-                style={{
-                  fontSize: "1.3em",
-                  color: "#52c41a",
-                  marginLeft: "8px",
-                }}
-              >
+            <div style={{ backgroundColor: "#f6ffed", border: "2px solid #52c41a", borderRadius: "6px", padding: "16px", marginBottom: "16px" }}>
+              <Text strong style={{ fontSize: "1.1em", color: "#274e0f" }}>Tổng tiền thanh toán: </Text>
+              <Text strong style={{ fontSize: "1.3em", color: "#52c41a", marginLeft: "8px" }}>
                 {formatCurrency(renewalCalculation.finalPrice)}
               </Text>
             </div>
             <Alert
-              message={
-                <Text strong style={{ fontSize: "1.1em" }}>
-                  {renewalCalculation.message}
-                </Text>
-              }
+              message={<Text strong style={{ fontSize: "1.1em" }}>{renewalCalculation.message}</Text>}
               description={renewalCalculation.recommendation}
               type="info"
               showIcon
@@ -482,6 +406,7 @@ export default function DriverSubscriptionManagement() {
 
   return (
     <div style={{ padding: 24 }}>
+      {/* Card chứa bảng dữ liệu */}
       <Card
         title="Quản lý gói cước của tôi"
         extra={
@@ -505,22 +430,19 @@ export default function DriverSubscriptionManagement() {
         </Spin>
       </Card>
 
+      {/* MODAL 1: NÂNG CẤP */}
       <Modal
         title="Nâng cấp gói cước"
         visible={isUpgradeModalVisible}
         onCancel={() => setIsUpgradeModalVisible(false)}
         footer={[
-          <Button key="back" onClick={() => setIsUpgradeModalVisible(false)}>
-            Hủy
-          </Button>,
+          <Button key="back" onClick={() => setIsUpgradeModalVisible(false)}>Hủy</Button>,
           <Button
             key="submit"
             type="primary"
             loading={submitting}
             onClick={handleConfirmUpgrade}
-            disabled={
-              !targetPackageId || isCalculating || !calculation?.canUpgrade
-            }
+            disabled={!targetPackageId || isCalculating || !calculation?.canUpgrade}
           >
             Xác nhận & Thanh toán
           </Button>,
@@ -528,8 +450,7 @@ export default function DriverSubscriptionManagement() {
         width={700}
       >
         <p>
-          <Text strong>Gói hiện tại:</Text>{" "}
-          {packageName(selectedSubscription?.packageId)}
+          <Text strong>Gói hiện tại:</Text> {packageName(selectedSubscription?.packageId)}
         </p>
         <Form layout="vertical">
           <Form.Item label="Chọn gói mới để nâng cấp:">
@@ -551,14 +472,13 @@ export default function DriverSubscriptionManagement() {
         {renderCalculationDetails()}
       </Modal>
 
+      {/* MODAL 2: GIA HẠN */}
       <Modal
         title="Gia hạn gói cước"
         visible={isRenewalModalVisible}
         onCancel={() => setIsRenewalModalVisible(false)}
         footer={[
-          <Button key="back" onClick={() => setIsRenewalModalVisible(false)}>
-            Hủy
-          </Button>,
+          <Button key="back" onClick={() => setIsRenewalModalVisible(false)}>Hủy</Button>,
           <Button
             key="submit"
             type="primary"

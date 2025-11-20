@@ -16,7 +16,7 @@ const PrivateRoute = ({ roles }) => {
     return <Navigate to={`/${role}`} replace />;
   }
 
-  // ✅ Nếu hợp lệ thì cho hiển thị route con
+  // Nếu hợp lệ thì cho hiển thị route con
 
   return <Outlet />;
 };

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import { useNavigate } from "react-router-dom";
-import { message } from "antd";
 import api from "../../config/axios";
 import {
   FaUser,

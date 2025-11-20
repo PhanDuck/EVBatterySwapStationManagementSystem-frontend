@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Form, Select, DatePicker, Spin, notification, Typography } from "antd";
+import { Form, Select, Spin, notification, Typography } from "antd";
 import api from "../../config/axios";
-//import dayjs from "dayjs";
 
 const { Option } = Select;
 const { Text } = Typography;
 
-// Component giờ đây sẽ nhận thêm prop `form`, `onVehicleChange`, `preselectedVehicleId`, `preselectedStationId`
 const BookingFormFields = ({
   form,
   onVehicleChange,
@@ -18,7 +16,7 @@ const BookingFormFields = ({
   const [isStationLoading, setIsStationLoading] = useState(false);
   const [isVehicleLoading, setIsVehicleLoading] = useState(true);
   const [selectedVehicleDetails, setSelectedVehicleDetails] = useState(null);
-  const [preselectedStationName, setPreselectedStationName] = useState(null);
+  // ĐÃ XÓA: preselectedStationName (vì không dùng đến)
   const [remainingSwaps, setRemainingSwaps] = useState(null);
 
   const fetchCompatibleStations = useCallback(async (vehicleId) => {
@@ -33,7 +31,6 @@ const BookingFormFields = ({
       );
       const stationsData = res.data.map((s) => ({
         ...s,
-        // Lấy currentBatteryCount từ API, hoặc 0 nếu không có (để phòng hờ)
         availableBatteriesCount: s.currentBatteryCount ?? 0,
       }));
       setCompatibleStations(stationsData || []);
@@ -85,14 +82,16 @@ const BookingFormFields = ({
     if (preselectedStationId && compatibleStations.length > 0) {
       const station = compatibleStations.find((s) => s.id === preselectedStationId);
       if (station) {
-        setPreselectedStationName(station.name);
+        // ĐÃ XÓA: setPreselectedStationName(station.name); -> Không cần thiết
+        
+        // Chỉ cần set giá trị cho form là đủ, Select sẽ tự hiển thị tên
         form.setFieldsValue({ stationId: preselectedStationId });
       }
     }
   }, [preselectedStationId, compatibleStations, form]);
 
   const handleVehicleChange = (vehicleId) => {
-    form.setFieldsValue({ stationId: undefined }); // Reset station selection
+    form.setFieldsValue({ stationId: undefined });
     const selected = vehicles.find((v) => v.id === vehicleId);
     setSelectedVehicleDetails(selected);
     setRemainingSwaps(selected?.remainingSwaps ?? null);
@@ -102,15 +101,10 @@ const BookingFormFields = ({
       setCompatibleStations([]);
       setRemainingSwaps(null);
     }
-    // Gọi callback để component cha có thể cập nhật UI (ví dụ: Steps)
     if (onVehicleChange) {
       onVehicleChange(vehicleId);
     }
   };
-
-  // const disabledDate = (current) => {
-  //   return current && current < dayjs().startOf("day");
-  // };
 
   if (isVehicleLoading) {
     return (
@@ -122,7 +116,6 @@ const BookingFormFields = ({
     );
   }
 
-  // Component chỉ trả về các Form.Item, không bao gồm thẻ <Form>
   return (
     <>
       <Form.Item
@@ -145,7 +138,6 @@ const BookingFormFields = ({
 
       {(selectedVehicleDetails && selectedVehicleDetails.plateNumber) || remainingSwaps !== null ? (
         <div style={{ marginBottom: 16, marginTop: -10 }}>
-          {/* Biển số xe */}
           {selectedVehicleDetails && selectedVehicleDetails.plateNumber && (
             <div style={{ marginBottom: 4 }}>
               <Text strong>Biển số xe: </Text>
@@ -153,12 +145,11 @@ const BookingFormFields = ({
             </div>
           )}
 
-          {/* 💡 DÒNG MỚI: Số lần đổi pin còn lại */}
           {remainingSwaps !== null && (
             <div>
               <Text strong>Số lần đổi pin còn lại: </Text>
               <Text 
-                style={{ color: remainingSwaps > 0 ? '#52c41a' : '#f5222d' }} // Xanh lá nếu còn, Đỏ nếu hết
+                style={{ color: remainingSwaps > 0 ? '#52c41a' : '#f5222d' }}
               >
                 **{remainingSwaps}** lần
               </Text>

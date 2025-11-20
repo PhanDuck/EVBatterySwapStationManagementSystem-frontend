@@ -19,8 +19,6 @@ import {
   Upload,
   Image,
   Tabs,
-  Tooltip,
-  Statistic, // Dùng để hiển thị số liệu đẹp hơn
 } from "antd";
 import {
   PlusOutlined,
@@ -37,7 +35,6 @@ import {
   CheckOutlined,
   CloseOutlined,
   InfoCircleOutlined,
-  ClockCircleOutlined,
   SyncOutlined, // Icon xoay xoay loading
   SafetyCertificateOutlined,
 } from "@ant-design/icons";

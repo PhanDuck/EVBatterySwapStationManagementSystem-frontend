@@ -7,7 +7,6 @@ import minhhoa1 from "../../assets/img/minhhoa1.png";
 import minhhoa2 from "../../assets/img/minhhoa2.png";
 import minhhoa3 from "../../assets/img/minhhoa3.png";
 import minhhoa4 from "../../assets/img/minhhoa4.png";
-import minhhoa5 from "../../assets/img/minhhoa5.png"; 
 import momoimage from "../../assets/img/momoimage.png";
 import { Button, Row, Col, Typography } from "antd";
 import {

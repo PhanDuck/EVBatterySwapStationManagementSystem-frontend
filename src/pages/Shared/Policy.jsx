@@ -2,7 +2,7 @@ import React from "react";
 import { Row, Col, Card, Button, Affix } from "antd";
 
 const Policy = () => {
-  // 1. Mảng Mục Lục (tableOfContents) đã được chuẩn hóa ID
+  // 1. Mảng Mục Lục (tableOfContents)
   const tableOfContents = [
     { id: "section-1", title: "Định Nghĩa & Phạm Vi Áp Dụng" },
     { id: "section-2", title: "Người Sử Dụng Dịch Vụ" },
@@ -11,12 +11,12 @@ const Policy = () => {
     { id: "section-5", title: "Phí Dịch Vụ" },
     { id: "section-6", title: "Quyền Sở Hữu Pin" },
     { id: "section-7", title: "Nghĩa Vụ Người Dùng" },
-    { id: "section-8", title: "Tạm Ngưng & Gián Đoạn Dịch Vụ" }, // Đã sửa lỗi: "8" -> "section-8"
-    { id: "section-9", title: "Chấm Dứt Hợp Đồng" },           // Đã sửa lỗi: "9" -> "section-9"
-    { id: "section-10", title: "Miễn Trừ Trách Nhiệm" },      // Đã sửa lỗi: "10" -> "section-10"
-    { id: "section-11", title: "Bồi Thường" },               // Đã sửa lỗi: "11" -> "section-11"
-    { id: "section-12", title: "Điều Khoản Khác" },           // Đã sửa lỗi: "12" -> "section-12"
-    { id: "phuluc-a", title: "PHỤ LỤC A: Miễn Trừ Bồi Thường Pin" }, // ID giữ nguyên nhưng cần đảm bảo khớp với nội dung
+    { id: "section-8", title: "Tạm Ngưng & Gián Đoạn Dịch Vụ" }, 
+    { id: "section-9", title: "Chấm Dứt Hợp Đồng" },           
+    { id: "section-10", title: "Miễn Trừ Trách Nhiệm" },    
+    { id: "section-11", title: "Bồi Thường" },             
+    { id: "section-12", title: "Điều Khoản Khác" },     
+    { id: "phuluc-a", title: "PHỤ LỤC A: Miễn Trừ Bồi Thường Pin" }, 
     { id: "phuluc-b", title: "PHỤ LỤC B: Quy Tắc Bảo Quản Pin" },
     { id: "phuluc-c", title: "PHỤ LỤC C: Tiêu Chuẩn Bồi Thường Pin" },
   ];

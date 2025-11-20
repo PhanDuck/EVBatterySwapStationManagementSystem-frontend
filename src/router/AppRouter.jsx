@@ -50,7 +50,7 @@ export default function AppRouter() {
   return (
     <Router>
       <Routes>
-        {/* 🌐 Public and Authenticated routes with HomeLayout */}
+        {/*  Public and Authenticated routes with HomeLayout */}
         <Route element={<HomeLayout />}>
           {/* Public */}
           <Route path="/" element={<Home />} />
@@ -78,7 +78,7 @@ export default function AppRouter() {
         />
         <Route path="/register" element={<Register />} />
 
-        {/* 🔒 Protected routes without HomeLayout (Dashboards, etc.) */}
+        {/*  Protected routes without HomeLayout (Dashboards, etc.) */}
         <Route element={<PrivateRoute roles={["Admin"]} />}>
           <Route path="/admin/*" element={<AdminDashboard />} />
         </Route>
@@ -92,7 +92,7 @@ export default function AppRouter() {
           <Route path="/staff/*" element={<StaffDashboard />} />
         </Route>
 
-        {/* 🚫 404 */}
+        {/*  404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

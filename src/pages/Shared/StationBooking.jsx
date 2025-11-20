@@ -4,7 +4,6 @@ import {
   Form,
   Button,
   Card,
-  //notification,
   Typography,
   Layout,
   Row,
@@ -15,7 +14,6 @@ import {
 import {
   CarOutlined,
   EnvironmentOutlined,
-  ClockCircleOutlined,
   SendOutlined,
   SmileOutlined,
 } from "@ant-design/icons";

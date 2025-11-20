@@ -1,5 +1,4 @@
-import { Avatar, Dropdown, Space } from "antd"; // ✅ thêm Button
-import React, { useEffect } from "react";
+import { Avatar, Dropdown, Space } from "antd";
 import { useNavigate } from "react-router-dom";
 import { UserOutlined } from "@ant-design/icons";
 import { HiOutlineSparkles } from "react-icons/hi";
@@ -9,13 +8,16 @@ import HomeBtn from "../Btn/HomeBtn";
 
 const BottomSideBar = ({ collapse }) => {
   const navigate = useNavigate();
-  const [setUser] = localStorage.getItem("currentUser");
 
+  // Hàm lấy tên hiển thị
   function getDisplayName() {
     try {
       const sessionName =
         sessionStorage.getItem("currentUser") ||
         localStorage.getItem("currentUser");
+        
+      if (!sessionName) return "User";
+
       const userObject = JSON.parse(sessionName);
       return userObject?.fullName || "User";
     } catch {
@@ -23,7 +25,7 @@ const BottomSideBar = ({ collapse }) => {
     }
   }
 
-  // Lấy role an toàn với error handling
+  // Hàm lấy Role
   const getRole = () => {
     try {
       const userStr = localStorage.getItem("currentUser");
@@ -36,18 +38,15 @@ const BottomSideBar = ({ collapse }) => {
   };
 
   const Role = getRole();
- 
 
   const items = [
-
     {
       key: "1",
-      label: <ProfileBtn />
+      label: <ProfileBtn />,
     },
-
     {
       key: "home",
-      label: <HomeBtn />       
+      label: <HomeBtn />,
     },
     {
       key: "2",
@@ -74,7 +73,8 @@ const BottomSideBar = ({ collapse }) => {
         />
         {!collapse && (
           <Dropdown menu={{ items }} placement="top">
-            <a onClick={(e) => e.preventDefault()}>
+            {/* Thêm href="#" hoặc style cursor pointer để giống link hơn */}
+            <a onClick={(e) => e.preventDefault()} style={{ cursor: "pointer" }}>
               <Space>
                 <span style={{ fontWeight: 500 }}>{getDisplayName()}</span>
               </Space>
@@ -82,6 +82,8 @@ const BottomSideBar = ({ collapse }) => {
           </Dropdown>
         )}
       </div>
+      
+      {/* Chỉ hiện nút nâng cấp nếu là DRIVER */}
       {Role === "DRIVER" && (
         <div>
           <button
@@ -93,12 +95,13 @@ const BottomSideBar = ({ collapse }) => {
               color: "#fff",
               border: "none",
               cursor: "pointer",
+              width: collapse ? "auto" : "100%", // Tinh chỉnh width khi collapse
             }}
             className="hover:bg-linear-to-t from-sky-500 to-indigo-500 duration-500"
           >
-            <div className="flex justify-between  items-center gap-1 font-bold">
+            <div className="flex justify-between items-center gap-1 font-bold">
               <HiOutlineSparkles />
-              {collapse ? <> </> : <p>Nâng cấp gói của bạn</p>}
+              {!collapse && <p style={{ margin: 0 }}>Nâng cấp gói</p>}
             </div>
           </button>
         </div>
