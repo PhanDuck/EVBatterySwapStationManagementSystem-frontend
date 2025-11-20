@@ -74,7 +74,7 @@ const Policy = () => {
         {/* Sidebar - Mục Lục */}
         <Col xs={24} md={6}>
           <div style={{ position: "sticky", top: "80px", maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
-            <Card title="📋 MỤC LỤC">
+            <Card title=" MỤC LỤC">
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {tableOfContents.map((item) => (
                   <Button

@@ -1,38 +1,48 @@
-name: Deploy to VPS
+name: Deploy React to VPS (SCP Mode)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    
+    environment: Production
+
     steps:
+      # 1. Lấy code về máy ảo của GitHub
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+      # 2. Cài Node.js trên máy ảo GitHub
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20' 
 
-      - name: Install dependencies
-        run: npm ci
+      # 3. Cài thư viện và Build 
+      - name: Install and Build
+        run: |
+          npm ci
+          npm run build
 
-      - name: Build application
-        run: npm run build
-        env:
-          CI: false
-
-      - name: Deploy to VPS
+      # 4. Copy thư mục 'dist' vào VPS (Thay thế lệnh scp thủ công hehe)
+      - name: Copy files via SSH
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: "dist/*"
-          target: "/var/www/html/"
-          strip_components: 1
-          rm: true
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          source: "dist/*"            # Lấy toàn bộ trong thư mục dist vừa build
+          target: "/var/www/html"     # Đích đến trên VPS 
+          strip_components: 1         # Giúp bỏ bớt lớp vỏ folder 'dist' bên ngoài khi copy
+
+      # 5.  Reload Nginx để chắc ăn
+      - name: Reload Nginx
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: systemctl reload nginx
