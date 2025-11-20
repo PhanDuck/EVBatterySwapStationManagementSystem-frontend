@@ -142,7 +142,7 @@ function Home() {
                 }}
               >
                 Từ công nghệ đột phá đến thiết kế, an toàn và dịch vụ không thỏa
-                hiệp. Mọi khía cạnh của mạng lưới EVBattery đều được xây dựng để
+                hiệp. Mọi khía cạnh của EVBattery đều được xây dựng để
                 việc đổi pin trở nên tốt hơn.
               </Paragraph>
             </div>
