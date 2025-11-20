@@ -117,6 +117,25 @@ const Footer = () => {
                       Chính Sách
                     </a>
                   </li>
+                  <li style={{ marginBottom: "12px" }}>
+                    <a
+                      onClick={() => handleNavigation("/privacy-policy")}
+                      style={{
+                        color: "rgba(255,255,255,0.6)",
+                        textDecoration: "none",
+                        cursor: "pointer",
+                        transition: "color 0.3s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.target.style.color = "rgba(255,255,255,1)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.target.style.color = "rgba(255,255,255,0.6)")
+                      }
+                    >
+                      Quyền Riêng Tư
+                    </a>
+                  </li>
                 </ul>
               </div>
             </Col>

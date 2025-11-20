@@ -27,6 +27,7 @@ import HomeLayout from "../Layouts/HomeLayout";
 import PaymentResult from "../pages/Payment/PaymentResult";
 import ForgotPassword from "../pages/Auth/ForgotPassword";
 import ResetPassword from "../pages/Auth/ResetPassword";
+import PrivacyPolicy from "../pages/Shared/PrivacyPolicy";
 
 
 
@@ -61,6 +62,7 @@ export default function AppRouter() {
           <Route path="/codeConfirm" element={<EnterConfirmationCode />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
           {/* Protected */}
           <Route element={<PrivateRoute roles={["Driver"]} />}>
