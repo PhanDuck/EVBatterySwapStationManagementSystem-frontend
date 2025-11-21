@@ -82,7 +82,7 @@ export default function BookingsPage() {
   }, [role]);
 
   useEffect(() => {
-      fetchData();
+    fetchData();
   }, [fetchData]);
 
   // 🔍 Tìm kiếm - Tìm kiếm trực tiếp trên dữ liệu từ API
@@ -406,6 +406,25 @@ export default function BookingsPage() {
           </Form.Item>
         </Form>
       </Modal>
+      <span
+        style={{
+          display: "inline-block", 
+          fontSize: "18px", 
+          fontWeight: "bold", 
+          color: "#997404", 
+          backgroundColor: "#fff3cd", 
+          borderRadius: "6px", 
+          border: "1px solid #ffeeba", 
+          width: "100%", 
+          textAlign: "center", 
+        }}
+      >
+        <ul style={{ paddingLeft: "20px", margin: "10px 0" }}>
+          <li>Tối đa 10 booking mỗi ngày.</li>
+          <li>Bạn chỉ có thể hủy Booking trước giờ hẹn tối thiểu 1 tiếng.</li>          
+          <li>Sau 3 tiếng hệ thống sẽ tự động hủy các booking chưa được xác nhận.</li>
+        </ul>
+      </span>
     </div>
   );
 }
