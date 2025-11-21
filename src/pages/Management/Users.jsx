@@ -42,7 +42,7 @@ export default function AccountPage() {
       } catch (error) {
         showToast(
           "error",
-          error.response?.data || "Lỗi tải danh sách người dùng"
+          error.response?.data?.message || "Lỗi tải danh sách người dùng"
         );
       } finally {
         setLoading(false);
@@ -50,7 +50,6 @@ export default function AccountPage() {
     };
     fetchAccounts();
   }, []);
-
 
   const handleEdit = (record) => {
     // normalize id for editing record
@@ -70,7 +69,19 @@ export default function AccountPage() {
           setAccounts((prev) => prev.filter((u) => (u.id ?? u._id) !== id));
           showToast("success", "Đã xóa thành công!");
         } catch (error) {
-          showToast("error", error.response?.data || "Lỗi khi xóa người dùng");
+          // ✅ LOGIC CẬP NHẬT: Lấy thông báo lỗi cụ thể từ API response
+          let errorMessage = "Lỗi khi xóa người dùng";
+
+          if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (typeof error.response?.data === 'string') {
+            // Trường hợp data là một chuỗi lỗi đơn giản
+            errorMessage = error.response.data;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+
+          showToast("error", errorMessage);
         } finally {
           setDeletingId(null);
         }
@@ -107,9 +118,23 @@ export default function AccountPage() {
       form.resetFields();
       setEditingAccount(null);
     } catch (error) {
+      
+      // LOGIC CẬP NHẬT (Đã sửa ở lần trước): Lấy thông báo lỗi cụ thể từ API response
+      let errorMessage = "Không thể cập nhật người dùng";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error.response?.data === 'string') {
+        errorMessage = error.response.data;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       showToast(
-        error.response?.data?.message || "Không thể cập nhật người dùng"
+        "error",
+        errorMessage
       );
+      
     } finally {
       setSubmitting(false);
     }
@@ -239,7 +264,11 @@ export default function AccountPage() {
       <Modal
         title={"Chỉnh sửa người dùng"}
         open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        onCancel={() => {
+          setIsModalVisible(false);
+          setEditingAccount(null);
+          form.resetFields();
+        }}
         footer={null}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
@@ -277,12 +306,17 @@ export default function AccountPage() {
             label="Vai trò"
             rules={[{ required: true, message: "Chọn vai trò!" }]}
           >
-            <Select placeholder="Chọn vai trò">
+            <Select placeholder="Chọn vai trò" disabled={editingAccount?.role === 'ADMIN'}>
               <Option value="ADMIN">ADMIN</Option>
               <Option value="STAFF">STAFF</Option>
               <Option value="DRIVER">DRIVER</Option>
             </Select>
           </Form.Item>
+          {editingAccount?.role === 'ADMIN' && (
+             <p style={{ color: 'red', marginBottom: '16px' }}>
+                **Lưu ý:** Không thể thay đổi vai trò của tài khoản ADMIN.
+             </p>
+          )}
 
           <Form.Item
             name="status"
@@ -295,12 +329,16 @@ export default function AccountPage() {
             </Select>
           </Form.Item>
 
-          <Form.Item>
+          <Form.Item style={{ marginTop: 24, textAlign: 'right' }}>
             <Space>
-              <Button type="primary" htmlType="submit">
+              <Button onClick={() => {
+                setIsModalVisible(false);
+                setEditingAccount(null);
+                form.resetFields();
+              }}>Hủy</Button>
+              <Button type="primary" htmlType="submit" loading={submitting}>
                 Cập nhật
               </Button>
-              <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
             </Space>
           </Form.Item>
         </Form>

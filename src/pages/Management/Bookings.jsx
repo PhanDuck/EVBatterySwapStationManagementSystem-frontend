@@ -10,8 +10,13 @@ import {
   Space,
   Tag,
   Spin,
+  Alert, // Thêm Alert component cho giao diện đẹp hơn
 } from "antd";
-import { PlusOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  CloseCircleOutlined,
+  InfoCircleOutlined, // Thêm icon Info
+} from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
 import handleApiError from "../../Utils/handleApiError";
@@ -33,6 +38,7 @@ export default function BookingsPage() {
   const user = getCurrentUser() || {};
   const role = user?.role;
   const navigate = useNavigate();
+
   // 🟢 Fetch dữ liệu ban đầu
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -136,7 +142,7 @@ export default function BookingsPage() {
     } catch (error) {
       showToast(
         "error",
-        error.response?.data || "Hủy booking thất bại, vui lòng thử lại!"
+        error.response?.data?.message || "Hủy booking thất bại, vui lòng thử lại!"
       );
     } finally {
       setSubmitting(false);
@@ -147,11 +153,12 @@ export default function BookingsPage() {
   const handleDriverCancel = (record) => {
     Modal.confirm({
       title: "Xác nhận hủy đặt lịch",
+      icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
       content: (
         <div>
           <p>Bạn có chắc chắn muốn hủy đặt lịch này không?</p>
           <p style={{ color: "red", fontWeight: "bold" }}>
-            Lưu ý! Bạn không thể hủy sau 2 giờ kể từ khi đặt lịch.
+            Lưu ý: Bạn chỉ có thể hủy Booking trước giờ hẹn tối thiểu 1 tiếng.
           </p>
         </div>
       ),
@@ -160,6 +167,8 @@ export default function BookingsPage() {
       cancelText: "Không",
       onOk: async () => {
         try {
+          // Logic kiểm tra thời gian hủy (1 tiếng trước giờ hẹn) có thể được thêm vào đây hoặc xử lý ở Backend.
+          // Hiện tại, logic API patch(`/booking/my-bookings/${record.id}/cancel`) sẽ xác định việc hủy có hợp lệ hay không.
           await api.patch(`/booking/my-bookings/${record.id}/cancel`);
           // Cập nhật state local
           setData((prev) =>
@@ -173,7 +182,7 @@ export default function BookingsPage() {
         } catch (error) {
           showToast(
             "error",
-            error.response?.data || "Hủy đặt lịch thất bại, vui lòng thử lại!"
+            error.response?.data?.message || "Hủy đặt lịch thất bại, vui lòng thử lại!"
           );
         }
       },
@@ -190,18 +199,19 @@ export default function BookingsPage() {
       sorter: (a, b) => a.id - b.id,
       defaultSortOrder: "descend",
     },
-    {
+    // Ẩn Tài xế, Điện thoại, Pin cũ, Pin mới, Mã xác nhận nếu là DRIVER
+    ...(role !== "DRIVER" ? [{
       title: "Tài xế",
       dataIndex: "driverName",
       key: "driverName",
       sorter: (a, b) => (a.driverName || "").localeCompare(b.driverName || ""),
-    },
-    {
+    }] : []),
+    ...(role !== "DRIVER" ? [{
       title: "Điện thoại",
       dataIndex: "driverPhone",
       key: "driverPhone",
       render: (phone) => <span>{phone}</span>,
-    },
+    }] : []),
     {
       title: "Xe",
       dataIndex: "vehicleModel",
@@ -221,18 +231,18 @@ export default function BookingsPage() {
       sorter: (a, b) =>
         (a.stationName || "").localeCompare(b.stationName || ""),
     },
-    {
+    ...(role !== "DRIVER" ? [{
       title: "Pin cũ",
       dataIndex: "swapOutBatteryModel",
       key: "swapOutBatteryModel",
       render: (model) => <span>{model}</span>,
-    },
-    {
+    }] : []),
+    ...(role !== "DRIVER" ? [{
       title: "Pin mới",
       dataIndex: "swapInBatteryModel",
       key: "swapInBatteryModel",
       render: (model) => <span>{model}</span>,
-    },
+    }] : []),
     {
       title: "Thời gian đặt",
       dataIndex: "bookingTime",
@@ -250,15 +260,15 @@ export default function BookingsPage() {
           s === "COMPLETED"
             ? "green"
             : s === "CONFIRMED"
-            ? "orange"
+            ? "blue" // Đổi màu CONFIRMED để phân biệt rõ hơn
             : s === "PENDING"
             ? "orange"
             : "red";
         return <Tag color={color}>{s}</Tag>;
       },
     },
-    // Mã xác nhận (Chỉ hiển thị cho ADMIN và DRIVER)
-    ...(role === "ADMIN" || role === "DRIVER"
+    // Mã xác nhận (Chỉ hiển thị cho ADMIN và STAFF/DRIVER)
+    ...(role === "ADMIN" || role === "STAFF" || role === "DRIVER"
       ? [
           {
             title: "Mã xác nhận",
@@ -268,7 +278,7 @@ export default function BookingsPage() {
           },
         ]
       : []),
-    // Cột Thao tác (Chỉ hiển thị cho ADMIN và STAFF)
+    // Cột Thao tác cho ADMIN/STAFF
     ...(role === "ADMIN" || role === "STAFF"
       ? [
           {
@@ -277,7 +287,7 @@ export default function BookingsPage() {
             width: 120,
             render: (_, record) => (
               <Space>
-                {record.status === "CONFIRMED" && (
+                {(record.status === "PENDING" || record.status === "CONFIRMED") && ( // Cho phép Hủy cả PENDING và CONFIRMED
                   <Button
                     type="primary"
                     danger
@@ -360,6 +370,31 @@ export default function BookingsPage() {
         </Spin>
       </Card>
 
+      {/* Quy tắc Booking - CHỈ HIỂN THỊ CHO TÀI XẾ (DRIVER) */}
+      {role === "DRIVER" && (
+        <Alert
+          style={{ marginTop: 20 }}
+          message=" CHÚ Ý: Quy tắc Đặt Lịch (Booking)"
+          description={
+            <ul style={{ paddingLeft: 20, margin: 0 }}>
+              <li>
+                Tối đa 10 booking mỗi ngày.
+              </li>
+              <li>
+                Hủy đặt lịch: Bạn chỉ có thể hủy Booking trước giờ hẹn tối thiểu 1 tiếng.
+              </li>
+              <li>
+                Tự động hủy: Sau 3 tiếng, hệ thống sẽ tự động hủy các booking chưa được xác nhận.(thông tin hủy tự động sẽ được gửi qua email).
+              </li>
+            </ul>
+          }
+          type="info"
+          showIcon
+          icon={<InfoCircleOutlined />}
+          banner
+        />
+      )}
+
       {/* Modal nhập lý do hủy booking cho Admin/Staff */}
       <Modal
         title={`Hủy Booking #${cancellingBooking?.id || ""}`}
@@ -373,7 +408,11 @@ export default function BookingsPage() {
         width={500}
       >
         <Form form={cancelForm} layout="vertical" onFinish={handleCancelSubmit}>
-          <Form.Item name="reason" label="Lý do hủy">
+          <Form.Item
+            name="reason"
+            label="Lý do hủy"
+            rules={[{ required: true, message: "Vui lòng nhập lý do hủy." }]}
+          >
             <TextArea
               rows={4}
               placeholder="Nhập lý do hủy booking (ví dụ: Khách hàng yêu cầu, Trạm bảo trì, v.v.)"
@@ -406,25 +445,6 @@ export default function BookingsPage() {
           </Form.Item>
         </Form>
       </Modal>
-      <span
-        style={{
-          display: "inline-block", 
-          fontSize: "18px", 
-          fontWeight: "bold", 
-          color: "#997404", 
-          backgroundColor: "#fff3cd", 
-          borderRadius: "6px", 
-          border: "1px solid #ffeeba", 
-          width: "100%", 
-          textAlign: "center", 
-        }}
-      >
-        <ul style={{ paddingLeft: "20px", margin: "10px 0" }}>
-          <li>Tối đa 10 booking mỗi ngày.</li>
-          <li>Bạn chỉ có thể hủy Booking trước giờ hẹn tối thiểu 1 tiếng.</li>          
-          <li>Sau 3 tiếng hệ thống sẽ tự động hủy các booking chưa được xác nhận.</li>
-        </ul>
-      </span>
     </div>
   );
 }

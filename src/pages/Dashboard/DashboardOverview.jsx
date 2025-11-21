@@ -33,7 +33,14 @@ import {
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
-import handleApiError from "../../Utils/handleApiError";
+// import handleApiError from "../../Utils/handleApiError"; // Đã bỏ import này
+
+// GIẢ ĐỊNH: Bạn đã import thư viện toastify, ví dụ:
+// import { toast } from "react-toastify";
+// Nếu bạn chưa import, hãy thêm dòng import thư viện toastify của bạn ở đây.
+const toast = {
+  error: (message) => console.error("TOASTIFY ERROR:", message),
+};
 
 const { Title } = Typography;
 
@@ -78,15 +85,19 @@ export default function DashboardOverview() {
       setDashboardData(response.data);
     } catch (err) {
       console.error("Dashboard error:", err);
+      let errorMsg;
       // Nếu timeout, hiển thị message thân thiện
       if (err.code === "ECONNABORTED") {
-        setError("API đang xử lý quá lâu. Vui lòng thử lại sau.");
+        errorMsg = "API đang xử lý quá lâu. Vui lòng thử lại sau.";
       } else {
-        const errorMsg =
+        errorMsg =
           err.response?.data?.message || err.message || "Lỗi không xác định";
-        setError(errorMsg);
       }
-      handleApiError(err, "tải dữ liệu dashboard");
+
+      setError(errorMsg);
+      // Thay thế handleApiError bằng toastify
+      toast.error(`Lỗi tải dữ liệu dashboard: ${errorMsg}`);
+
     } finally {
       setLoading(false);
     }
@@ -335,10 +346,10 @@ export default function DashboardOverview() {
                     <YAxis yAxisId="right" orientation="right" />
                     <Tooltip
                       formatter={(value, name) => {
-                        if (name === "revenue") {
-                          return [formatCurrency(value), "Doanh Thu"];
+                        if (name === "Doanh Thu (VND)") {
+                          return [formatCurrency(value), name];
                         }
-                        return [value, "Đặt lịch"];
+                        return [value, name];
                       }}
                     />
                     <Legend />
@@ -346,13 +357,13 @@ export default function DashboardOverview() {
                       yAxisId="left"
                       dataKey="revenue"
                       fill="#8884d8"
-                      name="Doanh Thu (VND)"
+                      name="Doanh Thu (VND)" 
                     />
                     <Bar
                       yAxisId="right"
                       dataKey="transactions"
                       fill="#82ca9d"
-                      name="Số Giao Dịch"
+                      name="Số Giao Dịch" 
                     />
                   </BarChart>
                 </ResponsiveContainer>
