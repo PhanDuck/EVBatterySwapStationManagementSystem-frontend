@@ -34,40 +34,7 @@ import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
 
-/**
- * 🛠️ Helper: Lấy thông báo lỗi chuẩn từ Backend
- * Đã fix để bắt trường hợp Backend trả về raw string
- */
-const getErrorMessage = (error) => {
-  console.log("Error Log:", error); // Log ra để debug nếu cần
-  
-  // Trường hợp có phản hồi từ Server (4xx, 5xx)
-  if (error.response) {
-    const { data } = error.response;
-    
-    // 1. Ưu tiên: Nếu data trả về là String (như trong ảnh của bạn)
-    if (typeof data === "string") {
-      return data;
-    }
-    
-    // 2. Nếu data là Object và có thuộc tính message
-    if (data && data.message) {
-      return typeof data.message === "string" ? data.message : JSON.stringify(data.message);
-    }
-
-    // 3. Fallback: Nếu là object lạ, chuyển thành string để hiển thị
-    if (data && typeof data === "object") {
-       return JSON.stringify(data);
-    }
-  }
-
-  // Trường hợp lỗi mạng hoặc không có response
-  return error.message || "Đã có lỗi không xác định xảy ra.";
-};
-
-/**
- * Component Modal hiển thị danh sách Pin tại một Trạm
- */
+//Component Modal hiển thị danh sách Pin tại một Trạm
 const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
   const [batteries, setBatteries] = useState([]);
   const [loading, setLoading] = useState(false);

@@ -95,14 +95,10 @@ export default function BatteryManagement() {
         await api.put(`/battery/${editingBattery.id}`, data);
         showToast("success", "Cập nhật pin thành công!");
         fetchAllData();
-        // setBatteries((prev) =>
-        //   prev.map((b) => (b.id === editingBattery.id ? { ...b, ...data } : b))
-        // );
       } else {
         await api.post("/battery", data);
         showToast("success", "Thêm pin mới thành công!");
         fetchAllData();
-        // setBatteries((prev) => [...prev, res.data]);
 
       }
       fetchAllData();
@@ -149,7 +145,7 @@ export default function BatteryManagement() {
     });
   };
 
-  // 🟡 Submit (Create / Update Type) - POST/PUT /api/battery-type
+  // 🟡 Submit (Create / Update Type)
   const handleTypeSubmit = async (values) => {
     const data = {
       ...values,
@@ -160,7 +156,7 @@ export default function BatteryManagement() {
 
     try {
       if (editingType) {
-        // Cập nhật (PUT /api/battery-type/{id})
+        // Cập nhật
         await api.put(`/battery-type/${editingType.id}`, data);
 
         showToast("success", "Cập nhật loại pin thành công!");
@@ -542,7 +538,6 @@ export default function BatteryManagement() {
           <Form.Item
             name="lastMaintenanceDate"
             label="Ngày bảo trì gần nhất"
-            // rules={[{ required: true }]}
           >
             <DatePicker style={{ width: "100%" }} />
           </Form.Item>

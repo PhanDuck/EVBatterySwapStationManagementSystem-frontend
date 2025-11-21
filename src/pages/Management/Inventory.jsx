@@ -45,18 +45,11 @@ const MoveToStationModal = ({
   maxSlotsAvailable,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [loading, setLoading] = useState(false);
-  
-  // Danh sách tất cả pin đạt chuẩn trong kho (để hiển thị cho user chọn)
-  const [availablePool, setAvailablePool] = useState([]); 
-  // Danh sách ID các pin user đã tích chọn
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]); 
-  
-  // Lưu số lượng đã nhập ở bước 1 để đối chiếu ở bước 2
-  const [confirmedQuantity, setConfirmedQuantity] = useState(0);
-
+  const [loading, setLoading] = useState(false); 
+  const [availablePool, setAvailablePool] = useState([]); // Danh sách tất cả pin đạt chuẩn trong kho (để hiển thị cho user chọn)
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]); // Danh sách ID các pin user đã tích chọn
+  const [confirmedQuantity, setConfirmedQuantity] = useState(0); // Lưu số lượng đã nhập ở bước 1 để đối chiếu ở bước 2
   const [form] = Form.useForm();
-  // Đã xóa dòng quantityRequested bị thừa
 
   // Reset state khi mở modal
   useEffect(() => {
@@ -81,7 +74,7 @@ const MoveToStationModal = ({
       // API trả về { total: 12, batteries: [...] } hoặc mảng
       const rawBatteries =
         res.data?.batteries || (Array.isArray(res.data) ? res.data : []);
-      
+
       // Lọc Pin SOH > 90%
       const pool = rawBatteries.filter(
         (b) => b.status === "AVAILABLE" && parseFloat(b.stateOfHealth) > 90
@@ -114,7 +107,7 @@ const MoveToStationModal = ({
   // BƯỚC 2: GỌI API CHUYỂN CÁC PIN ĐÃ CHỌN
   const handleConfirmMove = async () => {
     if (selectedRowKeys.length === 0) return;
-    
+
     setLoading(true);
     let successCount = 0;
 
@@ -183,8 +176,8 @@ const MoveToStationModal = ({
     },
     // Disable các ô còn lại khi đã chọn đủ số lượng
     getCheckboxProps: (record) => ({
-      disabled: 
-        selectedRowKeys.length >= confirmedQuantity && 
+      disabled:
+        selectedRowKeys.length >= confirmedQuantity &&
         !selectedRowKeys.includes(record.id),
     }),
   };
@@ -207,7 +200,7 @@ const MoveToStationModal = ({
         style={{ marginBottom: 24 }}
       />
 
-      {/* --- NỘI DUNG BƯỚC 1: NHẬP SỐ LƯỢNG --- */}
+      {/* --- BƯỚC 1: NHẬP SỐ LƯỢNG --- */}
       {currentStep === 0 && (
         <Form
           form={form}
@@ -219,9 +212,15 @@ const MoveToStationModal = ({
             message="Thông tin kho & Trạm"
             description={
               <ul style={{ paddingLeft: 20, margin: 0 }}>
-                <li>Loại pin: <b>{batteryType?.name}</b></li>
-                <li>Kho còn (SOH {">"} 90%): <b>{warehouseCount}</b> pin</li>
-                <li>Trạm còn trống: <b>{maxSlotsAvailable}</b> chỗ</li>
+                <li>
+                  Loại pin: <b>{batteryType?.name}</b>
+                </li>
+                <li>
+                  Kho còn (SOH {">"} 90%): <b>{warehouseCount}</b> pin
+                </li>
+                <li>
+                  Trạm còn trống: <b>{maxSlotsAvailable}</b> chỗ
+                </li>
               </ul>
             }
             type="info"
@@ -237,19 +236,25 @@ const MoveToStationModal = ({
                 validator(_, value) {
                   if (!value) return Promise.resolve();
                   const num = Number(value);
-                  
+
                   // Validate chặn cứng, không tự sửa số
                   if (num <= 0) {
-                    return Promise.reject(new Error("Số lượng phải lớn hơn 0!"));
+                    return Promise.reject(
+                      new Error("Số lượng phải lớn hơn 0!")
+                    );
                   }
                   if (num > maxSlotsAvailable) {
                     return Promise.reject(
-                      new Error(`Vượt quá sức chứa của trạm! (Trống: ${maxSlotsAvailable})`)
+                      new Error(
+                        `Vượt quá sức chứa của trạm! (Trống: ${maxSlotsAvailable})`
+                      )
                     );
                   }
                   if (num > warehouseCount) {
-                     return Promise.reject(
-                      new Error(`Vượt quá số lượng trong kho! (Kho có: ${warehouseCount})`)
+                    return Promise.reject(
+                      new Error(
+                        `Vượt quá số lượng trong kho! (Kho có: ${warehouseCount})`
+                      )
                     );
                   }
 
@@ -281,17 +286,21 @@ const MoveToStationModal = ({
         </Form>
       )}
 
-      {/* --- NỘI DUNG BƯỚC 2: CHỌN THỦ CÔNG --- */}
+      {/* --- BƯỚC 2: CHỌN THỦ CÔNG --- */}
       {currentStep === 1 && (
         <div>
-          <Alert 
+          <Alert
             message={`Vui lòng chọn đủ ${confirmedQuantity} pin từ danh sách dưới đây.`}
             description={`Đã chọn: ${selectedRowKeys.length} / ${confirmedQuantity}`}
-            type={selectedRowKeys.length === confirmedQuantity ? "success" : "warning"}
+            type={
+              selectedRowKeys.length === confirmedQuantity
+                ? "success"
+                : "warning"
+            }
             showIcon
             style={{ marginBottom: 16 }}
           />
-          
+
           <Table
             dataSource={availablePool}
             columns={selectionColumns}
@@ -302,7 +311,7 @@ const MoveToStationModal = ({
             scroll={{ y: 300 }}
             style={{ border: "1px solid #f0f0f0", borderRadius: 8 }}
           />
-          
+
           <div style={{ textAlign: "right", marginTop: 24 }}>
             <Space>
               <Button
@@ -344,6 +353,7 @@ export default function InventoryPage() {
   const [currentBatteryToEdit, setCurrentBatteryToEdit] = useState(null);
   const [form] = Form.useForm();
   const [showAllStationBatteries, setShowAllStationBatteries] = useState(false);
+  const [searchPinId, setSearchPinId] = useState("");
 
   const role = getCurrentRole();
   const upperRole = role ? role.toUpperCase() : null;
@@ -367,7 +377,7 @@ export default function InventoryPage() {
           capacity: MAX_STATION_CAPACITY,
           currentCount: 0,
         };
-    
+
     const maxLimit = MAX_BATTERIES_ALLOWED;
     const maxSlotsForMove = Math.max(0, maxLimit - currentBatteryCount);
 
@@ -709,7 +719,7 @@ export default function InventoryPage() {
         null,
         {
           params: {
-            newSOH: newSOH,
+            newSOH: values.newSOH,
           },
         }
       );
@@ -728,106 +738,127 @@ export default function InventoryPage() {
     }
   };
 
-  // --- 3. ĐỊNH NGHĨA CỘT CHO BẢNG ---
+  // --- HÀM SORT CHUẨN ĐẦY ĐỦ (STATUS -> SOH -> ID) ---
+  const customWarehouseSort = useCallback((data) => {
+    if (!Array.isArray(data) || data.length === 0) return [];
+    const compareFn = (a, b) => {
+      // 1. Ưu tiên Status
+      const getPriority = (status) => {
+        if (status === "AVAILABLE") return 1;
+        if (status === "MAINTENANCE") return 2;
+        return 99;
+      };
+      const priorityA = getPriority(a.status);
+      const priorityB = getPriority(b.status);
+      if (priorityA !== priorityB) return priorityA - priorityB;
+
+      // 2. Ưu tiên SOH
+      const sohA = parseFloat(a.stateOfHealth);
+      const sohB = parseFloat(b.stateOfHealth);
+      if (sohA !== sohB) return sohB - sohA;
+
+      // 3. Ưu tiên ID
+      return b.id - a.id;
+    };
+    return [...data].sort(compareFn);
+  }, []);
+
+  // --- LỌC DỮ LIỆU (Bao gồm cả tìm kiếm ID) ---
+  const stationDataSource = useMemo(() => {
+    let data =
+      isAdmin && showAllStationBatteries
+        ? stationInventory
+        : stationInventory.filter((b) => b.status === "MAINTENANCE");
+
+    if (searchPinId) {
+      data = data.filter((item) => item.id.toString().includes(searchPinId));
+    }
+    return data;
+  }, [stationInventory, isAdmin, showAllStationBatteries, searchPinId]);
+
+  const warehouseDataSource = useMemo(() => {
+    let data = customWarehouseSort(warehouseInventory);
+
+    if (searchPinId) {
+      data = data.filter((item) => item.id.toString().includes(searchPinId));
+    }
+    return data;
+  }, [warehouseInventory, customWarehouseSort, searchPinId]);
+
+  // Định nghĩa cột
   const FIXED_COL_WIDTH = {
-    PIN_ID: 100,
-    CAPACITY: 120,
+    PIN_ID: 80,
+    CAPACITY: 100,
     BATTERY_TYPE: 200,
-    SOH: 120,
-    CHARGE: 120,
-    STATUS: 120,
-    DATE: 150,
-    ACTIONS: 150,
+    SOH: 100,
+    CHARGE: 100,
+    STATUS: 110,
+    DATE: 140,
+    ACTIONS: 120,
   };
 
   const stationColumns = [
     {
-      title: "Pin ID",
+      title: "ID",
       dataIndex: "id",
-      key: "id",
       width: FIXED_COL_WIDTH.PIN_ID,
       sorter: (a, b) => a.id - b.id,
-      defaultSortOrder: "descend",
+      render: (t) => <b>#{t}</b>,
     },
     {
-      title: "Dung tích pin",
+      title: "Dung tích",
       dataIndex: "capacity",
-      key: "capacity",
       width: FIXED_COL_WIDTH.CAPACITY,
-      render: (capacity) => capacity,
     },
     {
       title: "Loại Pin",
       dataIndex: "batteryTypeId",
-      key: "batteryTypeId",
       width: FIXED_COL_WIDTH.BATTERY_TYPE,
-      render: (typeId) => batteryTypesMap[typeId],
+      render: (id) => batteryTypesMap[id],
     },
     {
-      title: "Mức sạc (%)",
+      title: "Mức sạc",
       dataIndex: "chargeLevel",
-      key: "chargeLevel",
       width: FIXED_COL_WIDTH.CHARGE,
-      render: (chargeLevel) => {
-        const chargeValue = chargeLevel
-          ? parseFloat(chargeLevel).toFixed(0)
-          : "";
-        if (chargeValue === "") return "";
-        let color;
-        const numericCharge = parseFloat(chargeValue);
-        if (numericCharge >= 70) {
-          color = "green";
-        } else {
-          color = "orange";
-        }
-        return <Tag color={color}>{chargeValue}</Tag>;
-      },
+      render: (v) => <Tag color={v > 70 ? "green" : "orange"}>{v}%</Tag>,
     },
     {
-      title: "Tình trạng pin (%)",
+      title: "SOH",
       dataIndex: "stateOfHealth",
-      key: "stateOfHealth",
       width: FIXED_COL_WIDTH.SOH,
-      render: (soh) => {
-        const sohValue = soh ? parseFloat(soh).toFixed(2) : "";
-        return sohValue !== "" ? (
-          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
-            {sohValue}
-          </Tag>
-        ) : (
-          "N—"
-        );
-      },
+      render: (v) => (
+        <Tag color={v > 70 ? "green" : "orange"}>
+          {parseFloat(v).toFixed(2)}%
+        </Tag>
+      ),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
-      key: "status",
       width: FIXED_COL_WIDTH.STATUS,
-      render: (status) => (
-        <Tag color={status === "AVAILABLE" ? "green" : "orange"}>{status}</Tag>
+      render: (s) => (
+        <Tag color={s === "AVAILABLE" ? "green" : "orange"}>{s}</Tag>
       ),
     },
     {
-      title: "Bảo trì lần cuối",
+      title: "Bảo trì cuối",
       dataIndex: "lastMaintenanceDate",
-      key: "lastMaintenanceDate",
       width: FIXED_COL_WIDTH.DATE,
-      render: (date) => (date ? new Date(date).toLocaleDateString() : ""),
+      render: (d) => (d ? new Date(d).toLocaleDateString() : ""),
     },
     {
       title: "Thao tác",
       key: "actions",
       fixed: "right",
       width: FIXED_COL_WIDTH.ACTIONS,
-      render: (_, record) => (
+      render: (_, r) => (
         <Space>
-          {record.status === "MAINTENANCE" && (
-            <Tooltip title="Chuyển pin lỗi này về kho bảo trì">
+          {r.status === "MAINTENANCE" && (
+            <Tooltip title="Về kho">
               <Button
                 type="primary"
                 icon={<RollbackOutlined />}
-                onClick={() => handleMoveToWarehouse(record)}
+                onClick={() => handleMoveToWarehouse(r)}
                 size="small"
               >
                 Về Kho
@@ -839,119 +870,61 @@ export default function InventoryPage() {
     },
   ];
 
-  const customWarehouseSort = useCallback((data) => {
-    if (!Array.isArray(data) || data.length === 0) return [];
-    const compareFn = (a, b) => {
-      const getPriority = (status) => {
-        if (status === "AVAILABLE") return 1;
-        if (status === "MAINTENANCE") return 2;
-        return 99;
-      };
-      const priorityA = getPriority(a.status);
-      const priorityB = getPriority(b.status);
-      const sohA = parseFloat(a.stateOfHealth);
-      const sohB = parseFloat(b.stateOfHealth);
-
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
-      }
-      if (sohA !== sohB) {
-        return sohB - sohA;
-      }
-      return b.id - a.id;
-    };
-    return [...data].sort(compareFn);
-  }, []);
-
-  const warehouseDataSource = useMemo(() => {
-    return customWarehouseSort(warehouseInventory);
-  }, [warehouseInventory, customWarehouseSort]);
-
   const warehouseColumns = [
     {
-      title: "Pin ID",
+      title: "ID",
       dataIndex: "id",
-      key: "id",
       width: FIXED_COL_WIDTH.PIN_ID,
       sorter: (a, b) => a.id - b.id,
+      render: (t) => <b>#{t}</b>,
     },
     {
-      title: "Dung tích pin",
+      title: "Dung tích",
       dataIndex: "capacity",
-      key: "capacity",
       width: FIXED_COL_WIDTH.CAPACITY,
-      render: (capacity) => capacity,
     },
     {
       title: "Loại Pin",
       dataIndex: "batteryTypeId",
-      key: "batteryTypeId",
       width: FIXED_COL_WIDTH.BATTERY_TYPE,
-      render: (typeId) => batteryTypesMap[typeId],
+      render: (id) => batteryTypesMap[id],
     },
     {
-      title: "Mức sạc (%)",
+      title: "Mức sạc",
       dataIndex: "chargeLevel",
-      key: "chargeLevel",
       width: FIXED_COL_WIDTH.CHARGE,
-      render: (chargeLevel) => {
-        const chargeValue = chargeLevel
-          ? parseFloat(chargeLevel).toFixed(0)
-          : "";
-        if (chargeValue === "") return "";
-        let color;
-        const numericCharge = parseFloat(chargeValue);
-        if (numericCharge >= 70) {
-          color = "green";
-        } else {
-          color = "orange";
-        }
-        return <Tag color={color}>{chargeValue}</Tag>;
-      },
+      render: (v) => <Tag color={v > 70 ? "green" : "orange"}>{v}%</Tag>,
     },
     {
-      title: "Tình trạng pin (%)",
+      title: "SOH",
       dataIndex: "stateOfHealth",
-      key: "stateOfHealth",
       width: FIXED_COL_WIDTH.SOH,
-      render: (soh) => {
-        const sohValue = soh ? parseFloat(soh).toFixed(2) : "";
-        return sohValue !== "" ? (
-          <Tag color={parseFloat(sohValue) >= 70 ? "green" : "orange"}>
-            {sohValue}
-          </Tag>
-        ) : (
-          ""
-        );
-      },
+      render: (v) => (
+        <Tag color={v > 70 ? "green" : "orange"}>
+          {parseFloat(v).toFixed(2)}%
+        </Tag>
+      ),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
-      key: "status",
       width: FIXED_COL_WIDTH.STATUS,
-      render: (status) => (
-        <Tag color={status === "AVAILABLE" ? "green" : "orange"}>{status}</Tag>
+      render: (s) => (
+        <Tag color={s === "AVAILABLE" ? "green" : "orange"}>{s}</Tag>
       ),
     },
-    {
-      title: "",
-      dataIndex: "placeholder",
-      key: "placeholder",
-      width: FIXED_COL_WIDTH.DATE,
-      render: () => null,
-    },
+    { title: "", width: FIXED_COL_WIDTH.DATE },
     {
       title: "Thao tác",
       key: "actions",
       fixed: "right",
       width: FIXED_COL_WIDTH.ACTIONS,
-      render: (_, record) => (
+      render: (_, r) => (
         <Space>
-          {isAdmin && record.status === "MAINTENANCE" && (
-            <Tooltip title="Hoàn tất bảo trì và cập nhật SOH">
+          {isAdmin && r.status === "MAINTENANCE" && (
+            <Tooltip title="Cập nhật SOH">
               <Button
-                onClick={() => handleEditSOH(record)}
+                onClick={() => handleEditSOH(r)}
                 type="primary"
                 icon={<EditOutlined />}
                 size="small"
@@ -965,34 +938,35 @@ export default function InventoryPage() {
     },
   ];
 
-  const stationDataSource = useMemo(() => {
-    if (isAdmin && showAllStationBatteries) {
-      return stationInventory; // Admin: Xem tất cả
-    }
-    return stationInventory.filter((b) => b.status === "MAINTENANCE"); // Staff: Chỉ xem MAINTENANCE
-  }, [stationInventory, isAdmin, showAllStationBatteries]);
-
   return (
     <div style={{ padding: "24px" }}>
+      {/* --- BẢNG TRẠM --- */}
       <Card
         title={
           selectedStationId
-            ? `Quản lý tồn kho pin tại ${selectedStationName} (${currentStationInfo.currentCount}/${currentStationInfo.capacity}) pin`
-            : `Quản lý tồn kho pin tại ${selectedStationName} (${currentStationInfo.currentCount}/${currentStationInfo.capacity}) pin`
+            ? `Pin tại ${selectedStationName} (${currentStationInfo.currentCount}/${currentStationInfo.capacity})`
+            : "Pin tại Trạm"
         }
         extra={
           <Space>
+            <Input.Search
+              placeholder="Tìm ID Pin..."
+              allowClear
+              // SỬA: Cập nhật state ngay khi gõ
+              onChange={(e) => setSearchPinId(e.target.value)}
+              style={{ width: 150 }}
+            />
             <Select
-              placeholder="Chọn Trạm quản lý"
-              style={{ width: 250 }}
+              placeholder="Chọn Trạm"
+              style={{ width: 200 }}
               value={selectedStationId}
               onChange={(value) => setSelectedStationId(value)}
               showSearch
               optionFilterProp="children"
             >
-              {stations.map((station) => (
-                <Option key={station.id} value={station.id}>
-                  {station.name}
+              {stations.map((s) => (
+                <Option key={s.id} value={s.id}>
+                  {s.name}
                 </Option>
               ))}
             </Select>
@@ -1002,48 +976,48 @@ export default function InventoryPage() {
                 onClick={() => setShowAllStationBatteries((prev) => !prev)}
                 type={showAllStationBatteries ? "primary" : "default"}
               >
-                {showAllStationBatteries
-                  ? "Chỉ xem pin bảo trì"
-                  : "Xem tất cả pin tại trạm"}
+                {showAllStationBatteries ? "Xem pin bảo trì" : "Xem tất cả"}
               </Button>
             )}
             <Button
               icon={<ReloadOutlined />}
-              onClick={() => {
-                if (selectedStationId) fetchStationInventory(selectedStationId);
-              }}
+              onClick={() =>
+                selectedStationId && fetchStationInventory(selectedStationId)
+              }
             >
-              Tải lại pin tại trạm
+              Tải lại
             </Button>
           </Space>
         }
         style={{ marginBottom: "20px" }}
       >
-        <h4>
-          {isAdmin && showAllStationBatteries
-            ? `Danh sách TẤT CẢ pin tại ${selectedStationName}`
-            : `Danh sách pin cần bảo dưỡng hoặc lỗi tại ${selectedStationName}`}
-        </h4>
         <Table
           columns={stationColumns}
           dataSource={stationDataSource}
           loading={loading}
           rowKey="id"
           pagination={{
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} trên ${total} pin`,
+            showTotal: (total, range) => `${range[0]}-${range[1]} / ${total}`,
           }}
+          size="small"
         />
       </Card>
 
+      {/* --- BẢNG KHO --- */}
       <Card
-        title="Quản lý tồn kho pin trong kho bảo trì"
+        title="Pin trong Kho Bảo Trì"
         extra={
           <Space>
+            <Input.Search
+              placeholder="Tìm ID Pin..."
+              allowClear
+              // SỬA: Cập nhật state ngay khi gõ
+              onChange={(e) => setSearchPinId(e.target.value)}
+              style={{ width: 150 }}
+            />
             <Button
               icon={<SendOutlined />}
               onClick={openMoveToStationModal}
-              type="default"
               disabled={
                 !selectedStationId ||
                 !currentStationBatteryType ||
@@ -1052,7 +1026,7 @@ export default function InventoryPage() {
                 getAvailableCount(currentStationBatteryType?.id) === 0
               }
             >
-              Chuyển pin ra trạm
+              Chuyển ra trạm
             </Button>
             {isAdmin && (
               <Space>
@@ -1062,12 +1036,10 @@ export default function InventoryPage() {
                   icon={<SearchOutlined />}
                   disabled={!selectedStationId}
                 >
-                  {filterBatteryTypeId &&
-                  filterBatteryTypeId === currentStationBatteryType?.id
+                  {filterBatteryTypeId
                     ? `Đang lọc: ${batteryTypesMap[filterBatteryTypeId]}`
-                    : "Lọc theo loại pin"}
+                    : "Lọc theo trạm"}
                 </Button>
-
                 {filterBatteryTypeId && (
                   <Button
                     onClick={() => {
@@ -1083,97 +1055,53 @@ export default function InventoryPage() {
             )}
             <Button
               icon={<ReloadOutlined />}
-              onClick={() => {
-                fetchWarehouseInventory(isAdmin ? null : filterBatteryTypeId);
-              }}
+              onClick={() =>
+                fetchWarehouseInventory(isAdmin ? null : filterBatteryTypeId)
+              }
             >
-              Tải lại pin kho
+              Tải lại
             </Button>
           </Space>
         }
       >
-        <h4>
-          {isAdmin
-            ? "Danh sách pin trong kho:"
-            : "Danh sách pin sẵn sàng (AVAILABLE) trong kho:"}
-        </h4>
         <Table
           columns={warehouseColumns}
           dataSource={warehouseDataSource}
           loading={loading}
           rowKey="id"
           pagination={{
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} trên ${total} pin`,
+            showTotal: (total, range) => `${range[0]}-${range[1]} / ${total}`,
           }}
+          size="small"
         />
       </Card>
 
+      {/* --- CÁC MODAL --- */}
       <Modal
-        title={
-          currentBatteryToEdit
-            ? `Cập nhật SOH cho Pin ID ${currentBatteryToEdit.id}`
-            : "Cập nhật SOH"
-        }
+        title="Cập nhật SOH"
         open={isEditSOHModalVisible}
         onCancel={() => setIsEditSOHModalVisible(false)}
         footer={null}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSOHSubmit}
-          initialValues={{ newSOH: null }}
-        >
-          <p>
-            Loại Pin:{" "}
-            <Tag color="blue">
-              {currentBatteryToEdit
-                ? batteryTypesMap[currentBatteryToEdit.batteryTypeId]
-                : ""}
-            </Tag>
-          </p>
-
+        <Form form={form} layout="vertical" onFinish={handleSOHSubmit}>
           <Form.Item
             name="newSOH"
             label="SOH mới (%)"
-            rules={[
-              {
-                required: true,
-                message: "Vui lòng nhập SOH mới (0-100)!",
-              },
-              {
-                type: "number",
-                min: 0,
-                max: 100,
-                message: "SOH phải nằm trong khoảng 0 đến 100.",
-              },
-            ]}
+            rules={[{ required: true }]}
           >
             <InputNumber
               min={0}
               max={100}
               step={0.01}
-              formatter={(value) => `${value}%`}
-              parser={(value) => value.replace("%", "")}
               style={{ width: "100%" }}
-              placeholder="Nhập SOH mới (ví dụ: 99.50)"
             />
           </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" loading={loading}>
-                Hoàn tất bảo trì & cập nhật
-              </Button>
-              <Button onClick={() => setIsEditSOHModalVisible(false)}>
-                Hủy
-              </Button>
-            </Space>
-          </Form.Item>
+          <Button type="primary" htmlType="submit" loading={loading}>
+            Cập nhật
+          </Button>
         </Form>
       </Modal>
 
-      {/* COMPONENT MỚI: QUY TRÌNH CHUYỂN PIN 2 BƯỚC */}
       <MoveToStationModal
         isVisible={isMoveToStationModalVisible}
         onCancel={() => setIsMoveToStationModalVisible(false)}

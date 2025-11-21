@@ -26,7 +26,6 @@ import {
 import api from "../../config/axios";
 import { showToast } from "../../Utils/toastHandler";
 
-const STAFF_ROLE = "STAFF";
 const { Option } = Select;
 
 const AssignStaffModal = ({
@@ -106,7 +105,7 @@ const AssignStaffModal = ({
           >
             {/* Lọc danh sách chỉ lấy các user có authority (role) là STAFF */}
             {staffList
-              .filter((user) => user.role === STAFF_ROLE)
+              .filter((user) => user.role === "STAFF")
               .map((staff) => (
                 <Option key={staff.id} value={staff.id}>
                   {staff.fullName} (ID: {staff.id})
@@ -155,11 +154,10 @@ export default function AssignmentPage() {
 
   // --- A. FUNCTIONS TẢI DỮ LIỆU CHÍNH ---
 
-  // Tải TẤT CẢ các assignment Staff-Station (GET /api/staff-station-assignment)
+  // Tải TẤT CẢ các assignment Staff-Station
   const fetchAllAssignments = useCallback(async () => {
     setLoading(true);
     try {
-      // API: GET /api/staff-station-assignment
       const res = await api.get("/staff-station-assignment");
       const data = Array.isArray(res.data) ? res.data : [];
       setAssignments(data);
@@ -353,11 +351,6 @@ export default function AssignmentPage() {
         });
       },
       width: 150,
-      // sorter: (a, b) => {
-      //   const dateA = a.assignedAt// Sử dụng assignedAt để so sánh
-      //   const dateB = b.assignedAt
-      //   return new Date(dateA) - new Date(dateB);
-      // },
     },
     {
       title: "Thao tác",
