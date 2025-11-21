@@ -46,7 +46,11 @@ const ServicePackagesPage = () => {
         : res.data?.data || [];
       setDriverSubscriptions(subscriptions.sort((a, b) => b.id - a.id)); // Sắp xếp ID giảm dần
     } catch (error) {
-      showToast("error", error.response?.data || "Lấy danh sách gói cước tài xế thất bại, vui lòng thử lại!");
+      showToast(
+        "error",
+        error.response?.data ||
+          "Lấy danh sách gói cước tài xế thất bại, vui lòng thử lại!"
+      );
     }
   };
 
@@ -57,8 +61,8 @@ const ServicePackagesPage = () => {
         name: values.name,
         description: values.description,
         price: values.price,
-        duration: values.duration, 
-        maxSwaps: values.maxSwaps, 
+        duration: values.duration,
+        maxSwaps: values.maxSwaps,
       };
 
       if (editingPackage) {
@@ -72,7 +76,10 @@ const ServicePackagesPage = () => {
       form.resetFields();
       fetchPackages();
     } catch (error) {
-      showToast("error", error.response?.data || "Lưu gói dịch vụ thất bại, vui lòng thử lại!");
+      showToast(
+        "error",
+        error.response?.data || "Lưu gói dịch vụ thất bại, vui lòng thử lại!"
+      );
     }
   };
 
@@ -88,7 +95,11 @@ const ServicePackagesPage = () => {
           showToast("success", "Xóa gói dịch vụ thành công");
           fetchPackages();
         } catch (error) {
-          showToast("error", error.response?.data || "Xóa gói dịch vụ thất bại, vui lòng thử lại!");
+          showToast(
+            "error",
+            error.response?.data ||
+              "Xóa gói dịch vụ thất bại, vui lòng thử lại!"
+          );
         }
       },
     });
@@ -107,7 +118,11 @@ const ServicePackagesPage = () => {
           showToast("success", "Đã xóa gói cước tài xế thành công!");
           fetchDriverSubscriptions();
         } catch (error) {
-          showToast("error", error.response?.data || "Xóa gói cước tài xế thất bại, vui lòng thử lại!");
+          showToast(
+            "error",
+            error.response?.data ||
+              "Xóa gói cước tài xế thất bại, vui lòng thử lại!"
+          );
         }
       },
     });
@@ -127,8 +142,8 @@ const ServicePackagesPage = () => {
       name: pkg.name,
       description: pkg.description,
       price: pkg.price,
-      duration: pkg.duration || pkg.durationDays, 
-      maxSwaps: pkg.maxSwaps || pkg.maxSwap, 
+      duration: pkg.duration || pkg.durationDays,
+      maxSwaps: pkg.maxSwaps || pkg.maxSwap,
     });
   };
 
@@ -196,9 +211,7 @@ const ServicePackagesPage = () => {
       title: "Tài xế",
       dataIndex: "driverName",
       key: "driverName",
-      render: (driverName, record) => (
-        driverName || `ID: ${record.driverId}` 
-      ),
+      render: (driverName, record) => driverName || `ID: ${record.driverId}`,
     },
     {
       title: "Gói dịch vụ",

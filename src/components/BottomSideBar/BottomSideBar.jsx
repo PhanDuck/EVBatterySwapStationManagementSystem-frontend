@@ -15,7 +15,7 @@ const BottomSideBar = ({ collapse }) => {
       const sessionName =
         sessionStorage.getItem("currentUser") ||
         localStorage.getItem("currentUser");
-        
+
       if (!sessionName) return "User";
 
       const userObject = JSON.parse(sessionName);
@@ -74,7 +74,10 @@ const BottomSideBar = ({ collapse }) => {
         {!collapse && (
           <Dropdown menu={{ items }} placement="top">
             {/* Thêm href="#" hoặc style cursor pointer để giống link hơn */}
-            <a onClick={(e) => e.preventDefault()} style={{ cursor: "pointer" }}>
+            <a
+              onClick={(e) => e.preventDefault()}
+              style={{ cursor: "pointer" }}
+            >
               <Space>
                 <span style={{ fontWeight: 500 }}>{getDisplayName()}</span>
               </Space>
@@ -82,7 +85,7 @@ const BottomSideBar = ({ collapse }) => {
           </Dropdown>
         )}
       </div>
-      
+
       {/* Chỉ hiện nút nâng cấp nếu là DRIVER */}
       {Role === "DRIVER" && (
         <div>

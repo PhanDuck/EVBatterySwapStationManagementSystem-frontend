@@ -4,7 +4,11 @@ import { getToken } from "../../config/auth";
 import { Await, useNavigate, Link } from "react-router-dom";
 import { showToast } from "../../Utils/toastHandler";
 import { Modal, Checkbox, Button } from "antd";
-import { CheckCircleOutlined, FileTextOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import {
+  CheckCircleOutlined,
+  FileTextOutlined,
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
 
 function PackagesPage() {
   const [packages, setPackages] = useState([]);
@@ -90,7 +94,14 @@ function PackagesPage() {
       >
         <div>
           {/* Title */}
-          <h2 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "8px", color: "#000" }}>
+          <h2
+            style={{
+              fontSize: "20px",
+              fontWeight: "600",
+              marginBottom: "8px",
+              color: "#000",
+            }}
+          >
             Xác nhận điều khoản dịch vụ
           </h2>
           <p style={{ color: "#666", fontSize: "14px", marginBottom: "24px" }}>
@@ -98,19 +109,49 @@ function PackagesPage() {
           </p>
 
           {/* Divider */}
-          <div style={{ height: "1px", backgroundColor: "#e0e0e0", marginBottom: "24px" }}></div>
+          <div
+            style={{
+              height: "1px",
+              backgroundColor: "#e0e0e0",
+              marginBottom: "24px",
+            }}
+          ></div>
 
           {/* Content */}
           <div style={{ marginBottom: "24px" }}>
-            <p style={{ color: "#333", fontSize: "14px", lineHeight: "1.8", marginBottom: "16px" }}>
+            <p
+              style={{
+                color: "#333",
+                fontSize: "14px",
+                lineHeight: "1.8",
+                marginBottom: "16px",
+              }}
+            >
               Bằng cách đăng ký gói dịch vụ, bạn đồng ý tuân thủ tất cả các điều khoản và chính sách của EV Battery Swap.
             </p>
 
-            <div style={{ backgroundColor: "#f9f9f9", padding: "16px", borderRadius: "6px", marginBottom: "16px" }}>
-              <p style={{ color: "#333", fontSize: "13px", lineHeight: "1.8", margin: "0" }}>
-                • Pin là tài sản của công ty, bạn chỉ có quyền sử dụng<br />
-                • Bạn chịu trách nhiệm bảo quản pin theo hướng dẫn<br />
-                • Thanh toán qua MoMo, gói kích hoạt sau thanh toán<br />
+            <div
+              style={{
+                backgroundColor: "#f9f9f9",
+                padding: "16px",
+                borderRadius: "6px",
+                marginBottom: "16px",
+              }}
+            >
+              <p
+                style={{
+                  color: "#333",
+                  fontSize: "13px",
+                  lineHeight: "1.8",
+                  margin: "0",
+                }}
+              >
+                • Pin là tài sản của công ty, bạn chỉ có quyền sử dụng
+                <br />
+                • Bạn chịu trách nhiệm bảo quản pin theo hướng dẫn
+                <br />
+                • Thanh toán qua MoMo, gói kích hoạt sau thanh toán
+                <br />
                 • Không hoàn tiền sau khi thanh toán
               </p>
             </div>
@@ -133,7 +174,13 @@ function PackagesPage() {
           </div>
 
           {/* Divider */}
-          <div style={{ height: "1px", backgroundColor: "#e0e0e0", marginBottom: "24px" }}></div>
+          <div
+            style={{
+              height: "1px",
+              backgroundColor: "#e0e0e0",
+              marginBottom: "24px",
+            }}
+          ></div>
 
           {/* Checkbox */}
           <div style={{ marginBottom: "24px" }}>
@@ -148,7 +195,9 @@ function PackagesPage() {
           </div>
 
           {/* Buttons */}
-          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+          <div
+            style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}
+          >
             <Button
               onClick={handleModalCancel}
               style={{

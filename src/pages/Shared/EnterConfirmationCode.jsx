@@ -149,11 +149,14 @@ export default function SwapAnimation() {
   //   Bước 1: Nhập Code -> Lấy thông tin Pin Mới
   // ----------------------------------------------------
   const handleGetNewBattery = async () => {
-    if (!code || code.length !== 6) {  
+    if (!code || code.length !== 6) {
       return showToast("warning", "⚠️ Vui lòng nhập đúng mã gồm 6 ký tự.");
     }
     if (step > 1) {
-      return showToast("success", "Mã đã được xác nhận. Vui lòng tiếp tục các bước đổi pin.");
+      return showToast(
+        "success",
+        "Mã đã được xác nhận. Vui lòng tiếp tục các bước đổi pin."
+      );
     }
 
     setLoading(true);
@@ -173,7 +176,10 @@ export default function SwapAnimation() {
       showToast("success", "✅ Xác nhận mã thành công! Sẵn sàng cho pin vào.");
     } catch (error) {
       setTransactionInfo({ vehiclePlate: null, driverName: null });
-      showToast("error", error.response?.data ||"❌ Lấy thông tin pin mới không thành công!");
+      showToast(
+        "error",
+        error.response?.data || "❌ Lấy thông tin pin mới không thành công!"
+      );
       console.error("❌ Lỗi lấy pin mới:", error);
     } finally {
       setLoading(false);
@@ -197,9 +203,15 @@ export default function SwapAnimation() {
 
       setOldBattery(res.data);
       setStep(3); // Chuyển sang bước "Sẵn sàng Swap"
-      showToast("success", "Pin đã được cho vào. Đã lấy thông tin pin. Sẵn sàng đổi.");
+      showToast(
+        "success",
+        "Pin đã được cho vào. Đã lấy thông tin pin. Sẵn sàng đổi."
+      );
     } catch (error) {
-      showToast("error", error.response?.data || "Lấy thông tin pin cũ thất bại!");
+      showToast(
+        "error",
+        error.response?.data || "Lấy thông tin pin cũ thất bại!"
+      );
       console.error("❌ Lỗi lấy pin cũ:", error);
     } finally {
       setLoading(false);
@@ -220,18 +232,18 @@ export default function SwapAnimation() {
           params: { code: code },
         }
       );
-      
+
       showToast("success", " Đổi pin thành công!");
       console.log("✅ Response API Swap:", res.data);
       // 1. Cột TRÁI (leftBatteryData) phải là Pin MỚI (newBatteryBeforeSwap) -> setOldBattery
-    setOldBattery(newBatteryBeforeSwap);
-    
-    // 2. Cột PHẢI (rightBatteryData) phải là Pin CŨ (oldBatteryBeforeSwap) -> setNewBattery
-    setNewBattery(oldBatteryBeforeSwap);
+      setOldBattery(newBatteryBeforeSwap);
+
+      // 2. Cột PHẢI (rightBatteryData) phải là Pin CŨ (oldBatteryBeforeSwap) -> setNewBattery
+      setNewBattery(oldBatteryBeforeSwap);
       setIsSwapped(true);
       setStep(4);
     } catch (error) {
-      showToast("error",error.response?.data || "Đổi không thành công!");
+      showToast("error", error.response?.data || "Đổi không thành công!");
       console.error("❌ Lỗi đổi:", error);
     } finally {
       setLoading(false);
@@ -255,25 +267,19 @@ export default function SwapAnimation() {
   // Bước 5: Logic Hiển thị
 
   // Xác định data và title cho cột trái (LEFT COLUMN)
-  const leftBatteryData = isSwapped 
+  const leftBatteryData = isSwapped
     ? oldBattery // Step 4: Pin mới (Đã lắp vào)
     : oldBattery; // Step 1, 2, 3: Pin cũ (Đã tháo ra)
-    
-  const leftTitle = isSwapped 
-    ? "Pin mới (Đã lắp vào)" 
-    : "Pin cũ (Đã tháo ra)";
-    
+
+  const leftTitle = isSwapped ? "Pin mới (Đã lắp vào)" : "Pin cũ (Đã tháo ra)";
   const leftType = isSwapped ? "new" : "old"; // Xanh lá khi đã swap
 
   // Xác định data và title cho cột phải (RIGHT COLUMN)
   const rightBatteryData = isSwapped
     ? newBattery // Step 4: Pin cũ (Đã tháo ra)
     : newBattery; // Step 1, 2, 3: Pin mới (Sẽ lắp vào)
-    
-  const rightTitle = isSwapped
-    ? "Pin cũ (Đã tháo ra)"
-    : "Pin mới (Sẽ lắp vào)";
-    
+
+  const rightTitle = isSwapped ? "Pin cũ (Đã tháo ra)" : "Pin mới (Sẽ lắp vào)";
   const rightType = isSwapped ? "old" : "new"; // Cam khi đã swap
 
   return (

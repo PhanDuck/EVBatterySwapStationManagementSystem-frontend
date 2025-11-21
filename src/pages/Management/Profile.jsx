@@ -43,7 +43,10 @@ export default function Profile() {
         });
       } catch (error) {
         console.error("Lỗi tải thông tin:", error);
-        showToast("error", error?.response?.data || "Không thể tải thông tin hồ sơ");
+        showToast(
+          "error",
+          error?.response?.data || "Không thể tải thông tin hồ sơ"
+        );
       } finally {
         setLoading(false);
       }
@@ -122,8 +125,12 @@ export default function Profile() {
     <div className="min-h-screen from-blue-50 to-blue-100 py-10 px-4">
       <div className="max-w-2xl mx-auto bg-white border border-blue-200 rounded-2xl shadow-lg overflow-hidden">
         <div className="border-b border-blue-100 bg-blue-600 px-6 py-5">
-          <h2 className="text-2xl font-semibold text-white">Profile Settings</h2>
-          <p className="text-blue-100 text-sm mt-1">Cập nhật thông tin cá nhân của bạn</p>
+          <h2 className="text-2xl font-semibold text-white">
+            Profile Settings
+          </h2>
+          <p className="text-blue-100 text-sm mt-1">
+            Cập nhật thông tin cá nhân của bạn
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="divide-y divide-gray-100">
@@ -182,7 +189,9 @@ export default function Profile() {
 
           {/* Phone */}
           <div className="flex justify-between px-6 py-4 hover:bg-blue-50 transition">
-            <span className="text-gray-600 font-medium w-1/3">Số điện thoại</span>
+            <span className="text-gray-600 font-medium w-1/3">
+              Số điện thoại
+            </span>
             <input
               name="phoneNumber"
               value={formData.phoneNumber}
@@ -207,7 +216,9 @@ export default function Profile() {
             className="flex justify-between px-6 py-4 hover:bg-blue-50 transition cursor-pointer"
             onClick={() => setShowPasswordModal(true)}
           >
-            <span className="text-gray-600 font-medium w-1/3">Mật khẩu mới</span>
+            <span className="text-gray-600 font-medium w-1/3">
+              Mật khẩu mới
+            </span>
             <span className="text-gray-800 w-2/3">••••••••</span>
           </div>
 
@@ -241,12 +252,26 @@ export default function Profile() {
               <h3 className="text-lg font-medium mb-4">Đổi mật khẩu</h3>
 
               {[
-                { label: "Mật khẩu hiện tại", value: oldPassword, setter: setOldPassword },
-                { label: "Mật khẩu mới", value: newPassword, setter: setNewPassword },
-                { label: "Xác nhận mật khẩu", value: confirmPassword, setter: setConfirmPassword },
+                {
+                  label: "Mật khẩu hiện tại",
+                  value: oldPassword,
+                  setter: setOldPassword,
+                },
+                {
+                  label: "Mật khẩu mới",
+                  value: newPassword,
+                  setter: setNewPassword,
+                },
+                {
+                  label: "Xác nhận mật khẩu",
+                  value: confirmPassword,
+                  setter: setConfirmPassword,
+                },
               ].map((f, i) => (
                 <div key={i} className="mb-3">
-                  <label className="block text-sm text-gray-600 mb-1">{f.label}</label>
+                  <label className="block text-sm text-gray-600 mb-1">
+                    {f.label}
+                  </label>
                   <input
                     type="password"
                     value={f.value}

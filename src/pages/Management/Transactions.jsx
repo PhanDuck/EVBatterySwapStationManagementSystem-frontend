@@ -9,14 +9,11 @@ import {
   Input,
   Modal,
   Form,
-
 } from "antd";
-import {
-  SearchOutlined,
-} from "@ant-design/icons";
+import { SearchOutlined } from "@ant-design/icons";
 import api from "../../config/axios";
 import MomoLogo from "../../assets/img/MoMoLogo.svg";
-import dayjs from "dayjs"; 
+import dayjs from "dayjs";
 import { showToast } from "../../Utils/toastHandler";
 
 const { RangePicker } = DatePicker;
@@ -45,7 +42,10 @@ const TransactionsPage = () => {
       setTransactions(list);
       setFilteredTransactions(list);
     } catch (error) {
-      showToast("error", error.response?.data || "Lỗi khi tải danh sách giao dịch");
+      showToast(
+        "error",
+        error.response?.data || "Lỗi khi tải danh sách giao dịch"
+      );
     } finally {
       setLoading(false);
     }

@@ -96,23 +96,7 @@ export default function InventoryPage() {
     return null;
   }, [stationInventory, batteryTypesMap]);
 
-  // Pin AVAILABLE trong kho (đã được tính số lượng) - Dùng cho Modal
-  const availableBatteryTypes = useMemo(() => {
-    const counts = warehouseInventory
-      .filter((b) => b.status === "AVAILABLE")
-      .reduce((acc, b) => {
-        acc[b.batteryTypeId] = (acc[b.batteryTypeId] || 0) + 1;
-        return acc;
-      }, {});
-
-    return Object.keys(counts).map((id) => ({
-      id: parseInt(id),
-      name: batteryTypesMap[parseInt(id)],
-      count: counts[id],
-    }));
-  }, [warehouseInventory, batteryTypesMap]);
-
-  // Lấy số lượng pin AVAILABLE theo loại (dùng cho rule của Form)
+  // Lấy số lượng pin AVAILABLE theo loại
   const getAvailableCount = useCallback(
     (typeId) => {
       if (!typeId) return 0;
@@ -233,7 +217,7 @@ export default function InventoryPage() {
       console.error(error);
       setStations([]);
     }
-  }, []);
+  }, [upperRole]);
 
   // Tải Map Loại Pin (Tên, Dung lượng)
   const fetchBatteryTypes = useCallback(async () => {
@@ -1126,7 +1110,7 @@ export default function InventoryPage() {
             dependencies={["batteryTypeId"]}
             rules={[
               { required: true, message: "Vui lòng nhập số lượng!" },
-              ({ getFieldValue }) => ({
+              () => ({
                 validator(_, value) {
                   const typeId = currentStationBatteryType?.id;
                   if (!typeId) {

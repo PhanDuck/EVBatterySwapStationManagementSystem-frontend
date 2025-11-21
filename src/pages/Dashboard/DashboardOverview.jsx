@@ -23,8 +23,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-}
- from "recharts";
+} from "recharts";
 import {
   CreditCardOutlined,
   CalendarOutlined,
@@ -39,7 +38,18 @@ import handleApiError from "../../Utils/handleApiError";
 const { Title } = Typography;
 
 // Màu sắc
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#4ECDC4", "#FF6B6B", "#45B7D1", "#C7F46D", "#779ECB"];
+const COLORS = [
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+  "#8884d8",
+  "#4ECDC4",
+  "#FF6B6B",
+  "#45B7D1",
+  "#C7F46D",
+  "#779ECB",
+];
 const BATTERY_COLORS = {
   "Enhanced 54V-24Ah": "#FF6B6B",
   "Premium 52V-22Ah": "#4ECDC4",
@@ -371,7 +381,7 @@ export default function DashboardOverview() {
                       outerRadius={100}
                       fill="#8884d8"
                       // **Đã xóa thuộc tính label và labelLine để tránh đè chữ**
-                      labelLine={false} 
+                      labelLine={false}
                     >
                       {stationUtilizationData.map((entry, index) => (
                         <Cell
@@ -385,7 +395,11 @@ export default function DashboardOverview() {
                       labelFormatter={(label) => `Trạm: ${label}`}
                     />
                     {/* Sử dụng Legend để hiển thị tên trạm */}
-                    <Legend layout="vertical" align="right" verticalAlign="middle" />
+                    <Legend
+                      layout="vertical"
+                      align="right"
+                      verticalAlign="middle"
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -421,8 +435,14 @@ export default function DashboardOverview() {
                         />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [`${value}`, "Số lượng pin"]} />
-                    <Legend layout="vertical" align="right" verticalAlign="middle" />
+                    <Tooltip
+                      formatter={(value) => [`${value}`, "Số lượng pin"]}
+                    />
+                    <Legend
+                      layout="vertical"
+                      align="right"
+                      verticalAlign="middle"
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

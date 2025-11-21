@@ -1,1394 +1,1314 @@
-# QUY TẮC VÀ LOGIC NGHIỆP VỤ HỆ THỐNG QUẢN LÝ TRẠM ĐỔI PIN XE ĐIỆN
-
-## MỤC LỤC
-1. [Quản lý Người Dùng & Xác Thực](#1-quản-lý-người-dùng--xác-thực)
-2. [Quản lý Xe & Phê Duyệt](#2-quản-lý-xe--phê-duyệt)
-3. [Quản lý Gói Dịch Vụ](#3-quản-lý-gói-dịch-vụ)
-4. [Đặt Chỗ Đổi Pin](#4-đặt-chỗ-đổi-pin)
-5. [Giao Dịch Đổi Pin](#5-giao-dịch-đổi-pin)
-6. [Quản lý Pin](#6-quản-lý-pin)
-7. [Nâng Cấp & Gia Hạn Gói](#7-nâng-cấp--gia-hạn-gói)
-8. [Email & Thông Báo](#8-email--thông-báo)
-9. [Quản lý Trạm](#9-quản-lý-trạm)
-10. [Phân Công Nhân Viên](#10-phân-công-nhân-viên)
-11. [Hỗ Trợ Khách Hàng](#11-hỗ-trợ-khách-hàng)
-12. [Quản lý Pin (CRUD)](#12-quản-lý-pin-battery)
-13. [Thanh Toán MoMo](#13-thanh-toán-momo)
-14. [Quản lý Gói Dịch Vụ (CRUD)](#14-quản-lý-gói-dịch-vụ-service-package)
-15. [Dashboard & Thống Kê](#15-dashboard--thống-kê-admin)
-16. [Quyền Hạn Theo Vai Trò](#16-quyền-hạn-theo-vai-trò-role-based-access)
-17. [Quản lý Loại Pin](#17-quản-lý-loại-pin-battery-type)
-18. [Quản lý Kho Pin](#18-quản-lý-kho-pin-station-inventory)
-19. [Quy Tắc Quan Trọng](#19-các-quy-tắc-quan-trọng-critical-rules)
-20. [Tham Khảo Nhanh](#20-tham-khảo-nhanh-cheat-sheet)
-21. [Contact & Support](#21-contact--support)
+# TỔNG QUAN BUSINESS RULES - HỆ THỐNG QUẢN LÝ TRẠM ĐỔI PIN XE ĐIỆN
+## (Dành cho Frontend Developer & Product Owner)
 
 ---
 
-## 1. QUẢN LÝ NGƯỜI DÙNG & XÁC THỰC
+## 📚 MỤC LỤC
 
-### 1.1. ĐĂNG KÝ TÀI KHOẢN (Register)
-**Endpoint:** `POST /api/register`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **CAPTCHA bắt buộc** | Phải verify CAPTCHA token từ Google reCAPTCHA trước khi tạo tài khoản |
-| 2 | **Email duy nhất** | Email không được trùng với bất kỳ tài khoản nào trong hệ thống |
-| 3 | **Số điện thoại duy nhất** | Số điện thoại phải tuân theo format Việt Nam: `(03|05|07|08|09)[0-9]{8}` và không được trùng |
-| 4 | **Vai trò mặc định** | Tài khoản mới tự động được gán role = `DRIVER` |
-| 5 | **Trạng thái mặc định** | Tài khoản mới tự động có status = `ACTIVE` |
-| 6 | **Mã hóa mật khẩu** | Mật khẩu được mã hóa bằng BCrypt trước khi lưu database |
-
-**Lỗi có thể xảy ra:**
-- `AuthenticationException`: CAPTCHA không hợp lệ
-- `IllegalArgumentException`: Email hoặc số điện thoại đã tồn tại
+1. [Tổng quan hệ thống](#1-tổng-quan-hệ-thống)
+2. [Authentication & User Management](#2-authentication--user-management)
+3. [Vehicle Management](#3-vehicle-management)
+4. [Service Package & Subscription](#4-service-package--subscription)
+5. [Booking System](#5-booking-system)
+6. [Swap Transaction](#6-swap-transaction)
+7. [Battery Management](#7-battery-management)
+8. [Station & Staff Management](#8-station--staff-management)
+9. [Payment System](#9-payment-system)
+10. [Support Ticket](#10-support-ticket)
+11. [Notification System](#11-notification-system)
+12. [Validation Rules Summary](#12-validation-rules-summary)
 
 ---
 
-### 1.2. ĐĂNG NHẬP (Login)
-**Endpoint:** `POST /api/login`
+## 1. TỔNG QUAN HỆ THỐNG
 
-**Quy tắc nghiệp vụ:**
+### 1.1. Concept
 
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Xác thực số điện thoại** | Sử dụng số điện thoại làm username để đăng nhập |
-| 2 | **Kiểm tra mật khẩu** | So sánh mật khẩu đã mã hóa với BCrypt |
-| 3 | **Tạo JWT Token** | Sau khi xác thực thành công, tạo JWT token cho session |
-| 4 | **Trả về thông tin user** | Response chứa: id, fullName, email, phoneNumber, dateOfBirth, gender, role, status, **token** |
+Hệ thống quản lý mạng lưới trạm đổi pin cho xe điện, cho phép:
+- **Driver (Tài xế)**: Đăng ký xe, mua gói dịch vụ, đặt lịch và tự đổi pin
+- **Staff (Nhân viên)**: Quản lý trạm, pin, hỗ trợ khách hàng
+- **Admin (Quản trị)**: Quản lý toàn bộ hệ thống
+
+### 1.2. Core Features
+
+```
+🚗 Vehicle Registration → 📦 Buy Service Package → 📅 Book Swap → 🔋 Self-Service Swap
+```
+
+### 1.3. User Roles
+
+| Role | Description | Key Permissions |
+|------|-------------|-----------------|
+| **DRIVER** | Tài xế sử dụng dịch vụ | Đăng ký xe, mua gói, booking, swap |
+| **STAFF** | Nhân viên trạm | Quản lý pin, booking, tickets của trạm |
+| **ADMIN** | Quản trị viên | Full access, duyệt xe, quản lý hệ thống |
 
 ---
 
-### 1.3. CẬP NHẬT PROFILE
-**Endpoint:** `PUT /api/profile`
+## 2. AUTHENTICATION & USER MANAGEMENT
 
-**Quy tắc nghiệp vụ:**
+### 2.1. Registration
 
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ user hiện tại** | Chỉ được cập nhật profile của chính mình |
-| 2 | **Email không trùng** | Nếu thay đổi email, phải kiểm tra email mới không trùng với user khác |
-| 3 | **Validate độ tuổi** | Nếu cập nhật dateOfBirth, tuổi phải từ **16-100 tuổi** |
-| 4 | **Field optional** | Các field null sẽ không được cập nhật (giữ nguyên giá trị cũ) |
-| 5 | **Cho phép gender = null** | Nếu frontend gửi gender = "" (empty string), tự động chuyển thành null |
+**Rules:**
+- ✅ Email phải unique
+- ✅ Username phải unique
+- ✅ Password tối thiểu 6 ký tự (recommend: 8+)
+- ✅ Role mặc định: `DRIVER`
+- ✅ Yêu cầu Google reCAPTCHA v2 verification
 
-**Validation tuổi:**
-```java
-int age = Period.between(request.getDateOfBirth(), LocalDate.now()).getYears();
-if (age < 15 || age > 100) {
-    throw new IllegalArgumentException("Tuổi phải từ 16 đến 100 tuổi!");
+**Required Fields:**
+```json
+{
+  "email": "driver@example.com",
+  "username": "driver123",
+  "password": "SecurePass123",
+  "fullName": "Nguyễn Văn A",
+  "phoneNumber": "0901234567",
+  "recaptchaToken": "03AGdBq2..."
 }
 ```
 
----
+### 2.2. Login
 
-### 1.4. ĐỔI MẬT KHẨU
-**Endpoint:** `POST /api/change-password`
+**Process:**
+1. User nhập email + password
+2. Backend verify credentials
+3. Trả về JWT access token (valid 7 days)
+4. Frontend lưu token và gửi kèm mỗi request
 
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Xác thực mật khẩu cũ** | Phải nhập đúng mật khẩu cũ mới được đổi |
-| 2 | **Mật khẩu mới ≠ mật khẩu cũ** | Mật khẩu mới không được trùng với mật khẩu cũ |
-| 3 | **Xác nhận mật khẩu** | newPassword phải khớp với confirmPassword |
-| 4 | **Mã hóa mật khẩu mới** | Mật khẩu mới được mã hóa bằng BCrypt |
-
----
-
-### 1.5. QUÊN MẬT KHẨU
-**Endpoint:** `POST /api/reset-password?email={email}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Kiểm tra email tồn tại** | Email phải có trong hệ thống |
-| 2 | **Tạo token reset** | Token có hiệu lực **15 phút** |
-| 3 | **Gửi email chứa link** | Link reset: `http://evbatteryswapsystem.com/reset-password?token={token}` |
-| 4 | **Không yêu cầu đăng nhập** | API public, không cần JWT token |
-
----
-
-## 2. QUẢN LÝ XE & PHÊ DUYỆT
-
-### 2.1. ĐĂNG KÝ XE (Driver)
-**Endpoint:** `POST /api/vehicle` (multipart/form-data)
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ DRIVER** | Chỉ user có role = `DRIVER` mới được đăng ký xe |
-| 2 | **VIN duy nhất** | VIN không được trùng với xe khác (chỉ check xe ACTIVE & PENDING) |
-| 3 | **Biển số duy nhất** | PlateNumber không được trùng với xe khác (chỉ check xe ACTIVE & PENDING) |
-| 4 | **Tối đa 2 xe ACTIVE** | 1 driver chỉ được có tối đa 2 xe ở trạng thái ACTIVE |
-| 5 | **Tối đa 1 xe PENDING** | Nếu đang có xe PENDING, không được đăng ký xe mới cho đến khi được duyệt/từ chối |
-| 6 | **Upload ảnh giấy đăng ký** | Bắt buộc upload file ảnh (registrationImage) |
-| 7 | **Trạng thái ban đầu** | Xe mới tạo có status = `PENDING` (chờ admin duyệt) |
-| 8 | **Loại pin phải tồn tại** | batteryTypeId phải hợp lệ |
-| 9 | **Gửi email cho Admin** | Sau khi tạo xe, tự động gửi email thông báo cho tất cả Admin |
-
-**Lỗi có thể xảy ra:**
-- `AuthenticationException`: Không phải DRIVER
-- `IllegalArgumentException`: VIN hoặc biển số trùng
-- `IllegalStateException`: Đã đủ 2 xe ACTIVE hoặc đang có xe PENDING
-
----
-
-### 2.2. PHÊ DUYỆT XE (Admin/Staff)
-**Endpoint:** `POST /api/vehicle/{id}/approve`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | Chỉ user có role = `ADMIN` hoặc `STAFF` mới được phê duyệt |
-| 2 | **Xe phải PENDING** | Chỉ phê duyệt xe ở trạng thái PENDING |
-| 3 | **Driver không quá 2 xe** | Kiểm tra driver không có quá 2 xe ACTIVE trước khi duyệt |
-| 4 | **Bắt buộc gắn pin** | Phải chỉ định batteryId để gắn pin ban đầu cho xe |
-| 5 | **Pin phải từ KHO** | Pin phải có status = `AVAILABLE`, `currentStation = NULL` và có trong `StationInventory` |
-| 6 | **Loại pin khớp với xe** | batteryType của pin phải khớp với batteryType của xe |
-| 7 | **Cập nhật trạng thái pin** | Pin chuyển sang status = `IN_USE`, currentStation = NULL |
-| 8 | **Xóa pin khỏi kho** | Xóa record pin trong `StationInventory` (pin đã lên xe) |
-| 9 | **Xe chuyển ACTIVE** | status xe = `ACTIVE` |
-| 10 | **Gửi email cho Driver** | Thông báo xe đã được phê duyệt |
-
-**Quy trình:**
-```
-1. Kiểm tra xe PENDING
-2. Kiểm tra driver chưa quá 2 xe ACTIVE
-3. Validate pin từ kho (AVAILABLE + currentStation = NULL + trong StationInventory)
-4. Kiểm tra loại pin khớp
-5. Gắn pin vào xe (vehicle.currentBattery = battery)
-6. Pin: status = IN_USE, currentStation = NULL
-7. Xóa pin khỏi StationInventory
-8. Xe: status = ACTIVE
-9. Gửi email thông báo
-```
-
----
-
-### 2.3. TỪ CHỐI XE (Admin/Staff)
-**Endpoint:** `POST /api/vehicle/{id}/reject`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | Chỉ user có role = `ADMIN` hoặc `STAFF` |
-| 2 | **Xe phải PENDING** | Chỉ từ chối xe ở trạng thái PENDING |
-| 3 | **Chuyển INACTIVE** | status xe = `INACTIVE` |
-| 4 | **Ghi nhận người từ chối** | deletedBy = currentUser, deletedAt = now() |
-| 5 | **Gửi email cho Driver** | Thông báo xe bị từ chối kèm lý do (rejectionReason) |
-
----
-
-### 2.4. XÓA XE (Soft Delete - Admin/Staff)
-**Endpoint:** `DELETE /api/vehicle/{id}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | Chỉ user có role = `ADMIN` hoặc `STAFF` |
-| 2 | **Không xóa xe đã INACTIVE** | Nếu xe đã bị xóa (INACTIVE), không cho xóa lại |
-| 3 | **Không xóa xe có booking active** | Kiểm tra xe không có booking CONFIRMED (đang chờ đổi pin) |
-| 4 | **Xử lý pin hiện tại** | Pin từ xe bị xóa chuyển sang status = `MAINTENANCE`, currentStation = NULL |
-| 5 | **Thêm pin vào kho bảo trì** | Thêm/cập nhật pin trong `StationInventory` với status = MAINTENANCE |
-| 6 | **Gỡ pin khỏi xe** | vehicle.currentBattery = NULL |
-| 7 | **Soft delete** | status = `INACTIVE`, deletedAt = now(), deletedBy = currentUser |
-
-**Lý do chuyển pin sang MAINTENANCE thay vì AVAILABLE:**
-- Pin từ xe bị xóa cần kiểm tra/bảo dưỡng trước khi đưa vào lưu thông
-
----
-
-### 2.5. CẬP NHẬT XE (Driver)
-**Endpoint:** `PUT /api/vehicle/my-vehicles/{id}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ xe của mình** | Driver chỉ được update xe thuộc sở hữu của mình |
-| 2 | **Chỉ update model & batteryType** | Không được thay đổi VIN, PlateNumber, registrationImage |
-| 3 | **Field optional** | Nếu field = null hoặc empty, giữ nguyên giá trị cũ |
-
----
-
-## 3. QUẢN LÝ GÓI DỊCH VỤ
-
-### 3.1. MUA GÓI DỊCH VỤ (Sau Thanh Toán MoMo)
-**Endpoint:** Internal - `createSubscriptionAfterPayment(packageId, driverId)`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Kiểm tra gói ACTIVE hiện tại** | Tìm gói đang ACTIVE của driver (startDate ≤ today ≤ endDate) |
-| 2 | **Không được còn lượt đổi** | Nếu gói ACTIVE còn remainingSwaps > 0 → **KHÔNG CHO MUA** |
-| 3 | **Hết hạn gói cũ nếu hết lượt** | Nếu gói ACTIVE nhưng remainingSwaps = 0 → chuyển status = `EXPIRED` |
-| 4 | **Tạo gói mới** | startDate = hôm nay, endDate = startDate + duration |
-| 5 | **Lượt đổi FULL** | remainingSwaps = maxSwaps (100% lượt đổi) |
-| 6 | **Trạng thái ACTIVE** | status = `ACTIVE` |
-
-**Logic:**
-```java
-if (existingSub.getRemainingSwaps() > 0) {
-    throw new Exception("Gói hiện tại vẫn còn lượt! Không cho mua gói mới.");
-}
-
-// Nếu remainingSwaps = 0
-existingSub.setStatus(EXPIRED);
-
-// Tạo gói mới
-newSub.setRemainingSwaps(package.getMaxSwaps());
-newSub.setStatus(ACTIVE);
-```
-
----
-
-### 3.2. XEM GÓI CỦA TÔI (Driver)
-**Endpoint:** `GET /api/driver-subscription/my-subscriptions`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ DRIVER** | role phải = `DRIVER` |
-| 2 | **Lấy tất cả gói** | Trả về tất cả subscription (ACTIVE, EXPIRED, CANCELLED) |
-| 3 | **Populate names** | Tự động fill driverName và packageName |
-
----
-
-### 3.3. XÓA GÓI (Admin)
-**Endpoint:** `DELETE /api/driver-subscription/{id}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ ADMIN** | role phải = `ADMIN` |
-| 2 | **Soft delete** | Chuyển status = `CANCELLED` (không xóa khỏi database) |
-| 3 | **Gửi email cho Driver** | Thông báo gói bị hủy kèm lý do |
-
----
-
-## 4. ĐẶT CHỖ ĐỔI PIN (BOOKING)
-
-### 4.1. TẠO BOOKING (Driver)
-**Endpoint:** `POST /api/booking`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Bắt buộc có gói ACTIVE** | Phải có subscription ACTIVE mới được booking |
-| 2 | **Kiểm tra còn lượt đổi** | remainingSwaps > 0 |
-| 3 | **Tối đa 10 booking/ngày** | 1 driver chỉ được tạo tối đa 10 booking trong 1 ngày |
-| 4 | **Xe phải thuộc driver** | vehicleId phải thuộc sở hữu của driver hiện tại |
-| 5 | **Xe phải ACTIVE** | vehicle.status = `ACTIVE` (xe đã được duyệt) |
-| 6 | **1 xe chỉ 1 booking active** | Xe không được có booking khác đang ở trạng thái PENDING/CONFIRMED |
-| 7 | **Trạm hỗ trợ loại pin** | station.batteryType phải khớp với vehicle.batteryType |
-| 8 | **Tự động set thời gian** | bookingTime = 3 giờ sau thời điểm hiện tại |
-| 9 | **Tìm pin phù hợp** | Pin phải: AVAILABLE, chargeLevel ≥ 95%, stateOfHealth ≥ 70%, cùng loại với xe |
-| 10 | **Ưu tiên pin tốt nhất** | Sort theo: health cao nhất → charge cao nhất |
-| 11 | **Đặt trước pin** | Pin: status = `PENDING`, reservedForBooking = booking |
-| 12 | **Thời gian hết hạn reservaItion** | reservationExpiry = bookingTime + 30 phút |
-| 13 | **Tự động CONFRMED** | status = `CONFIRMED` (không cần admin duyệt nữa) |
-| 14 | **Tạo confirmationCode** | Mã 6 ký tự random để driver quét tại trạm |
-| 15 | **Gửi email xác nhận** | Email chứa confirmationCode, thông tin trạm, thời gian |
-
-**Lỗi có thể xảy ra:**
-- `AuthenticationException`: Chưa mua gói, gói hết lượt, xe đã có booking active
-- `NotFoundException`: Không có pin đủ điều kiện
-
-**Logic tìm pin:**
-```java
-List<Battery> batteries = batteryRepository.findByStatus(AVAILABLE)
-    .stream()
-    .filter(b -> b.getBatteryType().equals(vehicle.getBatteryType()))
-    .filter(b -> b.getCurrentStation().equals(station))
-    .filter(b -> b.getChargeLevel() >= 95 && b.getStateOfHealth() >= 70)
-    .sorted((b1, b2) -> {
-        int healthCompare = b2.getStateOfHealth().compareTo(b1.getStateOfHealth());
-        if (healthCompare != 0) return healthCompare;
-        return b2.getChargeLevel().compareTo(b1.getChargeLevel());
-    })
-    .toList();
-
-Battery reservedBattery = batteries.get(0); // Lấy pin tốt nhất
-```
-
----
-
-### 4.2. HỦY BOOKING (Driver)
-**Endpoint:** `DELETE /api/booking/my-bookings/{id}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ booking của mình** | Chỉ được hủy booking thuộc về driver hiện tại |
-| 2 | **Không hủy COMPLETED** | Booking đã hoàn thành không được hủy |
-| 3 | **Không hủy CANCELLED** | Booking đã hủy rồi không hủy lại |
-| 4 | **Chỉ hủy trước 1 tiếng** | Chỉ được hủy nếu còn ≥ 60 phút trước bookingTime |
-| 5 | **Giải phóng pin** | Nếu booking CONFIRMED và có reservedBattery → chuyển pin về AVAILABLE, xóa reservation |
-| 6 | **Chuyển CANCELLED** | status = `CANCELLED`, cancellationReason = lý do |
-| 7 | **Gửi email thông báo** | Email thông báo booking đã hủy |
-
-**Lỗi có thể xảy ra:**
-- `AuthenticationException`: Quá gần giờ hẹn (< 60 phút), hoặc booking đã complete/cancel
-
-**Logic kiểm tra thời gian:**
-```java
-LocalDateTime now = LocalDateTime.now();
-long minutesUntilBooking = ChronoUnit.MINUTES.between(now, booking.getBookingTime());
-
-if (minutesUntilBooking < 60) {
-    throw new AuthenticationException(
-        "Chỉ được hủy booking trước 1 tiếng. " +
-        "Thời gian còn lại: " + minutesUntilBooking + " phút"
-    );
+**Response:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "user": {
+    "id": 5,
+    "email": "driver@example.com",
+    "role": "DRIVER",
+    "fullName": "Nguyễn Văn A"
+  }
 }
 ```
 
+### 2.3. JWT Token
+
+**Characteristics:**
+- **Validity**: 7 days (604,800,000 ms)
+- **Algorithm**: HMAC-SHA256
+- **Payload**: Contains userId
+- **Usage**: Header `Authorization: Bearer <token>`
+
+**Token Expiry Handling:**
+- Frontend phải check token expired
+- Nếu expired → Redirect to login
+- Recommend: Refresh token trước 1 ngày hết hạn
+
+### 2.4. Password Reset
+
+**Flow:**
+1. User request reset password với email
+2. Backend gửi email có reset token (valid 15 minutes)
+3. User click link, nhập password mới
+4. Token verified và password được cập nhật
+
+**Important:**
+- ⏰ Reset token chỉ valid 15 phút
+- 🔒 Token chỉ dùng được 1 lần
+- ❌ Token cũ invalid sau khi đổi password
+
 ---
 
-### 4.3. TỰ ĐỘNG HỦY BOOKING HẾT HẠN (Scheduler)
-**Service:** `BookingExpirationScheduler` - Chạy mỗi 5 phút
+## 3. VEHICLE MANAGEMENT
 
-**Quy tắc nghiệp vụ:**
+### 3.1. Vehicle Registration (Driver)
 
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Tìm booking quá hạn** | status = CONFIRMED và bookingTime + 30 phút < now |
-| 2 | **Chuyển CANCELLED** | status = `CANCELLED`, cancellationReason = "Hết hạn - không đến" |
-| 3 | **Giải phóng pin** | Pin về AVAILABLE, xóa reservedForBooking |
-| 4 | **TRỪ LƯỢT SWAP** | subscription.remainingSwaps -= 1 (phạt không đến) |
-| 5 | **Check subscription hết lượt** | Nếu remainingSwaps = 0 → status = `EXPIRED` |
-| 6 | **Gửi email thông báo** | Email thông báo booking hủy và bị trừ lượt |
+**Business Rules:**
 
-**Logic trừ lượt:**
-```java
-if (subscription.getRemainingSwaps() > 0) {
-    subscription.setRemainingSwaps(subscription.getRemainingSwaps() - 1);
-    
-    if (subscription.getRemainingSwaps() == 0) {
-        subscription.setStatus(EXPIRED);
-    }
+#### Giới hạn số lượng:
+- ✅ Tối đa **2 xe ACTIVE** (đang hoạt động)
+- ✅ Tối đa **1 xe PENDING** (đang chờ duyệt)
+- ❌ Không thể đăng ký xe thứ 3 khi đã có 2 xe ACTIVE
+- ❌ Không thể đăng ký xe thứ 2 PENDING khi đã có 1 xe đang chờ
+
+#### Validation:
+- VIN: 17 ký tự, unique (chỉ check xe ACTIVE/PENDING)
+- Biển số: Unique (chỉ check xe ACTIVE/PENDING)
+- Ảnh giấy đăng ký: Required, max 10MB, format JPG/PNG/PDF
+- Loại pin: Phải chọn từ danh sách có sẵn
+
+**Required Fields:**
+```json
+{
+  "vin": "1HGBH41JXMN109186",
+  "plateNumber": "30A12345",
+  "model": "VinFast VF8",
+  "batteryTypeId": 1,
+  "registrationImageFile": <File>
 }
 ```
 
----
-
-## 5. GIAO DỊCH ĐỔI PIN (SWAP TRANSACTION)
-
-### 5.1. XEM PIN CŨ (Trước khi đổi)
-**Endpoint:** `GET /api/swap-transaction/old-battery/{confirmationCode}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Validate confirmationCode** | Phải tồn tại booking với mã này |
-| 2 | **Booking phải CONFIRMED** | status = `CONFIRMED` |
-| 3 | **Chưa được swap** | Chưa có SwapTransaction nào liên kết với booking này |
-| 4 | **Lấy pin từ xe** | oldBattery = vehicle.currentBattery |
-| 5 | **Trả về thông tin pin cũ** | model, chargeLevel, stateOfHealth |
-
----
-
-### 5.2. XEM PIN MỚI (Chuẩn bị lắp)
-**Endpoint:** `GET /api/swap-transaction/new-battery/{confirmationCode}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Validate confirmationCode** | Booking phải CONFIRMED |
-| 2 | **Chưa được swap** | Chưa có SwapTransaction |
-| 3 | **Lấy pin đã reserve** | Pin có status = PENDING và reservedForBooking = booking |
-| 4 | **Trả về thông tin pin mới** | model, chargeLevel, stateOfHealth |
-
----
-
-### 5.3. THỰC HIỆN ĐỔI PIN (Driver tự swap bằng confirmationCode)
-**Endpoint:** `POST /api/swap-transaction/swap-by-code/{confirmationCode}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Tìm booking** | Tìm booking theo confirmationCode |
-| 2 | **Lấy driver từ booking** | Không cần authentication (API public) |
-| 3 | **Validate booking status** | - COMPLETED → Đã dùng rồi<br>- CANCELLED → Đã hủy<br>- Chỉ cho phép CONFIRMED |
-| 4 | **Kiểm tra chưa swap** | Chưa có SwapTransaction nào cho booking này |
-| 5 | **Validate subscription ACTIVE** | Driver phải có gói ACTIVE |
-| 6 | **Kiểm tra còn lượt** | remainingSwaps > 0 |
-| 7 | **Validate loại pin** | station.batteryType = vehicle.batteryType |
-| 8 | **Lấy pin đã reserve** | Pin PENDING + reservedForBooking = booking |
-| 9 | **Tạo SwapTransaction** | driver, vehicle, station, staff = NULL (vì tự động) |
-| 10 | **Lưu snapshot pin** | Lưu thông tin pin cũ & mới tại thời điểm swap |
-| 11 | **Set COMPLETED ngay** | status = `COMPLETED`, cost = 0 (đã trả qua subscription) |
-| 12 | **Hoàn tất giao dịch** | Gọi `handleTransactionCompletion()` |
-
-**handleTransactionCompletion() - Logic xử lý sau swap:**
-
-| STT | Bước | Chi tiết |
-|-----|------|----------|
-| 1 | **Xử lý pin cũ** | Pin cũ từ xe → status = `AVAILABLE`, currentStation = station, xóa reservedForBooking |
-| 2 | **Xử lý pin mới** | Pin mới → status = `IN_USE`, lắp lên xe (vehicle.currentBattery), xóa reservedForBooking |
-| 3 | **Trừ lượt swap** | subscription.remainingSwaps -= 1 |
-| 4 | **Cập nhật booking** | status = `COMPLETED`, xóa confirmationCode (để tái sử dụng) |
-| 5 | **Kiểm tra subscription hết lượt** | Nếu remainingSwaps = 0 → subscription.status = `EXPIRED` |
-| 6 | **Gửi email thành công** | Email chứa thông tin pin cũ/mới, lượt còn lại |
-
-**Lỗi có thể xảy ra:**
-- `NotFoundException`: Không tìm thấy booking/pin
-- `AuthenticationException`: 
-  - Mã đã sử dụng
-  - Booking đã hủy/chưa confirm
-  - Chưa có gói ACTIVE
-  - Hết lượt swap
-  - Loại pin không khớp
-
----
-
-## 6. QUẢN LÝ PIN
-
-### 6.1. TRẠNG THÁI PIN (Battery Status)
-
-| Status | Mô tả | Vị trí |
-|--------|-------|--------|
-| `AVAILABLE` | Pin sẵn sàng tại trạm, có thể đặt trước | Tại trạm (currentStation ≠ NULL) |
-| `IN_USE` | Pin đang được lắp trên xe | Trên xe (vehicle.currentBattery) |
-| `PENDING` | Pin đã được đặt trước cho booking | Tại trạm (reservedForBooking ≠ NULL) |
-| `MAINTENANCE` | Pin đang bảo trì, không khả dụng | Kho hoặc trạm |
-| `RETIRED` | Pin đã hết tuổi thọ, ngừng sử dụng | Kho |
-
----
-
-### 6.2. LOGIC XỬ LÝ PIN KHI ĐỔI
-
-**Pin CŨ (từ xe):**
-```java
-oldBattery.setStatus(AVAILABLE);
-oldBattery.setCurrentStation(station); // Về trạm
-oldBattery.setReservedForBooking(null);
-vehicle.setCurrentBattery(null); // Gỡ khỏi xe
+**Status Flow:**
 ```
+PENDING (Mới tạo)
+    ↓
+    ├─→ ACTIVE (Admin duyệt + gắn pin)
+    └─→ INACTIVE (Admin từ chối hoặc xóa)
+```
+
+**After Registration:**
+- Status: `PENDING`
+- Email gửi đến tất cả Admin
+- Driver chờ duyệt (thường 1-24h)
+- Xe PENDING không thể đặt lịch đổi pin
+
+### 3.2. Vehicle Approval (Admin)
+
+**Requirements:**
+- ✅ Xe phải ở status `PENDING`
+- ✅ Driver chưa có đủ 2 xe ACTIVE
+- ✅ Phải chọn pin từ kho để gắn vào xe
+- ✅ Pin phải khớp loại với xe
+
+**Pin từ kho:**
+- Status: `AVAILABLE`
+- Location: Trong kho (không thuộc trạm nào)
+- ChargeLevel: >= 80%
+- StateOfHealth: >= 70%
+
+**After Approval:**
+- Xe: `PENDING` → `ACTIVE`
+- Pin: Gắn vào xe, status `IN_USE`
+- Email thông báo driver
+- Driver có thể bắt đầu đặt lịch
+
+### 3.3. Vehicle Rejection (Admin)
+
+**Rules:**
+- ✅ Xe phải ở status `PENDING`
+- ✅ Phải ghi lý do từ chối
+
+**After Rejection:**
+- Xe: `PENDING` → `INACTIVE`
+- Email thông báo driver kèm lý do
+- Driver có thể đăng ký lại với thông tin đúng
+
+### 3.4. Vehicle Deletion
+
+**Rules:**
+- ✅ Chỉ Admin/Staff mới xóa được
+- ❌ KHÔNG xóa được nếu xe có booking đang chờ (CONFIRMED)
+- ✅ Pin trên xe sẽ được trả về kho để kiểm tra
+
+**After Deletion:**
+- Xe: `ACTIVE/PENDING` → `INACTIVE` (soft delete)
+- Pin: Về kho với status `MAINTENANCE`
+- Driver có thể đăng ký xe mới
+
+---
+
+## 4. SERVICE PACKAGE & SUBSCRIPTION
+
+### 4.1. Service Package Structure
+
+**Package Example:**
+```json
+{
+  "id": 1,
+  "name": "Gói Cơ Bản",
+  "duration": 30,        // Số ngày
+  "maxSwaps": 20,        // Số lượt đổi pin
+  "price": 400000        // VNĐ
+}
+```
+
+**Common Packages:**
+- 🥉 Gói Cơ Bản: 20 lượt / 30 ngày = 400,000đ
+- 🥈 Gói Tiêu Chuẩn: 50 lượt / 30 ngày = 800,000đ
+- 🥇 Gói VIP: 100 lượt / 30 ngày = 1,400,000đ
+
+### 4.2. Purchase (Mua gói mới)
+
+**When can purchase?**
+- ✅ Chưa có gói nào
+- ✅ Gói cũ đã HẾT LƯỢT (`remainingSwaps = 0`)
+- ❌ KHÔNG được mua khi gói cũ còn lượt (phải dùng hết hoặc nâng cấp)
+
+**After Purchase:**
+```
+Start Date: Hôm nay
+End Date: Hôm nay + duration
+Remaining Swaps: maxSwaps (FULL)
+Status: ACTIVE
+```
+
+**Example:**
+- Mua ngày 01/12: startDate = 01/12, endDate = 31/12
+- Nhận full 20 lượt
+- Có thể dùng từ 01/12 đến 31/12
+
+### 4.3. Upgrade (Nâng cấp gói)
+
+**When can upgrade?**
+- ✅ Đang có gói ACTIVE
+- ✅ Muốn chuyển sang gói đắt hơn hoặc nhiều lượt hơn
+
+**How it works?**
+
+**Công thức:**
+```
+Giá trị hoàn lại = (Lượt chưa dùng) × (Giá gói cũ ÷ Tổng lượt gói cũ)
+Số tiền cần trả = Giá gói mới - Giá trị hoàn lại
+```
+
+**Example:**
+```
+Gói cũ: Gói Cơ Bản
+- 20 lượt = 400,000đ
+- Đã dùng: 5 lượt
+- Còn lại: 15 lượt
+
+Gói mới: Gói Tiêu Chuẩn
+- 50 lượt = 800,000đ
+
+Tính toán:
+- Giá 1 lượt gói cũ = 400,000 ÷ 20 = 20,000đ
+- Giá trị hoàn lại = 15 × 20,000 = 300,000đ
+- Cần trả = 800,000 - 300,000 = 500,000đ
+```
+
+**After Upgrade:**
+- Gói cũ: HỦY ngay (EXPIRED)
+- Gói mới: Kích hoạt với FULL 50 lượt (không cộng 15 lượt cũ)
+- Start date: Hôm nay
+- End date: Hôm nay + 30 ngày
+
+**UI Recommendation:**
+```
+Hiển thị cho user:
+✓ Gói hiện tại: Gói Cơ Bản (còn 15 lượt)
+✓ Gói muốn nâng cấp: Gói Tiêu Chuẩn
+✓ Hoàn lại: 300,000đ (15 lượt × 20,000đ/lượt)
+✓ Cần thanh toán: 500,000đ
+✓ Nhận được: 50 lượt mới, dùng trong 30 ngày
+```
+
+### 4.4. Renewal (Gia hạn gói)
+
+**Rules:**
+- ✅ CHỈ gia hạn CÙNG GÓI đang dùng
+- ❌ Muốn đổi gói khác → Dùng Upgrade
+
+**Early Renewal (Gia hạn sớm - còn hạn):**
+
+**Benefits:**
+- 🎁 Cộng dồn lượt chưa dùng
+- 🎁 Cộng dồn thời gian
+- 🎁 Giảm 5% giá gói
+
+**Example:**
+```
+Gói hiện tại: Gói Cơ Bản (20 lượt/30 ngày)
+- Còn 8 lượt chưa dùng
+- Còn 10 ngày chưa hết hạn
+
+Gia hạn sớm:
+- Giá gốc: 400,000đ
+- Giảm 5%: -20,000đ
+- Thanh toán: 380,000đ
+
+Nhận được:
+- Lượt swap: 8 (cũ) + 20 (mới) = 28 lượt
+- Thời gian: 10 (còn lại) + 30 (mới) = 40 ngày
+```
+
+**Late Renewal (Gia hạn trễ - hết hạn):**
+
+**Characteristics:**
+- ❌ Mất lượt chưa dùng
+- ❌ Không giảm giá
+- Reset hoàn toàn
+
+**Example:**
+```
+Gói đã hết hạn:
+- Còn 5 lượt nhưng đã quá ngày hết hạn
+
+Gia hạn trễ:
+- Thanh toán: 400,000đ (full giá)
+- Nhận được: 20 lượt mới (mất 5 lượt cũ)
+- Thời gian: 30 ngày mới
+```
+
+**UI Recommendation:**
+```
+Nếu còn hạn:
+✓ "Gia hạn ngay để nhận ưu đãi!"
+✓ "Còn X ngày, Y lượt sẽ được giữ lại"
+✓ "Giảm 5% khi gia hạn sớm"
+
+Nếu hết hạn:
+⚠ "Gói đã hết hạn. Gia hạn sẽ mất lượt chưa dùng"
+⚠ "Không có ưu đãi giảm giá"
+```
+
+### 4.5. Subscription Status
+
+**Status Types:**
+- `ACTIVE` - Đang hoạt động, còn thời gian và lượt
+- `EXPIRED` - Hết hạn (hết thời gian hoặc hết lượt)
+- `CANCELLED` - Bị admin hủy
+
+**Auto Expiry:**
+- Hết lượt (`remainingSwaps = 0`) → `EXPIRED`
+- Hết thời gian (`endDate < today`) → `EXPIRED`
+
+---
+
+## 5. BOOKING SYSTEM
+
+### 5.1. Create Booking
+
+**Prerequisites:**
+- ✅ Phải có subscription ACTIVE
+- ✅ Subscription còn ít nhất 1 lượt
+- ✅ Xe phải ở status ACTIVE
+- ✅ 1 xe chỉ được có 1 booking ACTIVE
+
+**Automatic Behaviors:**
+
+#### 1. Thời gian tự động:
+```
+Thời điểm đặt: 10:00
+Giờ booking: 13:00 (TỰ ĐỘNG +3 tiếng)
+```
+- User KHÔNG chọn thời gian
+- Hệ thống tự set 3 tiếng sau
+- Đảm bảo đủ thời gian chuẩn bị
+
+#### 2. Pin tự động reserve:
+**Hệ thống tìm pin theo thứ tự:**
+- Đúng trạm
+- Đúng loại pin
+- Status = AVAILABLE
+- Pin >= 95%
+- Sức khỏe >= 70%
+- Ưu tiên: Sức khỏe cao nhất → Pin đầy nhất
+
+**Pin được chọn:**
+- Status: `AVAILABLE` → `PENDING`
+- Locked cho booking này
+- Không ai khác dùng được đến giờ booking
+
+#### 3. Tự động CONFIRMED:
+- Status: `CONFIRMED` ngay lập tức
+- Không cần staff duyệt
+- Generate confirmation code (10 ký tự)
+- Code gửi qua email
+
+#### 4. Trừ lượt ngay:
+```
+Subscription trước booking: 20 lượt
+Sau khi tạo booking: 19 lượt (trừ ngay)
+```
+- Trừ ngay khi booking (không đợi swap)
+- Tránh user book nhiều rồi hủy
+
+**Limits:**
+- Max 10 bookings per driver per day
+- 1 xe = 1 booking active
+
+**Response:**
+```json
+{
+  "id": 15,
+  "confirmationCode": "A7K9M3X2P1",
+  "status": "CONFIRMED",
+  "bookingTime": "2024-11-21T16:30:00",
+  "createdAt": "2024-11-21T13:30:00",
+  "vehicle": {...},
+  "station": {...},
+  "reservedBattery": {
+    "id": 12,
+    "chargeLevel": 98.5,
+    "stateOfHealth": 95.0
+  },
+  "remainingSwaps": 19
+}
+```
+
+**UI Flow:**
+```
+1. Driver chọn xe + trạm
+2. Click "Đặt lịch"
+3. Hiển thị:
+   ✓ Xe: 30A12345
+   ✓ Trạm: Trạm Quận 1
+   ✓ Thời gian: 16:30 (3 tiếng sau)
+   ✓ Pin dự kiến: 98% (sức khỏe 95%)
+   ✓ Trừ 1 lượt (còn 19 lượt)
+4. Confirm → Success
+5. Lưu mã code để swap
+```
+
+### 5.2. Cancel Booking
+
+**By Driver:**
+
+**Rules:**
+- ✅ Chỉ hủy được TRƯỚC **1 TIẾNG** (60 phút)
+- ✅ Hoàn lại 1 lượt swap
+- ✅ Pin được giải phóng
+
+**Example:**
+```
+Booking lúc: 16:30
+Có thể hủy đến: 15:30
+Sau 15:30: Không hủy được, phải liên hệ staff
+```
+
+**After Cancel:**
+- Booking status: `CANCELLED`
+- Pin: `PENDING` → `AVAILABLE`
+- Subscription: +1 lượt (hoàn lại)
+- Confirmation code: Xóa
+
+**By Staff/Admin:**
+
+**Rules:**
+- ✅ Hủy được BẤT KỲ LÚC NÀO
+- ✅ Staff chỉ hủy booking của trạm mình
+- ✅ Phải ghi lý do
+- ✅ Hoàn lại lượt cho driver
+
+**UI Messages:**
+```
+Còn > 1h:
+✓ "Hủy booking" button enabled
+✓ "Bạn sẽ được hoàn lại 1 lượt"
+
+Còn < 1h:
+✗ "Hủy booking" button disabled
+⚠ "Quá gần giờ đặt. Vui lòng liên hệ staff qua ticket"
+```
+
+### 5.3. View Booking
+
+**Driver:**
+- Xem bookings của mình (tất cả status)
+
+**Staff:**
+- Xem bookings của trạm mình quản lý
+
+**Admin:**
+- Xem tất cả bookings
+
+**Status Types:**
+- `CONFIRMED` - Đã xác nhận, chờ đổi pin
+- `COMPLETED` - Đã đổi pin xong
+- `CANCELLED` - Đã hủy
+
+---
+
+## 6. SWAP TRANSACTION
+
+### 6.1. Self-Service Swap
+
+**Concept:**
+- Driver tự đổi pin tại trạm
+- Không cần staff hỗ trợ
+- Dùng confirmation code để xác thực
+
+**Flow:**
+
+#### 1. Đến trạm đúng giờ:
+```
+Booking time: 16:30
+Driver nên đến: 16:15 - 16:30
+```
+
+#### 2. Mở app, nhập mã:
+```
+Input: A7K9M3X2P1 (10 ký tự)
+```
+
+#### 3. Xem thông tin pin:
+**GET Pin CŨ (đang trên xe):**
+```json
+{
+  "batteryRole": "OLD",
+  "batteryId": 8,
+  "model": "BAT-050",
+  "chargeLevel": 25.0,
+  "stateOfHealth": 88.5
+}
+```
+
+**GET Pin MỚI (chuẩn bị lắp):**
+```json
+{
+  "batteryRole": "NEW",
+  "batteryId": 12,
+  "model": "BAT-075",
+  "chargeLevel": 98.5,
+  "stateOfHealth": 95.0
+}
+```
+
+#### 4. Xác nhận swap:
+```
+POST /api/swap/by-code?code=A7K9M3X2P1
+```
+
+#### 5. Hệ thống xử lý:
+- Gỡ pin cũ khỏi xe
+- Lắp pin mới lên xe
+- Pin cũ về trạm (status CHARGING hoặc MAINTENANCE)
+- Pin mới status IN_USE
+- Booking COMPLETED
+- Subscription kiểm tra hết lượt → EXPIRED
+
+#### 6. Email thông báo:
+- Swap thành công
+- Thông tin 2 pin
+- Số lượt còn lại
+
+**Important Notes:**
+- ⚠️ Mã code chỉ dùng được 1 lần
+- ⚠️ Không chia sẻ mã cho người khác
+- ⚠️ Đến đúng giờ, đến sớm/trễ quá có thể không swap được
+
+### 6.2. Battery Handling After Swap
 
 **Pin MỚI (lắp lên xe):**
-```java
-newBattery.setStatus(IN_USE);
-newBattery.setCurrentStation(null); // Rời trạm
-newBattery.setReservedForBooking(null);
-vehicle.setCurrentBattery(newBattery); // Lắp lên xe
+- Status: `PENDING` → `IN_USE`
+- Location: Rời trạm, lên xe
+- Vehicle: Cập nhật currentBattery
+
+**Pin CŨ (gỡ từ xe):**
+- Location: Về trạm
+- Status check:
+  - **Sức khỏe < 70%** → `MAINTENANCE` (cần bảo dưỡng)
+  - **Sức khỏe >= 70% & pin chưa đầy** → `CHARGING` (đang sạc)
+  - **Sức khỏe >= 70% & pin đã đầy** → `AVAILABLE` (sẵn sàng)
+
+**UI Display:**
+```
+Lịch sử swap hiển thị:
+✓ Pin cũ: 25% (Đem vào trạm)
+✓ Pin mới: 98% (Lấy từ trạm)
+✓ Trạm: Trạm Quận 1
+✓ Thời gian: 21/11/2024 16:35
+```
+
+### 6.3. View Swap History
+
+**By Driver:**
+- Xem lịch sử swap của mình
+- Xem lịch sử swap của từng xe
+
+**By Staff/Admin:**
+- Xem tất cả swap transactions
+
+**Information Displayed:**
+- Thời gian swap
+- Trạm
+- Xe (biển số, model)
+- Pin cũ (model, %, sức khỏe)
+- Pin mới (model, %, sức khỏe)
+- Số lượt còn lại sau swap
+
+---
+
+## 7. BATTERY MANAGEMENT
+
+### 7.1. Battery Status
+
+**Status Flow:**
+```
+AVAILABLE (Sẵn sàng)
+    ↓
+PENDING (Đã reserve)
+    ↓
+IN_USE (Trên xe)
+    ↓
+CHARGING (Đang sạc)
+    ↓
+AVAILABLE hoặc MAINTENANCE
+```
+
+**Status Meanings:**
+- `AVAILABLE` - Sẵn sàng, có thể booking
+- `PENDING` - Đã được reserve, không ai khác dùng được
+- `IN_USE` - Đang lắp trên xe
+- `CHARGING` - Đang sạc tại trạm
+- `MAINTENANCE` - Bảo dưỡng (health < 70%)
+- `RETIRED` - Ngừng sử dụng vĩnh viễn
+
+### 7.2. Battery Location
+
+**3 vị trí:**
+
+**1. Trong KHO:**
+- currentStation = NULL
+- Status = AVAILABLE
+- Dùng để gắn vào xe mới duyệt
+
+**2. Tại TRẠM:**
+- currentStation = Station ID
+- Status = AVAILABLE/CHARGING/MAINTENANCE
+- Có thể booking
+
+**3. Trên XE:**
+- currentStation = NULL
+- Status = IN_USE
+- Không thể booking
+
+### 7.3. Battery Health
+
+**Key Metrics:**
+- **ChargeLevel**: Mức pin (0-100%)
+- **StateOfHealth**: Sức khỏe pin (0-100%)
+
+**Health Thresholds:**
+- >= 95%: Excellent
+- 80-94%: Good
+- 70-79%: Fair
+- < 70%: Poor (cần bảo dưỡng)
+
+**Health Degradation:**
+- Sau mỗi lần swap, SOH giảm 0.1-0.5%
+- Pin < 70% SOH → MAINTENANCE
+
+### 7.4. Battery for Booking
+
+**Requirements:**
+- ✅ Đúng trạm
+- ✅ Đúng loại pin
+- ✅ Status = AVAILABLE
+- ✅ ChargeLevel >= 95%
+- ✅ StateOfHealth >= 70%
+
+**Priority:**
+1. Sức khỏe cao nhất
+2. Pin đầy nhất
+
+---
+
+## 8. STATION & STAFF MANAGEMENT
+
+### 8.1. Station Information
+
+**Structure:**
+```json
+{
+  "id": 3,
+  "name": "Trạm Quận 1",
+  "location": "123 Nguyễn Huệ, Q1, TP.HCM",
+  "city": "TP.HCM",
+  "district": "Quận 1",
+  "contactInfo": "0901234567",
+  "batteryType": {
+    "id": 1,
+    "name": "Lithium-Ion 75kWh"
+  },
+  "availableBatteries": 8,
+  "status": "ACTIVE"
+}
+```
+
+### 8.2. Staff Station Assignment
+
+**Rules:**
+- ✅ 1 staff có thể quản lý NHIỀU trạm
+- ✅ 1 trạm có thể có NHIỀU staff
+- ✅ Chỉ Admin mới assign
+
+**Staff Permissions:**
+- Xem/Cập nhật pin của trạm mình
+- Xem/Hủy booking của trạm mình
+- Xử lý tickets của trạm mình
+
+**Authorization Check:**
+```
+Staff thao tác resource → Check resource.station IN staff.assignedStations
+```
+
+### 8.3. Compatible Stations
+
+**For Booking:**
+```
+GET /api/bookings/compatible-stations?vehicleId=1
+```
+
+**Returns:**
+- Trạm có cùng loại pin với xe
+- Trạm có pin sẵn sàng (>= 1 pin AVAILABLE)
+- Trạm đang ACTIVE
+
+**UI Display:**
+```
+✓ Trạm Quận 1 (5.2km)
+  📍 123 Nguyễn Huệ, Q1
+  🔋 8 pin sẵn sàng
+  ☎ 0901234567
+  
+✓ Trạm Quận 3 (8.7km)
+  📍 456 Lê Văn Sỹ, Q3
+  🔋 3 pin sẵn sàng
+  ☎ 0909876543
 ```
 
 ---
 
-### 6.3. ĐIỀU KIỆN PIN HỢP LỆ ĐỂ BOOKING
+## 9. PAYMENT SYSTEM
 
-| Điều kiện | Giá trị |
-|-----------|---------|
-| Status | `AVAILABLE` |
-| ChargeLevel | ≥ 95% |
-| StateOfHealth | ≥ 70% |
-| BatteryType | Khớp với vehicle.batteryType |
-| CurrentStation | = station trong booking |
-| ReservedForBooking | NULL (chưa ai đặt) |
+### 9.1. Payment Gateway
 
----
+**Provider:** MoMo
 
-## 7. NÂNG CẤP & GIA HẠN GÓI
+**Environment:** Sandbox (Test)
 
-### 7.1. NÂNG CẤP GÓI (Upgrade - Mô hình Telco)
-**Endpoint:** `POST /api/driver-subscription/calculate-upgrade?newPackageId={id}`
+**Payment Flow:**
+```
+1. User chọn gói/upgrade/renewal
+2. Frontend → POST /api/momo/payment/{type}
+3. Backend tạo payment request → MoMo
+4. MoMo trả về payUrl
+5. Frontend redirect user → MoMo payment page
+6. User thanh toán trên MoMo app
+7. MoMo callback → Backend
+8. Backend xử lý logic (tạo subscription/upgrade/renewal)
+9. Frontend hiển thị kết quả
+```
 
-**Quy tắc nghiệp vụ:**
+### 9.2. Payment Types
 
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ DRIVER** | role = `DRIVER` |
-| 2 | **Phải có gói ACTIVE** | Tìm subscription ACTIVE hiện tại |
-| 3 | **Gói mới phải cao hơn** | newPackage.price > currentPackage.price HOẶC newPackage.maxSwaps > currentPackage.maxSwaps |
-| 4 | **HỦY gói cũ hoàn toàn** | oldSubscription.status = `EXPIRED`, mất hết lượt còn lại |
-| 5 | **KÍCH HOẠT gói mới FULL** | newSubscription.remainingSwaps = newPackage.maxSwaps (100%) |
-| 6 | **THANH TOÁN FULL giá** | paymentRequired = newPackage.price |
-| 7 | **KHÔNG hoàn tiền** | refundValue = 0 |
-| 8 | **KHÔNG bonus** | Chỉ nhận đúng maxSwaps của gói mới |
+**PURCHASE:**
+```json
+POST /api/momo/payment/purchase
+{
+  "packageId": 1,
+  "driverId": 5
+}
+```
+- Mua gói mới
+- Amount = giá gói
 
-**Logic thanh toán (Mô hình Telco - Đơn giản nhất):**
-```java
-// HỦY gói cũ
-oldSub.setStatus(EXPIRED);
-oldSub.setEndDate(LocalDate.now());
+**UPGRADE:**
+```json
+POST /api/momo/payment/upgrade
+{
+  "packageId": 2,
+  "driverId": 5
+}
+```
+- Nâng cấp gói
+- Amount = giá gói mới - giá trị hoàn lại
 
-// Tạo gói mới FULL 100%
-newSub.setRemainingSwaps(newPackage.getMaxSwaps());
-newSub.setStatus(ACTIVE);
-newSub.setStartDate(LocalDate.now());
-newSub.setEndDate(LocalDate.now().plusDays(newPackage.getDuration()));
+**RENEWAL:**
+```json
+POST /api/momo/payment/renewal
+{
+  "packageId": 1,
+  "driverId": 5
+}
+```
+- Gia hạn gói
+- Amount = giá gói (có giảm 5% nếu sớm)
 
-// THANH TOÁN = GIÁ FULL GÓI MỚI
-paymentRequired = newPackage.getPrice();
+### 9.3. Payment Status
+
+**Success:**
+```json
+{
+  "resultCode": 0,
+  "message": "Thanh toán thành công"
+}
+```
+- Backend tạo/cập nhật subscription
+- Gửi email thông báo
+
+**Failed:**
+```json
+{
+  "resultCode": 1006,
+  "message": "Giao dịch bị từ chối"
+}
+```
+- Không tạo subscription
+- User có thể thử lại
+
+**Common Result Codes:**
+- `0` - Success
+- `1006` - Declined
+- `1000` - Timeout
+- `9000` - System error
+
+### 9.4. Payment History
+
+**Driver View:**
+```
+GET /api/payments/my
+```
+
+**Response:**
+```json
+[
+  {
+    "id": 8,
+    "orderId": "ORDER_1732185600_5",
+    "amount": 800000,
+    "status": "SUCCESS",
+    "paymentMethod": "MOMO",
+    "transactionId": "MOMO_TXN_123456",
+    "createdAt": "2024-11-21T10:00:00",
+    "servicePackage": {
+      "name": "Gói Tiêu Chuẩn"
+    },
+    "paymentType": "PURCHASE"
+  }
+]
 ```
 
 ---
 
-### 7.2. GIA HẠN GÓI (Renewal - Chỉ cùng gói)
-**Endpoint:** `POST /api/driver-subscription/calculate-renewal?renewalPackageId={id}`
+## 10. SUPPORT TICKET
 
-**Quy tắc nghiệp vụ:**
+### 10.1. Create Ticket
 
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ DRIVER** | role = `DRIVER` |
-| 2 | **Lấy gói gần nhất** | Lấy subscription có ID lớn nhất (gói được tạo sau cùng) |
-| 3 | **Gói không bị CANCELLED** | Nếu gói gần nhất đã CANCELLED → không cho gia hạn |
-| 4 | **Chỉ gia hạn CÙNG GÓI** | renewalPackageId phải = currentPackage.id |
-| 5 | **CASE 1: Gia hạn sớm** | Gói chưa hết hạn (endDate ≥ today) |
-| 6 | **- Stack lượt swap** | totalSwaps = remainingSwaps + renewalPackage.maxSwaps |
-| 7 | **- Stack thời gian** | newEndDate = currentEndDate + renewalPackage.duration |
-| 8 | **- Giảm giá 5%** | earlyDiscount = 5% (khuyến khích renew sớm) |
-| 9 | **CASE 2: Gia hạn trễ** | Gói đã hết hạn (endDate < today) |
-| 10 | **- Reset lượt swap** | totalSwaps = renewalPackage.maxSwaps (mất lượt cũ) |
-| 11 | **- Reset thời gian** | newEndDate = today + renewalPackage.duration |
-| 12 | **- Không giảm giá** | earlyDiscount = 0 |
+**When to create?**
+- ❓ Có câu hỏi về dịch vụ
+- 🔧 Gặp sự cố kỹ thuật
+- 🔋 Pin bị lỗi sau swap
+- 📍 Trạm có vấn đề
+- 💳 Vấn đề thanh toán
 
-**Logic gia hạn sớm:**
-```java
-if (!isExpired) {
-    // Gia hạn SỚM
-    totalSwaps = remainingSwaps + renewalPackage.getMaxSwaps();
-    newEndDate = currentSub.getEndDate().plusDays(renewalPackage.getDuration());
-    earlyDiscount = originalPrice * 0.05; // Giảm 5%
-    finalPrice = originalPrice - earlyDiscount;
-} else {
-    // Gia hạn TRỄ
-    totalSwaps = renewalPackage.getMaxSwaps();
-    newEndDate = today.plusDays(renewalPackage.getDuration());
-    finalPrice = originalPrice; // Không giảm
+**Limits:**
+- Max 3 tickets OPEN per driver
+
+**Types:**
+
+**1. Ticket có station (liên quan trạm):**
+```json
+{
+  "subject": "Pin bị lỗi sau khi swap",
+  "description": "Pin mới lắp vào xe báo lỗi...",
+  "stationId": 3
 }
 ```
+- Gửi đến Staff của trạm đó
+- Nếu không có staff → Gửi Admin
 
-**Xử lý sau thanh toán:**
-```java
-// Đánh dấu gói cũ hết hạn
-oldSub.setStatus(EXPIRED);
-
-// Tạo gói mới
-newSub.setRemainingSwaps(totalSwaps); // Có cộng dồn nếu renew sớm
-newSub.setStartDate(LocalDate.now());
-newSub.setEndDate(newEndDate);
-newSub.setStatus(ACTIVE);
-```
-
----
-
-## 8. EMAIL & THÔNG BÁO
-
-### 8.1. DANH SÁCH EMAIL TỰ ĐỘNG
-
-| Sự kiện | Template | Người nhận | Nội dung |
-|---------|----------|------------|----------|
-| Đăng ký xe mới | `vehicle-request-admin.html` | Tất cả Admin | Thông báo có xe mới chờ duyệt |
-| Xe được duyệt | `vehicle-approved-driver.html` | Driver | Xe đã ACTIVE, sẵn sàng booking |
-| Xe bị từ chối | `vehicle-rejected-driver.html` | Driver | Lý do từ chối xe |
-| Tạo booking | `booking-confirmation.html` | Driver | Mã xác nhận, thông tin trạm, thời gian |
-| Booking được confirm | `booking-confirmed.html` | Driver | Pin đã được đặt trước |
-| Hủy booking | `booking-cancellation.html` | Driver | Lý do hủy, có trả lại lượt không |
-| Booking hết hạn | `booking-out-of-stock.html` | Driver | Không đến đúng giờ, bị trừ lượt |
-| Swap thành công | `swap-success-email.html` | Driver | Thông tin pin cũ/mới, lượt còn lại |
-| Gói bị xóa bởi Admin | `subscription-deleted-email.html` | Driver | Lý do hủy gói |
-| Ticket được tạo | `ticket-created-staff.html` | Staff hoặc Admin | Thông báo ticket mới (nếu không có staff → gửi admin) |
-| Staff trả lời ticket | `ticket-response-driver.html` | Driver | Câu trả lời từ staff |
-
----
-
-### 8.2. ĐIỀU KIỆN GỬI EMAIL
-
-**Nguyên tắc:**
-- Tất cả email đều sử dụng try-catch để tránh ảnh hưởng luồng chính
-- Nếu gửi email thất bại, chỉ log error, không throw exception
-- Email template sử dụng Thymeleaf
-
-**Ví dụ:**
-```java
-try {
-    emailService.sendBookingConfirmation(booking);
-} catch (Exception e) {
-    log.error("Failed to send email: {}", e.getMessage());
-    // KHÔNG throw exception
+**2. Ticket không có station (vấn đề chung):**
+```json
+{
+  "subject": "Không thể nâng cấp gói",
+  "description": "Hệ thống báo lỗi khi nâng cấp...",
+  "stationId": null
 }
 ```
+- Gửi trực tiếp đến Admin
 
----
+### 10.2. Ticket Status
 
-## 9. QUẢN LÝ TRẠM (STATION)
-
-### 9.1. TẠO TRẠM (Admin/Staff)
-**Endpoint:** `POST /api/station`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | role = `ADMIN` hoặc `STAFF` |
-| 2 | **Tên trạm duy nhất** | Không được trùng tên với trạm khác |
-| 3 | **Battery type hợp lệ** | batteryTypeId phải tồn tại |
-| 4 | **Thông tin bắt buộc** | name, location, capacity, batteryType |
-| 5 | **Thông tin vị trí** | city, district, latitude, longitude (optional nhưng nên có) |
-| 6 | **Trạng thái mặc định** | status = `ACTIVE` |
-
----
-
-### 9.2. XEM TRẠM (Public)
-**Endpoint:** `GET /api/station`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Hoàn toàn public** | Không cần đăng nhập, ai cũng xem được |
-| 2 | **Xem tất cả trạm** | Kể cả ACTIVE, MAINTENANCE, INACTIVE |
-| 3 | **Lọc theo loại pin** | GET /api/station/by-battery-type/{batteryTypeId} |
-
----
-
-### 9.3. CẬP NHẬT TRẠM (Admin/Staff)
-**Endpoint:** `PUT /api/station/{id}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | role = `ADMIN` hoặc `STAFF` |
-| 2 | **Field optional** | Chỉ update field có giá trị mới (không null/empty) |
-| 3 | **Tên không trùng** | Nếu đổi tên, kiểm tra không trùng với trạm khác |
-| 4 | **Có thể đổi loại pin** | Cập nhật batteryTypeId nếu cần |
-
----
-
-### 9.4. XÓA TRẠM (Soft Delete - Admin)
-**Endpoint:** `DELETE /api/station/{id}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Soft delete** | status = `INACTIVE` |
-| 3 | **Không xóa nếu còn pin** | Kiểm tra không có pin AVAILABLE tại trạm |
-| 4 | **Không xóa nếu có booking** | Kiểm tra không có booking CONFIRMED |
-
----
-
-## 10. PHÂN CÔNG NHÂN VIÊN (STAFF ASSIGNMENT)
-
-### 10.1. GÁN NHÂN VIÊN VÀO TRẠM (Admin)
-**Endpoint:** `POST /api/staff-station-assignment`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Phải là STAFF** | User được gán phải có role = `STAFF` |
-| 3 | **Không trùng lặp** | Nhân viên chưa được gán vào trạm này |
-| 4 | **Tối đa 5 trạm/staff** | 1 nhân viên chỉ quản lý tối đa 5 trạm |
-| 5 | **Tối đa 3 staff/trạm** | 1 trạm chỉ có tối đa 3 nhân viên |
-| 6 | **Tự động populate** | staffName và stationName được tự động fill |
-
-**Lỗi có thể xảy ra:**
-- `IllegalArgumentException`: User không phải STAFF
-- `IllegalStateException`: Staff đã đủ 5 trạm, hoặc trạm đã đủ 3 staff
-- `IllegalStateException`: Staff đã được gán vào trạm này rồi
-
----
-
-### 10.2. THU HỒI NHÂN VIÊN KHỎI TRẠM (Admin)
-**Endpoint:** `DELETE /api/staff-station-assignment?staffId={id}&stationId={id}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Kiểm tra assignment tồn tại** | Phải có bản ghi assignment |
-| 3 | **Hard delete** | Xóa hoàn toàn khỏi database |
-
----
-
-### 10.3. XEM TRẠM CỦA TÔI (Staff)
-**Endpoint:** `GET /api/staff-station-assignment/my-stations`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Staff** | role = `STAFF` |
-| 2 | **Xem trạm được gán** | Danh sách trạm mà staff hiện tại quản lý |
-
----
-
-### 10.4. VALIDATE QUYỀN TRUY CẬP TRẠM
-**Internal method:** `validateStationAccess(stationId)`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Admin toàn quyền** | Admin có quyền truy cập tất cả trạm |
-| 2 | **Staff chỉ trạm được gán** | Staff chỉ truy cập trạm mình quản lý |
-| 3 | **Driver không truy cập** | Driver không có quyền quản lý trạm |
-
----
-
-## 11. HỖ TRỢ KHÁCH HÀNG (SUPPORT TICKET)
-
-### 11.1. TẠO TICKET (Driver)
-**Endpoint:** `POST /api/support-ticket`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Driver** | role = `DRIVER` |
-| 2 | **Tối đa 3 ticket OPEN** | 1 driver chỉ được có tối đa 3 ticket đang mở |
-| 3 | **Thông tin bắt buộc** | subject, description |
-| 4 | **Station optional** | Có thể gắn ticket với trạm cụ thể |
-| 5 | **Trạng thái mặc định** | status = `OPEN` |
-| 6 | **Tự động gửi email** | Gửi cho staff của trạm (nếu có stationId), nếu không → gửi admin |
-
-**Logic gửi email:**
-```java
-if (stationId != null) {
-    // Tìm staff của trạm
-    List<User> stationStaff = findStaffByStation(stationId);
-    if (!stationStaff.isEmpty()) {
-        sendToStaff(stationStaff);
-    } else {
-        sendToAdmin(); // Fallback nếu không có staff
-    }
-} else {
-    // Không có station → gửi tất cả admin
-    sendToAdmin();
-}
+**Flow:**
+```
+OPEN (Mới tạo)
+    ↓
+IN_PROGRESS (Staff đang xử lý)
+    ↓
+RESOLVED (Đã giải quyết)
 ```
 
----
+**Status Meanings:**
+- `OPEN` - Mới tạo, chờ xử lý
+- `IN_PROGRESS` - Staff đang xử lý
+- `RESOLVED` - Đã giải quyết xong
 
-### 11.2. TRẢ LỜI TICKET (Staff/Admin)
-**Endpoint:** `POST /api/ticket-response`
+### 10.3. Ticket Response
 
-**Quy tắc nghiệp vụ:**
+**Process:**
+1. Driver tạo ticket
+2. Email gửi đến Staff/Admin
+3. Staff/Admin xem và trả lời
+4. Driver nhận email thông báo có phản hồi
+5. Driver xem response trong app
 
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Staff/Admin** | role = `STAFF` hoặc `ADMIN` |
-| 2 | **Ticket phải OPEN** | Chỉ trả lời ticket đang mở |
-| 3 | **Gửi email cho Driver** | Email chứa câu trả lời từ staff |
-| 4 | **Ghi nhận staff** | ticketResponse.staff = currentUser |
+**UI Display:**
+```
+Ticket #12: Pin bị lỗi sau khi swap
+Status: IN_PROGRESS
+Created: 21/11/2024 17:00
 
----
-
-### 11.3. ĐÓNG TICKET (Staff/Admin)
-**Endpoint:** `PUT /api/support-ticket/{id}/close`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Staff/Admin** | role = `STAFF` hoặc `ADMIN` |
-| 2 | **Chuyển RESOLVED** | status = `RESOLVED` |
-| 3 | **Ghi nhận thời gian** | resolvedAt = now() |
-
----
-
-### 11.4. XEM TICKET CỦA TÔI (Driver)
-**Endpoint:** `GET /api/support-ticket/my-tickets`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Driver** | role = `DRIVER` |
-| 2 | **Xem ticket của mình** | Tất cả ticket (OPEN, RESOLVED) |
-
----
-
-### 11.5. XEM TẤT CẢ TICKET (Staff/Admin)
-**Endpoint:** `GET /api/support-ticket`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Staff/Admin** | role = `STAFF` hoặc `ADMIN` |
-| 2 | **Staff chỉ xem ticket trạm mình** | Nếu là Staff, chỉ xem ticket của trạm được gán |
-| 3 | **Admin xem tất cả** | Admin xem tất cả ticket |
-
----
-
-## 12. QUẢN LÝ PIN (BATTERY)
-
-### 12.1. TẠO PIN (Admin/Staff)
-**Endpoint:** `POST /api/battery`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | role = `ADMIN` hoặc `STAFF` |
-| 2 | **Serial number duy nhất** | serialNumber không được trùng |
-| 3 | **Battery type hợp lệ** | batteryTypeId phải tồn tại |
-| 4 | **Thông tin bắt buộc** | serialNumber, model, batteryType |
-| 5 | **Trạng thái mặc định** | status = `AVAILABLE` (nếu không chỉ định) |
-| 6 | **Charge & Health** | chargeLevel (0-100%), stateOfHealth (0-100%) |
-| 7 | **Current station** | Có thể gán pin vào trạm ngay khi tạo |
-
----
-
-### 12.2. CẬP NHẬT PIN (Admin/Staff)
-**Endpoint:** `PUT /api/battery/{id}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | role = `ADMIN` hoặc `STAFF` |
-| 2 | **Field optional** | Chỉ update field có giá trị mới |
-| 3 | **Không đổi serial nếu IN_USE** | Pin đang lắp trên xe không đổi serial |
-| 4 | **Cập nhật charge/health** | Có thể update chargeLevel, stateOfHealth |
-| 5 | **Đổi trạng thái** | Có thể chuyển AVAILABLE ↔ MAINTENANCE ↔ RETIRED |
-
----
-
-### 12.3. XÓA PIN (Soft Delete - Admin)
-**Endpoint:** `DELETE /api/battery/{id}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Không xóa pin IN_USE** | Pin đang lắp trên xe không được xóa |
-| 3 | **Không xóa pin PENDING** | Pin đã đặt trước không được xóa |
-| 4 | **Chuyển RETIRED** | status = `RETIRED` |
-
----
-
-### 12.4. XEM PIN THEO TRẠM
-**Endpoint:** `GET /api/battery/by-station/{stationId}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Public** | Không cần đăng nhập |
-| 2 | **Lọc theo trạm** | Chỉ pin có currentStation = stationId |
-| 3 | **Hiển thị tất cả status** | AVAILABLE, PENDING, MAINTENANCE (không hiển thị IN_USE) |
-
----
-
-## 13. THANH TOÁN MOMO
-
-### 13.1. TẠO THANH TOÁN
-**Endpoint:** `POST /api/payment/create`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Driver** | role = `DRIVER` |
-| 2 | **Loại thanh toán** | `NEW_SUBSCRIPTION`, `UPGRADE_SUBSCRIPTION`, `RENEW_SUBSCRIPTION` |
-| 3 | **Tạo orderId unique** | orderId = driverId + timestamp + random |
-| 4 | **Gọi MoMo API** | Tạo payment request đến MoMo |
-| 5 | **Lưu Payment** | status = `PENDING`, lưu orderId, amount |
-| 6 | **Trả về payUrl** | URL redirect đến MoMo payment gateway |
-
----
-
-### 13.2. XỬ LÝ CALLBACK TỪ MOMO
-**Endpoint:** `POST /api/payment/momo-ipn` (Internal - MoMo gọi)
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Verify signature** | Kiểm tra chữ ký từ MoMo |
-| 2 | **Tìm payment** | Tìm payment theo orderId |
-| 3 | **Kiểm tra trạng thái** | Nếu payment đã SUCCESS → ignore (tránh duplicate) |
-| 4 | **Cập nhật payment** | status = `SUCCESS` hoặc `FAILED` |
-| 5 | **Xử lý theo loại** | - NEW_SUBSCRIPTION → tạo subscription<br>- UPGRADE → upgrade subscription<br>- RENEW → renew subscription |
-| 6 | **Ghi log** | Log đầy đủ callback từ MoMo |
-
-**Logic xử lý:**
-```java
-if (resultCode == 0) { // Thành công
-    payment.setStatus(SUCCESS);
-    
-    switch(paymentType) {
-        case NEW_SUBSCRIPTION:
-            subscriptionService.createSubscriptionAfterPayment(packageId, driverId);
-            break;
-        case UPGRADE_SUBSCRIPTION:
-            subscriptionService.upgradeSubscriptionAfterPayment(packageId, driverId);
-            break;
-        case RENEW_SUBSCRIPTION:
-            subscriptionService.renewSubscriptionAfterPayment(packageId, driverId);
-            break;
-    }
-} else {
-    payment.setStatus(FAILED);
-}
+Response từ Nhân Viên Trạm:
+"Cảm ơn bạn đã phản hồi. Chúng tôi đang kiểm tra 
+và sẽ liên hệ trong 30 phút."
+21/11/2024 17:15
 ```
 
----
+### 10.4. View Tickets
 
-### 13.3. XEM LỊCH SỬ THANH TOÁN
+**Driver:**
+- Xem tickets của mình
 
-**Driver:** `GET /api/payment/my-payments` - Xem payment của mình
-**Admin/Staff:** `GET /api/payment` - Xem tất cả payment
+**Staff:**
+- Xem tickets của trạm mình
 
----
-
-## 14. QUẢN LÝ GÓI DỊCH VỤ (SERVICE PACKAGE)
-
-### 14.1. TẠO GÓI (Admin)
-**Endpoint:** `POST /api/service-package`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Tối đa 12 gói** | Hệ thống chỉ cho phép tối đa 12 gói |
-| 3 | **Tên duy nhất** | Tên gói không được trùng |
-| 4 | **Thông tin bắt buộc** | name, description, price, duration, maxSwaps |
-| 5 | **Validate số liệu** | price > 0, duration > 0, maxSwaps > 0 |
+**Admin:**
+- Xem tất cả tickets
 
 ---
 
-### 14.2. CẬP NHẬT GÓI (Admin)
-**Endpoint:** `PUT /api/service-package/{id}`
+## 11. NOTIFICATION SYSTEM
 
-**Quy tắc nghiệp vụ:**
+### 11.1. Email Notifications
 
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Field optional** | Chỉ update field có giá trị mới |
-| 3 | **Tên không trùng** | Nếu đổi tên, kiểm tra không trùng |
+**Trigger Events:**
 
----
+| Event | Recipient | Content |
+|-------|-----------|---------|
+| **Vehicle Registration** | Admin | Có xe mới cần duyệt |
+| **Vehicle Approved** | Driver | Xe đã được duyệt, có pin |
+| **Vehicle Rejected** | Driver | Xe bị từ chối + lý do |
+| **Booking Confirmed** | Driver | Booking thành công + confirmation code |
+| **Booking Cancelled** | Driver | Booking bị hủy + lý do |
+| **Swap Success** | Driver | Swap thành công + thông tin pins |
+| **Payment Success** | Driver | Thanh toán thành công |
+| **Subscription Deleted** | Driver | Gói bị admin hủy + lý do |
+| **Ticket Created** | Staff/Admin | Có ticket mới cần xử lý |
+| **Ticket Response** | Driver | Staff đã trả lời ticket |
 
-### 14.3. XÓA GÓI (Admin)
-**Endpoint:** `DELETE /api/service-package/{id}`
+### 11.2. Email Templates
 
-**Quy tắc nghiệp vụ:**
+**Key Information:**
 
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Không xóa nếu đang dùng** | Kiểm tra không có subscription ACTIVE sử dụng gói này |
-| 3 | **Soft delete** | Đánh dấu không khả dụng thay vì xóa |
+**Booking Confirmed:**
+- Confirmation code (10 ký tự)
+- Thời gian booking
+- Địa chỉ trạm
+- Thông tin xe (biển số riêng)
+- Thông tin pin dự kiến
+- Chính sách hủy (>1h trước)
 
----
+**Vehicle Approved:**
+- Thông tin xe
+- Thông tin pin được gắn (% cao)
+- Hướng dẫn bước tiếp theo
 
-### 14.4. XEM GÓI (Public)
-**Endpoint:** `GET /api/service-package`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Hoàn toàn public** | Không cần đăng nhập |
-| 2 | **Xem tất cả gói** | Trả về tất cả gói đang khả dụng |
-
----
-
-## 15. DASHBOARD & THỐNG KÊ (Admin)
-
-### 15.1. XEM DASHBOARD
-**Endpoint:** `GET /api/dashboard`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Thống kê User** | Tổng user, driver, staff, admin, active user, user mới (ngày/tuần/tháng) |
-| 3 | **Thống kê Booking** | Tổng booking, booking theo status, booking hôm nay/tuần/tháng |
-| 4 | **Thống kê Swap** | Tổng swap, swap hôm nay/tuần/tháng, doanh thu |
-| 5 | **Thống kê Station** | Tổng trạm, trạm active, trạng thái trạm |
-| 6 | **Thống kê Battery** | Tổng pin, pin theo status, pin cần bảo trì |
-| 7 | **Thống kê Subscription** | Gói active, gói expired, doanh thu từ gói |
-| 8 | **Thống kê Vehicle** | Tổng xe, xe active/pending/inactive |
+**Swap Success:**
+- Pin cũ (% thấp)
+- Pin mới (% cao - từ snapshot)
+- Số lượt còn lại
+- Link xem lịch sử
 
 ---
 
-## 16. QUYỀN HẠN THEO VAI TRÒ (ROLE-BASED ACCESS)
+## 12. VALIDATION RULES SUMMARY
 
-### 9.1. DRIVER
+### 12.1. Vehicle
 
-| Chức năng | Endpoint | Quyền |
-|-----------|----------|-------|
-| Đăng ký xe | POST /api/vehicle | ✅ |
-| Xem xe của tôi | GET /api/vehicle/my-vehicles | ✅ |
-| Cập nhật xe của tôi | PUT /api/vehicle/my-vehicles/{id} | ✅ (chỉ model & batteryType) |
-| Phê duyệt/từ chối xe | POST /api/vehicle/{id}/approve | ❌ |
-| Xóa xe | DELETE /api/vehicle/{id} | ❌ |
-| Tạo booking | POST /api/booking | ✅ |
-| Xem booking của tôi | GET /api/booking/my-bookings | ✅ |
-| Hủy booking của tôi | DELETE /api/booking/my-bookings/{id} | ✅ |
-| Xem tất cả booking | GET /api/booking | ❌ |
-| Xem gói của tôi | GET /api/driver-subscription/my-subscriptions | ✅ |
-| Tính toán nâng cấp | POST /api/driver-subscription/calculate-upgrade | ✅ |
-| Tính toán gia hạn | POST /api/driver-subscription/calculate-renewal | ✅ |
-| Xóa gói | DELETE /api/driver-subscription/{id} | ❌ |
-| Swap bằng code | POST /api/swap-transaction/swap-by-code/{code} | ✅ (public) |
+| Field | Rule |
+|-------|------|
+| VIN | 17 ký tự, unique (ACTIVE/PENDING) |
+| PlateNumber | Unique (ACTIVE/PENDING) |
+| RegistrationImage | Required, max 10MB, JPG/PNG/PDF |
+| Max ACTIVE | 2 xe per driver |
+| Max PENDING | 1 xe per driver |
 
----
+### 12.2. Subscription
 
-### 9.2. STAFF
+| Rule | Description |
+|------|-------------|
+| Purchase | Chỉ khi chưa có hoặc hết lượt |
+| Upgrade | Gói mới phải đắt hơn/nhiều lượt hơn |
+| Renewal | Chỉ gia hạn cùng gói |
+| Max Active | 1 subscription ACTIVE per driver |
 
-| Chức năng | Endpoint | Quyền |
-|-----------|----------|-------|
-| Xem tất cả xe | GET /api/vehicle | ✅ |
-| Xem tất cả booking | GET /api/booking | ✅ |
-| Xem tất cả swap transaction | GET /api/swap-transaction | ✅ |
-| Xóa gói | DELETE /api/driver-subscription/{id} | ❌ |
-| Quản lý support ticket | * | ✅ |
+### 12.3. Booking
 
----
+| Rule | Description |
+|------|-------------|
+| Prerequisite | Subscription ACTIVE + còn lượt |
+| Time | Tự động +3h, không chọn được |
+| Vehicle Limit | 1 booking ACTIVE per vehicle |
+| Daily Limit | Max 10 bookings per day |
+| Cancel By Driver | >1h trước giờ booking |
+| Cancel By Staff | Bất kỳ lúc nào |
 
-### 9.3. ADMIN
+### 12.4. Swap
 
-| Chức năng | Endpoint | Quyền |
-|-----------|----------|-------|
-| Tất cả quyền của STAFF | * | ✅ |
-| Xem tất cả subscription | GET /api/driver-subscription | ✅ |
-| Xóa subscription | DELETE /api/driver-subscription/{id} | ✅ |
-| Quản lý user | CRUD /api/admin/users | ✅ |
-| Xem dashboard | GET /api/dashboard | ✅ |
-| Quản lý service package | CRUD /api/service-package | ✅ |
-| Quản lý station | CRUD /api/station | ✅ |
-| Quản lý battery | CRUD /api/battery | ✅ |
-| Quản lý battery type | CRUD /api/battery-type | ✅ |
+| Rule | Description |
+|------|-------------|
+| Code Usage | 1 lần duy nhất |
+| Code Validity | Đến giờ booking |
+| Battery Requirement | >= 95%, health >= 70% |
+| Deduct Swaps | Đã trừ từ booking |
 
----
+### 12.5. Battery
 
-## 17. QUẢN LÝ LOẠI PIN (BATTERY TYPE)
+| Field | Rule |
+|-------|------|
+| ChargeLevel | 0-100% |
+| StateOfHealth | 0-100%, >= 70% for booking |
+| Status | 6 types (AVAILABLE, PENDING, IN_USE, ...) |
+| Location | Kho/Trạm/Xe |
 
-### 17.1. TẠO LOẠI PIN (Admin)
-**Endpoint:** `POST /api/battery-type`
+### 12.6. Support Ticket
 
-**Quy tắc nghiệp vụ:**
+| Rule | Description |
+|------|-------------|
+| Max Open | 3 tickets per driver |
+| Routing | Station → Staff, None → Admin |
+| Status | 3 types (OPEN, IN_PROGRESS, RESOLVED) |
 
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Tên duy nhất** | Tên loại pin không được trùng |
-| 3 | **Thông tin bắt buộc** | name, description |
-| 4 | **Thông tin kỹ thuật** | voltage (V), capacity (Ah), weight (kg), dimensions (mm) - optional |
+### 12.7. Payment
 
----
-
-### 17.2. XEM LOẠI PIN (Public)
-**Endpoint:** `GET /api/battery-type`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Hoàn toàn public** | Không cần đăng nhập |
-| 2 | **Xem tất cả loại** | Trả về tất cả battery type |
+| Rule | Description |
+|------|-------------|
+| Gateway | MoMo Sandbox |
+| Types | PURCHASE, UPGRADE, RENEWAL |
+| Verification | HMAC-SHA256 signature |
+| Callback | Required for completion |
 
 ---
 
-### 17.3. CẬP NHẬT LOẠI PIN (Admin)
-**Endpoint:** `PUT /api/battery-type/{id}`
+## 13. ERROR HANDLING
 
-**Quy tắc nghiệp vụ:**
+### 13.1. Common Error Messages
 
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Field optional** | Chỉ update field có giá trị mới |
-| 3 | **Tên không trùng** | Nếu đổi tên, kiểm tra không trùng |
-
----
-
-### 17.4. XÓA LOẠI PIN (Admin)
-**Endpoint:** `DELETE /api/battery-type/{id}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Không xóa nếu đang dùng** | Kiểm tra không có pin hoặc trạm sử dụng loại này |
-| 3 | **Hard delete** | Xóa hoàn toàn khỏi database (nếu không còn ràng buộc) |
-
----
-
-## 18. QUẢN LÝ KHO PIN (STATION INVENTORY)
-
-### 18.1. XEM TẤT CẢ PIN TRONG KHO
-**Endpoint:** `GET /api/station-inventory/warehouse`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | role = `ADMIN` hoặc `STAFF` |
-| 2 | **Pin trong kho** | Pin có `currentStation = NULL` và có record trong `StationInventory` |
-| 3 | **Chi tiết đầy đủ** | ID, serialNumber, model, batteryType, charge, health, status, lastUpdate |
-| 4 | **Thống kê tổng** | Tổng số pin trong kho |
-
----
-
-### 18.2. XEM PIN CẦN BẢO TRÌ TRONG KHO
-**Endpoint:** `GET /api/station-inventory/warehouse/maintenance-needed`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | role = `ADMIN` hoặc `STAFF` |
-| 2 | **Điều kiện cần bảo trì** | - stateOfHealth < 70%<br>- status = MAINTENANCE<br>- currentStation = NULL (trong kho) |
-| 3 | **Sắp xếp** | Ưu tiên pin có health thấp nhất |
-
----
-
-### 18.3. XEM PIN KHẢ DỤNG THEO LOẠI
-**Endpoint:** `GET /api/station-inventory/warehouse/available-by-type/{batteryTypeId}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | role = `ADMIN` hoặc `STAFF` |
-| 2 | **Điều kiện** | - batteryType = batteryTypeId<br>- status = AVAILABLE<br>- currentStation = NULL (trong kho) |
-| 3 | **Mục đích** | Tìm pin để gắn lên xe khi approve hoặc chuyển sang trạm |
-
----
-
-### 18.4. CHUYỂN PIN TỪ KHO SANG TRẠM
-**Endpoint:** `POST /api/station-inventory/move-to-station`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | role = `ADMIN` hoặc `STAFF` |
-| 2 | **Staff chỉ chuyển đến trạm mình** | Staff chỉ chuyển pin đến trạm được gán |
-| 3 | **Pin phải trong kho** | currentStation = NULL và có trong StationInventory |
-| 4 | **Pin phải AVAILABLE** | status = `AVAILABLE` |
-| 5 | **Loại pin khớp với trạm** | batteryType của pin = batteryType của station |
-| 6 | **Cập nhật vị trí** | - battery.currentStation = station<br>- Xóa record trong StationInventory (pin rời kho) |
-
-**Logic:**
-```java
-// Validate
-if (battery.getCurrentStation() != null) {
-    throw new Exception("Pin không ở trong kho");
-}
-if (battery.getStatus() != AVAILABLE) {
-    throw new Exception("Pin không AVAILABLE");
-}
-if (!battery.getBatteryType().equals(station.getBatteryType())) {
-    throw new Exception("Loại pin không khớp với trạm");
-}
-
-// Chuyển pin
-battery.setCurrentStation(station);
-stationInventoryRepository.deleteByBattery(battery); // Xóa khỏi kho
-```
-
----
-
-### 18.5. CHUYỂN PIN TỪ TRẠM VỀ KHO
-**Endpoint:** `POST /api/station-inventory/move-to-warehouse`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin/Staff** | role = `ADMIN` hoặc `STAFF` |
-| 2 | **Staff chỉ chuyển từ trạm mình** | Staff chỉ chuyển pin từ trạm được gán |
-| 3 | **Pin phải ở trạm** | currentStation ≠ NULL |
-| 4 | **Pin không được IN_USE** | status ≠ `IN_USE` (không lấy pin đang lắp trên xe) |
-| 5 | **Pin không được PENDING** | status ≠ `PENDING` (không lấy pin đã đặt trước) |
-| 6 | **Cập nhật vị trí** | - battery.currentStation = NULL<br>- Tạo record mới trong StationInventory |
-
-**Logic:**
-```java
-// Validate
-if (battery.getCurrentStation() == null) {
-    throw new Exception("Pin đã ở trong kho");
-}
-if (battery.getStatus() == IN_USE) {
-    throw new Exception("Không thể lấy pin đang lắp trên xe");
-}
-if (battery.getStatus() == PENDING) {
-    throw new Exception("Không thể lấy pin đã đặt trước");
-}
-
-// Chuyển về kho
-battery.setCurrentStation(null);
-
-// Tạo record trong StationInventory
-StationInventory inventory = new StationInventory();
-inventory.setBattery(battery);
-inventory.setStatus(battery.getStatus());
-inventory.setLastUpdate(LocalDateTime.now());
-stationInventoryRepository.save(inventory);
-```
-
----
-
-### 18.6. XEM PIN TẠI TRẠM CỤ THỂ
-**Endpoint:** `GET /api/station-inventory/station/{stationId}`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Public** | Không cần đăng nhập (để driver xem) |
-| 2 | **Lọc theo trạm** | Pin có currentStation = stationId |
-| 3 | **Hiển thị status** | AVAILABLE (có thể booking), PENDING (đã đặt trước), MAINTENANCE |
-| 4 | **Không hiển thị IN_USE** | Pin đang lắp trên xe không hiển thị |
-
----
-
-### 18.7. THỐNG KÊ KHO
-**Endpoint:** `GET /api/station-inventory/warehouse/statistics`
-
-**Quy tắc nghiệp vụ:**
-
-| STT | Quy tắc | Chi tiết |
-|-----|---------|----------|
-| 1 | **Chỉ Admin** | role = `ADMIN` |
-| 2 | **Thống kê tổng quan** | - Tổng pin trong kho<br>- Pin AVAILABLE<br>- Pin MAINTENANCE<br>- Pin cần bảo trì (health < 70%)<br>- Pin sắp hết tuổi thọ (health < 50%) |
-| 3 | **Thống kê theo loại pin** | Số lượng từng loại pin trong kho |
-
----
-
-## 19. CÁC QUY TẮC QUAN TRỌNG (CRITICAL RULES)
-
-### 19.1. KHÔNG BAO GIỜ ĐƯỢC PHÉP
-
-| ❌ KHÔNG | Lý do |
-|---------|-------|
-| Xóa hard data | Luôn dùng soft delete (đổi status) |
-| Cho driver mua gói khi còn lượt | Tránh lãng phí tiền |
-| Cho 1 xe có >1 booking active | Tránh conflict |
-| Cho booking khi xe chưa ACTIVE | Xe chưa được duyệt |
-| Cho swap khi booking chưa CONFIRMED | Chưa có pin đặt trước |
-| Dùng pin không đủ charge/health | Ảnh hưởng trải nghiệm |
-| Gắn pin từ trạm lên xe khi approve | Chỉ được dùng pin từ KHO (currentStation = NULL) |
-| Cho nâng cấp/gia hạn gói khác | Renew chỉ cho phép cùng gói |
-
----
-
-### 19.2. LUÔN LUÔN PHẢI
-
-| ✅ PHẢI | Lý do |
-|---------|-------|
-| Validate role trước mọi action | Bảo mật |
-| Kiểm tra ownership (xe/booking của mình) | Phân quyền |
-| Send email trong try-catch | Tránh crash app |
-| Log mọi transaction quan trọng | Audit trail |
-| Validate pin type trước khi swap | Tránh lắp nhầm |
-| Trừ lượt swap khi no-show | Phạt không đến đúng hẹn |
-| Xóa confirmationCode sau swap | Tránh tái sử dụng mã |
-| Set pin về MAINTENANCE khi xe bị xóa | Cần kiểm tra trước khi dùng lại |
-| Stack swaps khi renew sớm | Khuyến khích gia hạn sớm |
-| Expire gói khi remainingSwaps = 0 | Tự động hết hạn |
-
----
-
-## 20. THAM KHẢO NHANH (CHEAT SHEET)
-
-### 20.1. STATUS FLOW
+**Authentication:**
+- `Chưa có gói dịch vụ!` → Mua gói trước
+- `Gói đã hết lượt!` → Gia hạn/mua gói mới
+- `Chỉ tài xế mới đăng ký xe!` → Sai role
 
 **Vehicle:**
-```
-PENDING (đăng ký) → ACTIVE (duyệt) ✅
-PENDING (đăng ký) → INACTIVE (từ chối) ❌
-ACTIVE → INACTIVE (xóa) ❌
-```
+- `VIN đã tồn tại!` → Xe đã đăng ký
+- `Đã đủ 2 xe hoạt động!` → Xóa xe không dùng
+- `Có xe đang chờ duyệt!` → Đợi duyệt xe cũ
+- `Xe chưa được phê duyệt!` → Xe PENDING
 
 **Booking:**
+- `Đã đạt giới hạn 10 lượt/ngày!` → Đợi ngày mai
+- `Xe đã có booking!` → Hoàn tất/hủy booking cũ
+- `Trạm hết pin!` → Chọn trạm khác
+- `Quá gần giờ đặt!` → Liên hệ staff
+
+**Subscription:**
+- `Gói hiện tại còn lượt!` → Dùng hết hoặc nâng cấp
+- `Gói mới phải đắt hơn!` → Không phải upgrade
+- `Chỉ được gia hạn cùng gói!` → Dùng nâng cấp
+
+**Swap:**
+- `Không tìm thấy booking!` → Mã sai
+- `Mã đã sử dụng!` → Không dùng lại được
+- `Booking đã bị hủy!` → Tạo booking mới
+
+**Ticket:**
+- `Đã đạt giới hạn 3 ticket!` → Đợi ticket cũ xử lý
+
+### 13.2. HTTP Status Codes
+
+| Code | Meaning | Example |
+|------|---------|---------|
+| 200 | Success | Request thành công |
+| 201 | Created | Tạo resource thành công |
+| 400 | Bad Request | Validation error |
+| 401 | Unauthorized | Token invalid/expired |
+| 403 | Forbidden | Không đủ quyền |
+| 404 | Not Found | Resource không tồn tại |
+| 409 | Conflict | Duplicate data |
+| 500 | Server Error | Lỗi server |
+
+---
+
+## 14. UI/UX RECOMMENDATIONS
+
+### 14.1. Dashboard (Driver)
+
+**Display:**
 ```
-CONFIRMED (tạo) → COMPLETED (swap thành công) ✅
-CONFIRMED → CANCELLED (driver hủy hoặc hết hạn) ❌
+👤 Nguyễn Văn A
+📦 Gói Tiêu Chuẩn: 19/50 lượt
+⏰ Hết hạn: 15/12/2024 (còn 24 ngày)
+
+🚗 Xe của tôi: 2 xe
+📅 Booking tiếp theo: 21/11 16:30
+🔋 Lịch sử swap: 31 lần
 ```
 
-**Battery:**
+### 14.2. Booking Page
+
+**Steps:**
 ```
-AVAILABLE → PENDING (được đặt trước)
-PENDING → IN_USE (lắp lên xe)
-IN_USE → AVAILABLE (đổi pin, về trạm)
-AVAILABLE → MAINTENANCE (xe bị xóa)
+1. Chọn xe
+   [30A12345 - VinFast VF8]
+
+2. Chọn trạm
+   [Trạm Quận 1 - 5.2km - 8 pin sẵn sàng]
+
+3. Xác nhận
+   ✓ Giờ đổi pin: 16:30 (3 tiếng sau)
+   ✓ Trừ 1 lượt (còn 19 lượt)
+   ✓ Pin dự kiến: 98%
+   
+[Đặt lịch ngay]
 ```
 
-**DriverSubscription:**
+### 14.3. Subscription Page
+
+**Current Subscription:**
 ```
-ACTIVE (mua mới) → EXPIRED (hết hạn/hết lượt)
-ACTIVE → CANCELLED (admin xóa)
-EXPIRED → ACTIVE (mua gói mới/gia hạn)
+📦 Gói Tiêu Chuẩn
+💰 800,000đ / 30 ngày
+🔋 19/50 lượt còn lại
+📅 Hết hạn: 15/12/2024
+
+[Nâng cấp] [Gia hạn]
+```
+
+**Upgrade Modal:**
+```
+Nâng cấp từ Gói Tiêu Chuẩn → Gói VIP
+
+Gói hiện tại:
+✓ 50 lượt = 800,000đ
+✓ Đã dùng: 31 lượt
+✓ Còn lại: 19 lượt
+
+Hoàn lại: 304,000đ (19 lượt × 16,000đ)
+
+Gói mới:
+✓ 100 lượt = 1,400,000đ
+✓ Thời hạn: 30 ngày
+
+Thanh toán: 1,096,000đ
+
+[Xác nhận nâng cấp]
+```
+
+### 14.4. Swap Page
+
+**Enter Code:**
+```
+Nhập mã xác nhận:
+[A7K9M3X2P1]
+
+[Xem thông tin pin]
+```
+
+**Battery Info:**
+```
+Pin CŨ (gỡ từ xe):
+🔋 BAT-050
+📊 25% (Sức khỏe: 88%)
+
+Pin MỚI (lắp vào xe):
+🔋 BAT-075
+📊 98% (Sức khỏe: 95%)
+
+[Xác nhận đổi pin]
+```
+
+### 14.5. Notification Badge
+
+```
+🔔 (3)
+- Booking 16:30 còn 2 giờ
+- Gói dịch vụ hết hạn sau 3 ngày
+- Ticket #12 đã được trả lời
 ```
 
 ---
 
-### 20.2. VALIDATION CHECKLIST
+## 15. TESTING SCENARIOS
 
-**Trước khi BOOKING:**
-- [ ] Có subscription ACTIVE?
-- [ ] Còn lượt swap?
-- [ ] Xe thuộc sở hữu driver?
-- [ ] Xe đã ACTIVE?
-- [ ] Xe chưa có booking active khác?
-- [ ] Trạm hỗ trợ loại pin?
-- [ ] Có pin đủ điều kiện?
-- [ ] Chưa đạt limit 10 booking/ngày?
+### 15.1. Happy Path
 
-**Trước khi SWAP:**
-- [ ] Booking CONFIRMED?
-- [ ] Chưa có transaction nào?
-- [ ] Có subscription ACTIVE?
-- [ ] Còn lượt swap?
-- [ ] Loại pin khớp?
-- [ ] Có pin đã đặt trước?
+**Complete Flow:**
+1. ✅ Đăng ký tài khoản Driver
+2. ✅ Đăng ký xe → Admin duyệt
+3. ✅ Mua gói Tiêu Chuẩn → Thanh toán MoMo
+4. ✅ Đặt lịch đổi pin tại Trạm Quận 1
+5. ✅ Đến trạm, swap bằng mã code
+6. ✅ Kiểm tra lịch sử swap
+7. ✅ Gia hạn gói sớm → Cộng dồn lượt
 
-**Trước khi APPROVE xe:**
-- [ ] Xe PENDING?
-- [ ] Driver chưa quá 2 xe ACTIVE?
-- [ ] Pin từ KHO (currentStation = NULL)?
-- [ ] Pin AVAILABLE?
-- [ ] Pin trong StationInventory?
-- [ ] Loại pin khớp?
+### 15.2. Edge Cases
+
+**Subscription:**
+- Mua gói khi còn lượt → Error
+- Upgrade sang gói rẻ hơn → Error
+- Renewal gói khác → Error
+
+**Booking:**
+- Đặt lịch khi hết lượt → Error
+- Đặt lịch xe thứ 2 khi xe 1 có booking → Success
+- Hủy booking < 1h → Error
+- Trạm hết pin → Error
+
+**Swap:**
+- Dùng mã 2 lần → Error
+- Dùng mã đã hủy → Error
+- Swap sai trạm → Error
+
+**Vehicle:**
+- Đăng ký xe thứ 3 → Error
+- Đăng ký 2 xe PENDING → Error
+- VIN trùng → Error
 
 ---
 
-## 21. CONTACT & SUPPORT
+## 16. GLOSSARY
 
-Nếu có thắc mắc về business rules, vui lòng liên hệ:
-- **Backend Team Lead:** [Email/Slack]
-- **Business Analyst:** [Email/Slack]
-- **Documentation:** Xem thêm tại `README.md` và các file trong `docs/`
+**Key Terms:**
+
+- **VIN**: Vehicle Identification Number (17 ký tự)
+- **SOH**: State of Health (sức khỏe pin, 0-100%)
+- **SOC**: State of Charge (mức pin, 0-100%)
+- **Swap**: Đổi pin
+- **Booking**: Đặt lịch đổi pin
+- **Confirmation Code**: Mã xác nhận để swap (10 ký tự)
+- **Service Package**: Gói dịch vụ (lượt đổi pin + thời gian)
+- **Subscription**: Gói đăng ký đang sử dụng
+- **Station**: Trạm đổi pin
+- **Warehouse**: Kho pin (không thuộc trạm nào)
 
 ---
 
-**Cập nhật lần cuối:** 12/11/2025
-**Phiên bản:** 1.0
-**Trạng thái:** Đầy đủ & Chi tiết
+## 17. QUICK REFERENCE
+
+### For Frontend Developers:
+
+**Authentication:**
+- Login → Lưu JWT token
+- Mọi request → Header: `Authorization: Bearer <token>`
+- Token expired → Redirect login
+
+**Key APIs:**
+```
+POST   /api/auth/register          - Đăng ký
+POST   /api/auth/login             - Đăng nhập
+GET    /api/vehicles/my            - Xe của tôi
+POST   /api/bookings               - Tạo booking
+POST   /api/swap/by-code           - Swap tự phục vụ
+GET    /api/payments/my            - Lịch sử thanh toán
+```
+
+**States to Track:**
+- User info & role
+- Active subscription (lượt, ngày hết hạn)
+- Active booking (nếu có)
+- Vehicles (status, currentBattery)
+
+**Real-time Updates:**
+- Subscription remainingSwaps giảm khi booking
+- Booking status change
+- Vehicle status change
+
+---
+
+**Ngày cập nhật:** 21/11/2025  
+**Dự án:** EVBatterySwapStationManagementSystem-backend  
+**Mục đích:** Tài liệu cho Frontend & Product Team  
+**Liên hệ:** support@evbs.com
+
+🚀 **Chúc các bạn phát triển thành công!** 🚀

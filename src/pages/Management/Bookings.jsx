@@ -211,8 +211,7 @@ export default function BookingsPage() {
       title: "Xe",
       dataIndex: "vehicleModel",
       key: "vehicleModel",
-      sorter: (a, b) =>
-        (a.vehicleModel || "").localeCompare(b.vehicleModel),
+      sorter: (a, b) => (a.vehicleModel || "").localeCompare(b.vehicleModel),
     },
     {
       title: "Biển số",

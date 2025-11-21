@@ -40,7 +40,10 @@ export default function AccountPage() {
           .sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
         setAccounts(list);
       } catch (error) {
-        showToast("error", error.response?.data || "Lỗi tải danh sách người dùng");
+        showToast(
+          "error",
+          error.response?.data || "Lỗi tải danh sách người dùng"
+        );
       } finally {
         setLoading(false);
       }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   Table,
@@ -47,32 +47,35 @@ export default function SupportPage() {
   const role = currentUser?.role;
 
   // Fetch tickets + users
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const ticketAPI =
         role === "DRIVER" ? "/support-ticket/my-tickets" : "/support-ticket";
       const res = await api.get(ticketAPI);
-      const tickets = (res.data || []) 
-            .map((t) => {
-                return {
-                    ...t,
-                    key: t.id ?? t._id,
-                };
-            })
-            .sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
+      const tickets = (res.data || [])
+        .map((t) => {
+          return {
+            ...t,
+            key: t.id ?? t._id,
+          };
+        })
+        .sort((a, b) => b.id - a.id); // Sắp xếp theo ID giảm dần
 
       setData(tickets);
     } catch (error) {
-      showToast("error", error.response?.data || "Lỗi khi tải danh sách hỗ trợ");
+      showToast(
+        "error",
+        error.response?.data || "Lỗi khi tải danh sách hỗ trợ"
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, [role]);
 
   useEffect(() => {
     fetchData();
-  }, [role]);
+  }, [fetchData]);
 
   const fetchStations = async () => {
     try {
@@ -165,7 +168,10 @@ export default function SupportPage() {
         setResponses(res.data || []);
       }
     } catch (error) {
-      showToast("error", error.response?.data || "Lỗi khi tải lịch sử phản hồi");
+      showToast(
+        "error",
+        error.response?.data || "Lỗi khi tải lịch sử phản hồi"
+      );
       setResponses([]);
     }
   };

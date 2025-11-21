@@ -80,10 +80,12 @@ const BookingFormFields = ({
   // Fetch tên trạm khi có preselectedStationId
   useEffect(() => {
     if (preselectedStationId && compatibleStations.length > 0) {
-      const station = compatibleStations.find((s) => s.id === preselectedStationId);
+      const station = compatibleStations.find(
+        (s) => s.id === preselectedStationId
+      );
       if (station) {
         // ĐÃ XÓA: setPreselectedStationName(station.name); -> Không cần thiết
-        
+
         // Chỉ cần set giá trị cho form là đủ, Select sẽ tự hiển thị tên
         form.setFieldsValue({ stationId: preselectedStationId });
       }
@@ -126,7 +128,9 @@ const BookingFormFields = ({
         <Select placeholder="Chọn một chiếc xe" onChange={handleVehicleChange}>
           {vehicles.map((v) => {
             const isDisabled = v.status !== "ACTIVE";
-            const disabledLabel = isDisabled ? ` (${v.status === "PENDING" ? "Chờ duyệt" : "Không hoạt động"})` : "";
+            const disabledLabel = isDisabled
+              ? ` (${v.status === "PENDING" ? "Chờ duyệt" : "Không hoạt động"})`
+              : "";
             return (
               <Option key={v.id} value={v.id} disabled={isDisabled}>
                 {v.model} ({v.plateNumber || "Chưa có biển số"}){disabledLabel}
@@ -136,7 +140,8 @@ const BookingFormFields = ({
         </Select>
       </Form.Item>
 
-      {(selectedVehicleDetails && selectedVehicleDetails.plateNumber) || remainingSwaps !== null ? (
+      {(selectedVehicleDetails && selectedVehicleDetails.plateNumber) ||
+      remainingSwaps !== null ? (
         <div style={{ marginBottom: 16, marginTop: -10 }}>
           {selectedVehicleDetails && selectedVehicleDetails.plateNumber && (
             <div style={{ marginBottom: 4 }}>
@@ -148,8 +153,8 @@ const BookingFormFields = ({
           {remainingSwaps !== null && (
             <div>
               <Text strong>Số lần đổi pin còn lại: </Text>
-              <Text 
-                style={{ color: remainingSwaps > 0 ? '#52c41a' : '#f5222d' }}
+              <Text
+                style={{ color: remainingSwaps > 0 ? "#52c41a" : "#f5222d" }}
               >
                 **{remainingSwaps}** lần
               </Text>

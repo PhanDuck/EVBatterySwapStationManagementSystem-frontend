@@ -44,7 +44,7 @@ const AssignStaffModal = ({
     try {
       await api.post("/staff-station-assignment", values);
       showToast(
-        "success",  
+        "success",
         `Phân quyền nhân viên ${values.staffId} quản lý trạm ${values.stationId} thành công!`
       );
       onSuccess();
@@ -215,14 +215,14 @@ export default function AssignmentPage() {
   const handleOpenAssignModal = async () => {
     // Kiểm tra nếu chưa có dữ liệu Staff/Station hoặc danh sách rỗng
     if (allStaffs.length === 0 || allStations.length === 0) {
-        const success = await fetchAuxiliaryData();
-        if (!success) {
-            // Nếu fetch thất bại, không mở modal
-            return;
-        }
+      const success = await fetchAuxiliaryData();
+      if (!success) {
+        // Nếu fetch thất bại, không mở modal
+        return;
+      }
     }
     setIsAssignModalVisible(true);
-  }
+  };
 
   // --- B. HÀM XỬ LÝ THAO TÁC DELETE ---
 
@@ -263,13 +263,15 @@ export default function AssignmentPage() {
       // Đảm bảo các trường name tồn tại để gọi .toLowerCase()
       const currentStaffName = (record.staffName || "").toLowerCase();
       const currentStationName = (record.stationName || "").toLowerCase();
-      
+
       const staffMatch = staffSearchValue
-        ? currentStaffName.includes(staffSearchValue) || String(record.staffId).includes(staffSearchValue)
+        ? currentStaffName.includes(staffSearchValue) ||
+          String(record.staffId).includes(staffSearchValue)
         : true;
 
       const stationMatch = stationSearchValue
-        ? currentStationName.includes(stationSearchValue) || String(record.stationId).includes(stationSearchValue)
+        ? currentStationName.includes(stationSearchValue) ||
+          String(record.stationId).includes(stationSearchValue)
         : true;
 
       // Chỉ hiển thị khi cả 2 điều kiện tìm kiếm đều thỏa mãn
@@ -277,7 +279,7 @@ export default function AssignmentPage() {
     });
     // Dependency: Phụ thuộc vào assignments (dữ liệu gốc), và 2 giá trị tìm kiếm
   }, [assignments, searchStaffId, searchStationId]);
-  
+
   // --- E. ĐỊNH NGHĨA CỘT CHO BẢNG ---
 
   const columns = [
@@ -444,7 +446,9 @@ export default function AssignmentPage() {
           columns={columns}
           dataSource={filteredAndMappedAssignments}
           loading={loading}
-          rowKey={(record) => record.id || `${record.staffId}-${record.stationId}`}
+          rowKey={(record) =>
+            record.id || `${record.staffId}-${record.stationId}`
+          }
           pagination={{
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} trên ${total} phân quyền`,

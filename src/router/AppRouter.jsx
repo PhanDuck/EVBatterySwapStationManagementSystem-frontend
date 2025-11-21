@@ -7,7 +7,7 @@ import {
 
 import Login from "../pages/Auth/login";
 import Register from "../pages/Auth/Register";
-import Home from "../pages/Shared/Home";
+import Home from "../pages/Shared/home";
 import About from "../pages/Shared/About";
 import Packages from "../pages/Shared/Packages";
 import Policy from "../pages/Shared/Policy";

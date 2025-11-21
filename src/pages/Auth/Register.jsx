@@ -108,9 +108,7 @@ const RegisterPage = () => {
     } catch (error) {
       // 4. Xử lý lỗi (Ví dụ: 400 Bad Request, 500 Internal Server Error)
 
-      const msg =
-        error.response?.data|| 
-        "Đăng ký thất bại. Vui lòng thử lại.";
+      const msg = error.response?.data || "Đăng ký thất bại. Vui lòng thử lại.";
 
       showToast("error", msg); // Hiển thị thông báo lỗi bằng Antd
       setErrors({ submit: msg }); // Hiển thị lỗi chung bên dưới form (nếu cần)
@@ -252,9 +250,9 @@ const RegisterPage = () => {
             />
             <label className="ml-2 text-sm text-gray-700">
               Tôi đồng ý với{" "}
-              <a 
-                href="/policy" 
-                target="_blank" 
+              <a
+                href="/policy"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:text-blue-500 underline"
               >

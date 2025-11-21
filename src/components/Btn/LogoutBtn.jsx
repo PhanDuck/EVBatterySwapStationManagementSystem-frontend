@@ -11,7 +11,7 @@ const LogoutBtn = () => {
     clearAuth();
     sessionStorage.clear();
     navigate("/login", { replace: true }); // quay lại login
-    window.location.reload(); 
+    window.location.reload();
   };
   return (
     <div>

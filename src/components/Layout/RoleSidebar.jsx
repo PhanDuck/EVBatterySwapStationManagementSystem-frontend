@@ -6,7 +6,12 @@ import {
   FiBatteryCharging,
   FiBox,
 } from "react-icons/fi";
-import { MdOutlinePayments, MdDashboard, MdElectricBike, MdLocationOn } from "react-icons/md";
+import {
+  MdOutlinePayments,
+  MdDashboard,
+  MdElectricBike,
+  MdLocationOn,
+} from "react-icons/md";
 import { TbMessageCircleQuestion } from "react-icons/tb";
 import { RiUserLocationLine } from "react-icons/ri";
 import { Tooltip } from "antd";
@@ -22,28 +27,64 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
     ADMIN: [
       { path: "overview", label: "Dashboard", icon: <MdDashboard /> },
       { path: "users", label: "Quản lý người dùng", icon: <FiUsers /> },
-      { path: "stations", label: "Quản lý trạm đổi pin", icon: <MdLocationOn /> },
+      {
+        path: "stations",
+        label: "Quản lý trạm đổi pin",
+        icon: <MdLocationOn />,
+      },
       { path: "batteries", label: "Quản lý pin", icon: <FiBatteryCharging /> },
       { path: "vehicles", label: "Quản lý xe điện", icon: <MdElectricBike /> },
-      { path: "assignments", label: "Quản lý phân quyền", icon: <RiUserLocationLine /> },
+      {
+        path: "assignments",
+        label: "Quản lý phân quyền",
+        icon: <RiUserLocationLine />,
+      },
       { path: "inventories", label: "Quản lý tồn kho", icon: <FiBox /> },
       { path: "bookings", label: "Quản lý đặt lịch", icon: <FiCalendar /> },
-      { path: "service-packages", label: "Quản lý gói cước",icon: <FiCreditCard />, },
-      { path: "transactions", label: "Quản lý giao dịch", icon: <MdOutlinePayments />, },
-      { path: "tickets", label: "Quản lý hỗ trợ", icon: <TbMessageCircleQuestion />, },
+      {
+        path: "service-packages",
+        label: "Quản lý gói cước",
+        icon: <FiCreditCard />,
+      },
+      {
+        path: "transactions",
+        label: "Quản lý giao dịch",
+        icon: <MdOutlinePayments />,
+      },
+      {
+        path: "tickets",
+        label: "Quản lý hỗ trợ",
+        icon: <TbMessageCircleQuestion />,
+      },
     ],
     STAFF: [
       { path: "bookings", label: "Quản lý đặt lịch", icon: <FiCalendar /> },
-      { path: "stations", label: "Quản lý trạm đổi pin", icon: <MdLocationOn /> },
+      {
+        path: "stations",
+        label: "Quản lý trạm đổi pin",
+        icon: <MdLocationOn />,
+      },
       { path: "inventories", label: "Quản lý kho", icon: <FiBox /> },
-      { path: "tickets", label: "Quản lý hỗ trợ", icon: <TbMessageCircleQuestion />, },
+      {
+        path: "tickets",
+        label: "Quản lý hỗ trợ",
+        icon: <TbMessageCircleQuestion />,
+      },
     ],
     DRIVER: [
       { path: "bookings", label: "Lịch đặt của tôi", icon: <FiCalendar /> },
       { path: "vehicles", label: "Xe điện của tôi", icon: <MdElectricBike /> },
-      { path: "transactions", label: "Giao dịch của tôi", icon: <MdOutlinePayments /> },
-      { path: "driver-subscription", label: "Quản lý gói cước", icon: <FiCreditCard />},
-      { path: "tickets", label: "Hỗ trợ", icon: <TbMessageCircleQuestion /> },  
+      {
+        path: "transactions",
+        label: "Giao dịch của tôi",
+        icon: <MdOutlinePayments />,
+      },
+      {
+        path: "driver-subscription",
+        label: "Quản lý gói cước",
+        icon: <FiCreditCard />,
+      },
+      { path: "tickets", label: "Hỗ trợ", icon: <TbMessageCircleQuestion /> },
     ],
   };
 

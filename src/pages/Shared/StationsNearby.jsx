@@ -217,7 +217,7 @@ function FlyToLocation({ position }) {
   const map = useMap();
   useEffect(() => {
     if (position) map.flyTo(position, 15, { duration: 1.5 });
-  }, [position]);
+  }, [position, map]);
   return null;
 }
 

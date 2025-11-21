@@ -9,12 +9,7 @@ import minhhoa3 from "../../assets/img/minhhoa3.png";
 import minhhoa4 from "../../assets/img/minhhoa4.png";
 import momoimage from "../../assets/img/momoimage.png";
 import { Button, Row, Col, Typography } from "antd";
-import {
-  ThunderboltOutlined,
-  EnvironmentOutlined,
-  UserOutlined,
-  CloudTwoTone,
-} from "@ant-design/icons";
+import { ThunderboltOutlined, EnvironmentOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 
 const { Title, Paragraph } = Typography;
@@ -26,28 +21,28 @@ const featureData = [
     eyebrow: "PIN THÔNG MINH",
     title: "Không còn chờ đợi. Nạp đầy trong vài giây.",
     desc: "Cách nhanh nhất, sạch nhất để vận hành xe của bạn. Đổi pin chỉ trong tích tắc. Nhỏ gọn và dễ sử dụng. Năng lượng đủ cho nhiều ngày di chuyển. Luôn được sạc đầy và sẵn sàng cho bạn. Chỉ cần đổi và đi, tiếp tục hành trình mà không lỡ nhịp nào.",
-    img: minhhoa1, 
+    img: minhhoa1,
   },
   {
     key: "station",
     eyebrow: "MẠNG LƯỚI TRẠM ĐỔI PIN TIỆN LỢI",
     title: "Đổi pin trên đường, và tiếp tục lăn bánh.",
     desc: "Lái xe thỏa thích. Pin đầy luôn ở gần bạn. Các trạm EVBattery Station luôn có sẵn pin sạc đầy ở bất cứ đâu bạn cần, 24/7, khắp thành phố. Đi làm? Đi chơi đêm? Hay chỉ dạo phố? Không vấn đề. Luôn có một trạm EVBattery trên đường đi của bạn.",
-    img: minhhoa2, 
+    img: minhhoa2,
   },
   {
     key: "app",
     eyebrow: "ỨNG DỤNG EVBATTERY",
     title: "Năng lượng trong tầm tay, thanh toán trong tích tắc.",
     desc: "Kết nối với toàn bộ mạng lưới EVBattery theo thời gian thực. Sẵn sàng đổi pin? Tìm pin đầy gần bạn nhất. Lên kế hoạch đi chơi? Bản đồ trạm sẽ dẫn đường cho bạn. Tất cả đều ở đây: Lịch sử chuyến đi, Thanh toán không tiền mặt, Thống kê pin. Xăng dầu chưa bao giờ thông minh thế này.",
-    img: momoimage, 
+    img: momoimage,
   },
   {
     key: "service",
     eyebrow: "DỊCH VỤ THUÊ PIN (BaaS)",
     title: "Bạn cứ việc lái. Mọi việc còn lại để chúng tôi lo.",
     desc: "Tận hưởng dịch vụ pin không lo âu qua từng lần đổi. Gói thuê bao giúp bạn tiếp cận nguồn pin thông minh, luôn mới, luôn sẵn sàng. Mỗi viên pin đều được kết nối với mạng lưới EVBattery và được giám sát liên tục về an toàn, hiệu suất năng lượng. Công nghệ mới nhất. Cập nhật tự động. Nhiều trạm hơn mỗi năm. Tất cả là dành cho bạn.",
-    img: minhhoa4, 
+    img: minhhoa4,
   },
 ];
 
@@ -141,9 +136,7 @@ function Home() {
                   maxWidth: "450px",
                 }}
               >
-                Từ công nghệ đột phá đến thiết kế, an toàn và dịch vụ không thỏa
-                hiệp. Mọi khía cạnh của EVBattery đều được xây dựng để
-                việc đổi pin trở nên tốt hơn.
+                Từ công nghệ đột phá đến thiết kế, an toàn và dịch vụ không thỏa hiệp. Mọi khía cạnh của EVBattery đều được xây dựng để việc đổi pin trở nên tốt hơn.
               </Paragraph>
             </div>
           </Col>
@@ -158,7 +151,7 @@ function Home() {
                 position: "absolute",
                 inset: 0,
                 backgroundImage: `url(${BackgroundImage})`,
-               backgroundSize: "cover",
+                backgroundSize: "cover",
                 backgroundPosition: "center",
                 opacity: 0.6,
               }}
@@ -194,8 +187,7 @@ function Home() {
                   marginBottom: "40px",
                 }}
               >
-                Mạng lưới EVBattery được xây dựng để mở rộng. Chúng tôi nhanh
-                chóng phủ sóng các trạm khắp thành phố và xa hơn nữa.
+                Mạng lưới EVBattery được xây dựng để mở rộng. Chúng tôi nhanh chóng phủ sóng các trạm khắp thành phố và xa hơn nữa.
               </Paragraph>
 
               <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
@@ -233,7 +225,7 @@ function Home() {
           </Col>
         </Row>
       </section>
-{/* ================= Features Section================= */}
+      {/* ================= Features Section================= */}
       <section style={{ padding: "80px 0", background: "#fff" }}>
         <div
           style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}
@@ -273,15 +265,15 @@ function Home() {
 
                 {/* CỘT NỘI DUNG - ĐƯỢC STYLE LẠI */}
                 <Col xs={24} md={12} order={isEven ? 2 : 1}>
-                  <div 
-                    style={{ 
+                  <div
+                    style={{
                       padding: "40px", // Thêm khoảng đệm bên trong
                       background: isEven ? "#F9FAFB" : "#F0F7FF", // Màu nền: Chẵn là xám nhạt, Lẻ là xanh nhạt (hoặc để #F9FAFB hết cũng được)
                       borderRadius: "24px", // Bo góc
                       height: "100%",
                       display: "flex",
                       flexDirection: "column",
-                      justifyContent: "center"
+                      justifyContent: "center",
                     }}
                   >
                     <h5
@@ -298,11 +290,11 @@ function Home() {
                     </h5>
                     <Title
                       level={2}
-                      style={{ 
-                        marginBottom: "20px", 
-                        fontSize: "32px", 
+                      style={{
+                        marginBottom: "20px",
+                        fontSize: "32px",
                         fontWeight: 700, // Tiêu đề đậm hơn
-                        lineHeight: 1.3 
+                        lineHeight: 1.3,
                       }}
                     >
                       {item.title}
@@ -313,7 +305,7 @@ function Home() {
                         lineHeight: "1.8", // Tăng khoảng cách dòng cho dễ đọc
                         color: "#4b5563", // Màu xám đậm hơn để tăng độ tương phản (dễ đọc hơn #555)
                         fontWeight: 400,
-                        marginBottom: 0
+                        marginBottom: 0,
                       }}
                     >
                       {item.desc}
@@ -406,9 +398,7 @@ function Home() {
               lineHeight: "1.6",
             }}
           >
-            Dù bạn đi làm hàng ngày, đi phượt cuối tuần hay chạy xe chuyên
-            nghiệp. Bạn có thể đổi pin thoải mái. Chọn các gói thuê bao linh
-            hoạt giúp việc lái xe điện trở nên dễ dàng và tiết kiệm.
+            Dù bạn đi làm hàng ngày, đi phượt cuối tuần hay chạy xe chuyên nghiệp. Bạn có thể đổi pin thoải mái. Chọn các gói thuê bao linh hoạt giúp việc lái xe điện trở nên dễ dàng và tiết kiệm.
           </Paragraph>
 
           <Row gutter={[48, 48]}>
@@ -446,8 +436,7 @@ function Home() {
                 <Paragraph
                   style={{ color: "rgba(255,255,255,0.8)", fontSize: "16px" }}
                 >
-                  Chọn các gói phù hợp với quãng đường đi trung bình hàng tháng
-                  để tiết kiệm hơn.
+                  Chọn các gói phù hợp với quãng đường đi trung bình hàng tháng để tiết kiệm hơn.
                 </Paragraph>
               </div>
             </Col>
@@ -463,8 +452,7 @@ function Home() {
                 <Paragraph
                   style={{ color: "rgba(255,255,255,0.8)", fontSize: "16px" }}
                 >
-                  Các gói thương mại được thiết kế riêng cho nhu cầu sử dụng tần
-                  suất cao.
+                  Các gói thương mại được thiết kế riêng cho nhu cầu sử dụng tần suất cao.
                 </Paragraph>
               </div>
             </Col>
@@ -530,10 +518,7 @@ function Home() {
                   lineHeight: "1.6",
                 }}
               >
-                Đối với người dùng xe máy điện, việc chờ đợi sạc pin có thể gây
-                ra nhiều bất tiện. Dịch vụ đổi pin của EVBattery mang đến một
-                giải pháp nhanh chóng, tiện lợi và an toàn, giúp bạn tiếp tục
-                hành trình chỉ trong vài phút.
+                Đối với người dùng xe máy điện, việc chờ đợi sạc pin có thể gây ra nhiều bất tiện. Dịch vụ đổi pin của EVBattery mang đến một giải pháp nhanh chóng, tiện lợi và an toàn, giúp bạn tiếp tục hành trình chỉ trong vài phút.
               </Paragraph>
             </Col>
           </Row>

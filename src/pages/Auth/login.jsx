@@ -92,9 +92,7 @@ const LoginPage = () => {
               user = me.data;
             }
           } catch {
-
-              showToast("Warning", "Không lấy được thông tin user hiện tại");
-
+            showToast("Warning", "Không lấy được thông tin user hiện tại");
           }
         }
 

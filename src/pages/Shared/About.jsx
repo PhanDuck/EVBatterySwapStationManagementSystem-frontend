@@ -54,7 +54,7 @@ function AboutPage() {
             level={1}
             style={{ color: "white", fontSize: "3rem", marginBottom: 24 }}
           >
-                        Năng Lượng Xanh <span style={{ color: "#4096ff" }}>Cho Tương Lai</span>
+            Năng Lượng Xanh <span style={{ color: "#4096ff" }}>Cho Tương Lai</span>
           </Title>
           <Paragraph
             style={{
@@ -64,8 +64,7 @@ function AboutPage() {
               margin: "0 auto",
             }}
           >
-            Giải pháp năng lượng xanh, nhanh chóng và tiện lợi - Góp phần xây
-            dựng tương lai giao thông bền vững tại Việt Nam
+            Giải pháp năng lượng xanh, nhanh chóng và tiện lợi - Góp phần xây dựng tương lai giao thông bền vững tại Việt Nam
           </Paragraph>
         </div>
       </section>
@@ -172,20 +171,17 @@ function AboutPage() {
               lineHeight: 1.8,
             }}
           >
-            Chúng tôi là nền tảng đặt lịch đổi pin xe máy điện hàng đầu, mang
-            đến giải pháp năng lượng xanh, nhanh chóng và tiện lợi cho người
-            dùng xe điện tại Việt Nam. Với mạng lưới trạm đổi pin phủ khắp cả
-            nước, chúng tôi cam kết đồng hành cùng xu hướng giao thông bền vững.
+            Chúng tôi là nền tảng đặt lịch đổi pin xe máy điện hàng đầu, mang đến giải pháp năng lượng xanh, nhanh chóng và tiện lợi cho người dùng xe điện tại Việt Nam. Với mạng lưới trạm đổi pin phủ khắp cả nước, chúng tôi cam kết đồng hành cùng xu hướng giao thông bền vững.
           </Paragraph>
         </div>
 
-{/* Tầm nhìn & Sứ mệnh - */}
+        {/* Tầm nhìn & Sứ mệnh - */}
         <Row gutter={[32, 32]} style={{ marginBottom: 80 }}>
           {/* Card Tầm Nhìn */}
           <Col xs={24} md={12}>
             <Card
               bordered={false}
-              hoverable 
+              hoverable
               style={{
                 height: "100%",
                 borderRadius: 16, // Bo góc mềm mại hơn
@@ -195,7 +191,13 @@ function AboutPage() {
                 transition: "all 0.3s ease",
               }}
             >
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "24px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "24px",
+                }}
+              >
                 {/* Icon Container */}
                 <div
                   style={{
@@ -212,23 +214,24 @@ function AboutPage() {
                 >
                   <RocketOutlined style={{ fontSize: "28px" }} />
                 </div>
-                
+
                 {/* Nội dung */}
                 <div>
-                  <Title level={3} style={{ marginTop: 0, marginBottom: 12, color: "#1f1f1f" }}>
+                  <Title
+                    level={3}
+                    style={{ marginTop: 0, marginBottom: 12, color: "#1f1f1f" }}
+                  >
                     Tầm Nhìn
                   </Title>
                   <Paragraph
                     style={{
-                      color: "#595959", 
+                      color: "#595959",
                       fontSize: "16px",
                       lineHeight: 1.6,
                       marginBottom: 0,
                     }}
                   >
-                    Trở thành nền tảng hạ tầng năng lượng hàng đầu cho xe máy điện,
-                    góp phần xây dựng hệ sinh thái giao thông xanh và phát triển bền
-                    vững tại Việt Nam và khu vực.
+                    Trở thành nền tảng hạ tầng năng lượng hàng đầu cho xe máy điện, góp phần xây dựng hệ sinh thái giao thông xanh và phát triển bền vững tại Việt Nam và khu vực.
                   </Paragraph>
                 </div>
               </div>
@@ -249,7 +252,13 @@ function AboutPage() {
                 transition: "all 0.3s ease",
               }}
             >
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "24px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "24px",
+                }}
+              >
                 {/* Icon Container */}
                 <div
                   style={{
@@ -257,11 +266,11 @@ function AboutPage() {
                     width: 64,
                     height: 64,
                     borderRadius: "50%",
-                    background: "#f6ffed", 
+                    background: "#f6ffed",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    color: "#52c41a", 
+                    color: "#52c41a",
                   }}
                 >
                   <ThunderboltOutlined style={{ fontSize: "28px" }} />
@@ -269,7 +278,10 @@ function AboutPage() {
 
                 {/* Nội dung */}
                 <div>
-                  <Title level={3} style={{ marginTop: 0, marginBottom: 12, color: "#1f1f1f" }}>
+                  <Title
+                    level={3}
+                    style={{ marginTop: 0, marginBottom: 12, color: "#1f1f1f" }}
+                  >
                     Sứ Mệnh
                   </Title>
                   <Paragraph
@@ -280,16 +292,13 @@ function AboutPage() {
                       marginBottom: 0,
                     }}
                   >
-                    Cung cấp giải pháp đổi pin nhanh chóng, tiện lợi và an toàn,
-                    giúp người dùng xe điện tiết kiệm thời gian, giảm chi phí và
-                    nâng cao trải nghiệm di chuyển hàng ngày.
+                    Cung cấp giải pháp đổi pin nhanh chóng, tiện lợi và an toàn, giúp người dùng xe điện tiết kiệm thời gian, giảm chi phí và nâng cao trải nghiệm di chuyển hàng ngày.
                   </Paragraph>
                 </div>
               </div>
             </Card>
           </Col>
         </Row>
-
 
         {/* Ưu điểm */}
         <div style={{ marginBottom: 60 }}>
@@ -319,8 +328,7 @@ function AboutPage() {
                 />
                 <Title level={4}>Tiết Kiệm Thời Gian</Title>
                 <Paragraph style={{ color: "#475569" }}>
-                  Đổi pin chỉ trong 3-5 phút, nhanh hơn gấp nhiều lần so với sạc
-                  pin truyền thống (2-4 giờ)
+                  Đổi pin chỉ trong 3-5 phút, nhanh hơn gấp nhiều lần so với sạc pin truyền thống (2-4 giờ)
                 </Paragraph>
               </Card>
             </Col>
@@ -343,8 +351,7 @@ function AboutPage() {
                 />
                 <Title level={4}>Pin Luôn Tốt</Title>
                 <Paragraph style={{ color: "#475569" }}>
-                  Pin được kiểm tra và bảo dưỡng tập trung, đảm bảo chất lượng
-                  và tuổi thọ cao nhất
+                  Pin được kiểm tra và bảo dưỡng tập trung, đảm bảo chất lượng và tuổi thọ cao nhất
                 </Paragraph>
               </Card>
             </Col>
@@ -367,8 +374,7 @@ function AboutPage() {
                 />
                 <Title level={4}>Mạng Lưới Rộng</Title>
                 <Paragraph style={{ color: "#475569" }}>
-                  Hơn 10 trạm đổi pin phủ khắp 34 tỉnh thành, luôn sẵn sàng phục
-                  vụ mọi lúc mọi nơi
+                  Hơn 10 trạm đổi pin phủ khắp 34 tỉnh thành, luôn sẵn sàng phục vụ mọi lúc mọi nơi
                 </Paragraph>
               </Card>
             </Col>
@@ -398,8 +404,7 @@ function AboutPage() {
                     <div>
                       <Title level={4}>Bước 1: Đặt Lịch Online</Title>
                       <Paragraph>
-                        Đặt lịch nhanh chóng qua website , chọn trạm và thời
-                        gian phù hợp
+                        Đặt lịch nhanh chóng qua website , chọn trạm và thời gian phù hợp
                       </Paragraph>
                     </div>
                   ),
@@ -479,7 +484,7 @@ function AboutPage() {
                 <Col xs={24} md={8}>
                   <div>
                     <Title level={4} style={{ color: "white" }}>
-                       Bền Vững
+                      Bền Vững
                     </Title>
                     <Text style={{ color: "rgba(255,255,255,0.9)" }}>
                       Góp phần bảo vệ môi trường và phát triển giao thông xanh
@@ -489,18 +494,17 @@ function AboutPage() {
                 <Col xs={24} md={8}>
                   <div>
                     <Title level={4} style={{ color: "white" }}>
-                       Nhanh Chóng
+                      Nhanh Chóng
                     </Title>
                     <Text style={{ color: "rgba(255,255,255,0.9)" }}>
-                      Tiết kiệm thời gian quý báu của bạn với dịch vụ đổi pin
-                      siêu tốc
+                      Tiết kiệm thời gian quý báu của bạn với dịch vụ đổi pin siêu tốc
                     </Text>
                   </div>
                 </Col>
                 <Col xs={24} md={8}>
                   <div>
                     <Title level={4} style={{ color: "white" }}>
-                       An Toàn
+                      An Toàn
                     </Title>
                     <Text style={{ color: "rgba(255,255,255,0.9)" }}>
                       Pin được kiểm tra kỹ lưỡng, đảm bảo an toàn tuyệt đối

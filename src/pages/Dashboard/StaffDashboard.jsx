@@ -2,7 +2,6 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../../components/Layout/MainLayout";
 import RoleSidebar from "../../components/Layout/RoleSidebar";
-
 import Bookings from "../Management/Bookings";
 import Stations from "../Management/Stations";
 import Vehicles from "../Management/Vehicles";

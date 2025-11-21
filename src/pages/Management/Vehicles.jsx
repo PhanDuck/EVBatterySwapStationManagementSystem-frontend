@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Card,
   Table,
@@ -129,7 +129,14 @@ const PendingVehicleAlert = ({ vehicle }) => {
         <Col xs={24} md={14}>
           <Space direction="vertical" size={4} style={{ width: "100%" }}>
             <Space align="center" style={{ marginBottom: 8 }}>
-              <Spin indicator={<SyncOutlined spin style={{ fontSize: 20, color: "#faad14" }} />} />
+              <Spin
+                indicator={
+                  <SyncOutlined
+                    spin
+                    style={{ fontSize: 20, color: "#faad14" }}
+                  />
+                }
+              />
               <Text strong style={{ fontSize: 18, color: "#faad14" }}>
                 Hồ sơ đăng ký đang được xét duyệt
               </Text>
@@ -176,7 +183,7 @@ const PendingVehicleAlert = ({ vehicle }) => {
         <Col xs={24} md={10} style={{ textAlign: "center" }}>
           <div
             style={{
-              backgroundColor: "#f2d338", 
+              backgroundColor: "#f2d338",
               padding: "20px",
               borderRadius: "16px",
               border: "1px solid #ffe58f",
@@ -186,10 +193,17 @@ const PendingVehicleAlert = ({ vehicle }) => {
               justifyContent: "center",
             }}
           >
-            <Text type="secondary" style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: "1px" }}>
+            <Text
+              type="secondary"
+              style={{
+                fontSize: 14,
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+              }}
+            >
               Thời gian còn lại
             </Text>
-            
+
             {isExpired ? (
               <Title level={4} type="danger" style={{ margin: "10px 0" }}>
                 Đã hết hạn duyệt
@@ -197,19 +211,40 @@ const PendingVehicleAlert = ({ vehicle }) => {
             ) : (
               <div style={{ margin: "10px 0" }}>
                 <Space align="baseline">
-                  <span style={{ fontSize: "48px", fontWeight: "bold", color: "#ff4d4f", lineHeight: 1 }}>
+                  <span
+                    style={{
+                      fontSize: "48px",
+                      fontWeight: "bold",
+                      color: "#ff4d4f",
+                      lineHeight: 1,
+                    }}
+                  >
                     {timeLeft.hours}
                   </span>
-                  <span style={{ fontSize: "16px", color: "#888", marginRight: 10 }}>giờ</span>
-                  <span style={{ fontSize: "48px", fontWeight: "bold", color: "#ff4d4f", lineHeight: 1 }}>
-                    {String(timeLeft.minutes).padStart(2, '0')}
+                  <span
+                    style={{ fontSize: "16px", color: "#888", marginRight: 10 }}
+                  >
+                    giờ
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "48px",
+                      fontWeight: "bold",
+                      color: "#ff4d4f",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {String(timeLeft.minutes).padStart(2, "0")}
                   </span>
                   <span style={{ fontSize: "16px", color: "#888" }}>phút</span>
                 </Space>
               </div>
             )}
 
-            <Tag icon={<SafetyCertificateOutlined />} color={isExpired ? "red" : "orange"}>
+            <Tag
+              icon={<SafetyCertificateOutlined />}
+              color={isExpired ? "red" : "orange"}
+            >
               {isExpired ? "Hệ thống đang hủy bỏ" : "Đang chờ Admin xác nhận"}
             </Tag>
           </div>
@@ -248,7 +283,8 @@ const VehiclePage = () => {
   const [selectedReplacementBattery, setSelectedReplacementBattery] =
     useState(null);
   const [isSwapping, setIsSwapping] = useState(false);
-  const [rejectReasonModalVisible, setRejectReasonModalVisible] = useState(false);
+  const [rejectReasonModalVisible, setRejectReasonModalVisible] =
+    useState(false);
   const [rejectingVehicleId, setRejectingVehicleId] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [isRejectingVehicle, setIsRejectingVehicle] = useState(false);
@@ -269,7 +305,8 @@ const VehiclePage = () => {
   const isDriver = role === "DRIVER";
   const isAdmin = role === "ADMIN";
 
-  const fetchVehicles = async () => {
+  // Bọc hàm bằng useCallback để "đóng băng" logic, chỉ tạo lại khi isAdmin thay đổi
+  const fetchVehicles = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -295,7 +332,7 @@ const VehiclePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAdmin]);
 
   // Lấy danh sách xe PENDING của riêng tài xế để hiển thị thông báo
   const myPendingVehicles = useMemo(() => {
@@ -519,9 +556,11 @@ const VehiclePage = () => {
   );
 
   // 🚗 Lấy danh sách vehicle
+  // useEffect bây giờ theo dõi chính hàm fetchVehicles
+  // Vì hàm đã được bọc useCallback nên nó sẽ không bị chạy lặp vô tận
   useEffect(() => {
     fetchVehicles();
-  }, [isAdmin]);
+  }, [fetchVehicles]);
 
   // 👥 Lấy danh sách tài xế (chỉ cho ADMIN)
   useEffect(() => {
@@ -954,19 +993,19 @@ const VehiclePage = () => {
           >
             Duyệt
           </Button>
-           <Button
-             type="primary"
-             danger
-             icon={<CloseOutlined />}
-             size="small"
-             onClick={() => {
-               setRejectingVehicleId(record.id);
-               setRejectReason("");
-               setRejectReasonModalVisible(true);
-             }}
-           >
-             Từ chối
-           </Button>
+          <Button
+            type="primary"
+            danger
+            icon={<CloseOutlined />}
+            size="small"
+            onClick={() => {
+              setRejectingVehicleId(record.id);
+              setRejectReason("");
+              setRejectReasonModalVisible(true);
+            }}
+          >
+            Từ chối
+          </Button>
         </Space>
       ),
     },
@@ -1264,46 +1303,43 @@ const VehiclePage = () => {
     }
   };
 
-   // ❌ Từ chối xe
-   const handleRejectVehicle = async (vehicleId, reason) => {
-     if (!reason || reason.trim() === "") {
-       message.error("Vui lòng nhập lý do từ chối!");
-       return;
-     }
+  // ❌ Từ chối xe
+  const handleRejectVehicle = async (vehicleId, reason) => {
+    if (!reason || reason.trim() === "") {
+      message.error("Vui lòng nhập lý do từ chối!");
+      return;
+    }
 
-     setIsRejectingVehicle(true);
-     try {
-       console.log("Rejecting vehicle:", vehicleId, "Reason:", reason);
-       const payload = { rejectionReason: reason.trim() };
-       console.log("Payload being sent:", JSON.stringify(payload));
-       
-       const res = await api.put(`/vehicle/${vehicleId}/reject`, payload);
-       console.log("Reject response:", res.data);
+    setIsRejectingVehicle(true);
+    try {
+      console.log("Rejecting vehicle:", vehicleId, "Reason:", reason);
+      const payload = { rejectionReason: reason.trim() };
+      console.log("Payload being sent:", JSON.stringify(payload));
 
-       showToast("success", "Đã từ chối xe!");
+      const res = await api.put(`/vehicle/${vehicleId}/reject`, payload);
+      console.log("Reject response:", res.data);
 
-       // Cập nhật danh sách xe chờ duyệt
-       setPendingVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+      showToast("success", "Đã từ chối xe!");
 
-       // Cập nhật danh sách xe chính - xóa xe bị từ chối
-       setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+      // Cập nhật danh sách xe chờ duyệt
+      setPendingVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
 
-       // Đóng modal
-       setRejectReasonModalVisible(false);
-       setRejectingVehicleId(null);
-       setRejectReason("");
-     } catch (error) {
-       console.error(
-         "Error rejecting vehicle - Full error:",
-         error
-       );
-       console.error("Error response:", error.response);
-       console.error("Error response data:", error.response?.data);
-       showToast("error", error.response?.data?.message || "Lỗi khi từ chối xe");
-     } finally {
-       setIsRejectingVehicle(false);
-     }
-   };
+      // Cập nhật danh sách xe chính - xóa xe bị từ chối
+      setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+
+      // Đóng modal
+      setRejectReasonModalVisible(false);
+      setRejectingVehicleId(null);
+      setRejectReason("");
+    } catch (error) {
+      console.error("Error rejecting vehicle - Full error:", error);
+      console.error("Error response:", error.response);
+      console.error("Error response data:", error.response?.data);
+      showToast("error", error.response?.data?.message || "Lỗi khi từ chối xe");
+    } finally {
+      setIsRejectingVehicle(false);
+    }
+  };
 
   const handleAdd = () => {
     setEditingVehicle(null);
@@ -1434,11 +1470,11 @@ const VehiclePage = () => {
 
           {/* 👇 HIỂN THỊ THÔNG BÁO XE ĐANG CHỜ DUYỆT Ở DƯỚI BẢNG XE */}
           {isDriver && myPendingVehicles.length > 0 && (
-             <div style={{ marginTop: 24 }}>
-               {myPendingVehicles.map(vehicle => (
-                 <PendingVehicleAlert key={vehicle.id} vehicle={vehicle} />
-               ))}
-             </div>
+            <div style={{ marginTop: 24 }}>
+              {myPendingVehicles.map((vehicle) => (
+                <PendingVehicleAlert key={vehicle.id} vehicle={vehicle} />
+              ))}
+            </div>
           )}
         </Card>
       )}
@@ -1607,35 +1643,50 @@ const VehiclePage = () => {
                   showSearch
                   optionFilterProp="label"
                 >
-                   {availableBatteries.map((battery) => (
-                     <Select.Option
-                       key={battery.id}
-                       value={battery.id}
-                       label={`Pin #${battery.id} - ${battery.model}`}
-                     >
-                       <div style={{ padding: "8px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                         <div style={{ fontWeight: "bold", flex: 1 }}>
-                           Pin #{battery.id} - {battery.model}
-                         </div>
-                         <div style={{ fontSize: "12px", color: "#666", display: "flex", gap: "8px", whiteSpace: "nowrap" }}>
-                           <Tag
-                             color={
-                               battery.chargeLevel > 70 ? "green" : "orange"
-                             }
-                           >
-                             {battery.chargeLevel}%
-                           </Tag>
-                           <Tag
-                             color={
-                               battery.stateOfHealth > 70 ? "green" : "orange"
-                             }
-                           >
-                             {battery.stateOfHealth}%
-                           </Tag>
-                         </div>
-                       </div>
-                     </Select.Option>
-                   ))}
+                  {availableBatteries.map((battery) => (
+                    <Select.Option
+                      key={battery.id}
+                      value={battery.id}
+                      label={`Pin #${battery.id} - ${battery.model}`}
+                    >
+                      <div
+                        style={{
+                          padding: "8px 0",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div style={{ fontWeight: "bold", flex: 1 }}>
+                          Pin #{battery.id} - {battery.model}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#666",
+                            display: "flex",
+                            gap: "8px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          <Tag
+                            color={
+                              battery.chargeLevel > 70 ? "green" : "orange"
+                            }
+                          >
+                            {battery.chargeLevel}%
+                          </Tag>
+                          <Tag
+                            color={
+                              battery.stateOfHealth > 70 ? "green" : "orange"
+                            }
+                          >
+                            {battery.stateOfHealth}%
+                          </Tag>
+                        </div>
+                      </div>
+                    </Select.Option>
+                  ))}
                 </Select>
                 {availableBatteries.length === 0 && !batteriesLoading && (
                   <p style={{ marginTop: 10, color: "red" }}>
@@ -1647,141 +1698,214 @@ const VehiclePage = () => {
           </Form>
         )}
       </Modal>
-       {/* Modal Duyệt xe và chọn pin */}
-       <Modal
-         title="Duyệt xe và chọn pin"
-         open={approveModalVisible}
-         onCancel={() => {
-           setApproveModalVisible(false);
-           setSelectedVehicleForApprove(null);
-           setSelectedBatteryForApprove(null);
-           setAvailableBatteries([]);
-         }}
-         width={900}
-         footer={[
-           <Button
-             key="cancel"
-             onClick={() => {
-               setApproveModalVisible(false);
-               setSelectedVehicleForApprove(null);
-               setSelectedBatteryForApprove(null);
-               setAvailableBatteries([]);
-             }}
-           >
-             Hủy
-           </Button>,
-           <Button
-             key="submit"
-             type="primary"
-             loading={isApprovingVehicle}
-             onClick={() => {
-               if (selectedVehicleForApprove) {
-                 handleApproveVehicle(
-                   selectedVehicleForApprove.id,
-                   selectedBatteryForApprove
-                 );
-               } else {
-                 message.error("Vui lòng chọn xe để duyệt!");
-               }
-             }}
-           >
-             {isApprovingVehicle ? "Đang duyệt..." : "Duyệt xe"}
-           </Button>,
-         ]}
-       >
-         {selectedVehicleForApprove && (
-           <div>
-             <Form layout="vertical">
-               <Form.Item label="Chọn pin để gán ban đầu (Pin sẵn có)" required>
-                 <Spin spinning={batteriesLoading}>
-                   <Select
-                     placeholder="Chọn pin phù hợp"
-                     onChange={setSelectedBatteryForApprove}
-                     popupMatchSelectWidth={false}
-                     style={{ width: "100%" }}
-                     popupStyle={{ minWidth: "800px", maxHeight: "400px" }}
-                   >
-                     {availableBatteries.map((battery) => (
-                       <Option
-                         key={battery.id}
-                         value={battery.id}
-                         label={
-                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                             <span>Pin #{battery.id} - {battery.model}</span>
-                             <div style={{ display: "flex", gap: "16px", whiteSpace: "nowrap", fontSize: "12px" }}>
-                               <span>Mức sạc: <Tag color={battery.chargeLevel > 70 ? "green" : "orange"}>{battery.chargeLevel}%</Tag></span>
-                               <span>Tình trạng: <Tag color={battery.stateOfHealth > 70 ? "green" : "orange"}>{battery.stateOfHealth}%</Tag></span>
-                             </div>
-                           </div>
-                         }
-                       >
-                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "8px 0" }}>
-                           <div style={{ fontWeight: "bold" }}>
-                             Pin #{battery.id} - {battery.model}
-                           </div>
-                           <div style={{ display: "flex", gap: "16px", whiteSpace: "nowrap", fontSize: "12px" }}>
-                             <span>Mức sạc: <Tag color={battery.chargeLevel > 70 ? "green" : "orange"}>{battery.chargeLevel}%</Tag></span>
-                             <span>Tình trạng: <Tag color={battery.stateOfHealth > 70 ? "green" : "orange"}>{battery.stateOfHealth}%</Tag></span>
-                           </div>
-                         </div>
-                       </Option>
-                     ))}
-                   </Select>
-                 </Spin>
-               </Form.Item>
-             </Form>
-           </div>
-         )}
-       </Modal>
-       {/* Modal Từ chối xe */}
-       <Modal
-         title="Từ chối xe"
-         open={rejectReasonModalVisible}
-         onCancel={() => {
-           setRejectReasonModalVisible(false);
-           setRejectingVehicleId(null);
-           setRejectReason("");
-         }}
-         footer={[
-           <Button
-             key="cancel"
-             onClick={() => {
-               setRejectReasonModalVisible(false);
-               setRejectingVehicleId(null);
-               setRejectReason("");
-             }}
-             disabled={isRejectingVehicle}
-           >
-             Hủy
-           </Button>,
-           <Button
-             key="submit"
-             type="primary"
-             danger
-             loading={isRejectingVehicle}
-             onClick={() => {
-               if (rejectingVehicleId) {
-                 handleRejectVehicle(rejectingVehicleId, rejectReason);
-               }
-             }}
-           >
-             {isRejectingVehicle ? "Đang từ chối..." : "Từ chối xe"}
-           </Button>,
-         ]}
-       >
-         <Form layout="vertical">
-           <Form.Item label="Lý do từ chối" required>
-             <Input.TextArea
-               placeholder="Nhập lý do từ chối xe (sẽ được gửi đến email khách hàng)"
-               value={rejectReason}
-               onChange={(e) => setRejectReason(e.target.value)}
-               rows={4}
-               maxLength={500}
-               showCount
-             />
-           </Form.Item>
-         </Form>
-       </Modal>
+      {/* Modal Duyệt xe và chọn pin */}
+      <Modal
+        title="Duyệt xe và chọn pin"
+        open={approveModalVisible}
+        onCancel={() => {
+          setApproveModalVisible(false);
+          setSelectedVehicleForApprove(null);
+          setSelectedBatteryForApprove(null);
+          setAvailableBatteries([]);
+        }}
+        width={900}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setApproveModalVisible(false);
+              setSelectedVehicleForApprove(null);
+              setSelectedBatteryForApprove(null);
+              setAvailableBatteries([]);
+            }}
+          >
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={isApprovingVehicle}
+            onClick={() => {
+              if (selectedVehicleForApprove) {
+                handleApproveVehicle(
+                  selectedVehicleForApprove.id,
+                  selectedBatteryForApprove
+                );
+              } else {
+                message.error("Vui lòng chọn xe để duyệt!");
+              }
+            }}
+          >
+            {isApprovingVehicle ? "Đang duyệt..." : "Duyệt xe"}
+          </Button>,
+        ]}
+      >
+        {selectedVehicleForApprove && (
+          <div>
+            <Form layout="vertical">
+              <Form.Item label="Chọn pin để gán ban đầu (Pin sẵn có)" required>
+                <Spin spinning={batteriesLoading}>
+                  <Select
+                    placeholder="Chọn pin phù hợp"
+                    onChange={setSelectedBatteryForApprove}
+                    popupMatchSelectWidth={false}
+                    style={{ width: "100%" }}
+                    popupStyle={{ minWidth: "800px", maxHeight: "400px" }}
+                  >
+                    {availableBatteries.map((battery) => (
+                      <Option
+                        key={battery.id}
+                        value={battery.id}
+                        label={
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              width: "100%",
+                            }}
+                          >
+                            <span>
+                              Pin #{battery.id} - {battery.model}
+                            </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "16px",
+                                whiteSpace: "nowrap",
+                                fontSize: "12px",
+                              }}
+                            >
+                              <span>
+                                Mức sạc:{" "}
+                                <Tag
+                                  color={
+                                    battery.chargeLevel > 70
+                                      ? "green"
+                                      : "orange"
+                                  }
+                                >
+                                  {battery.chargeLevel}%
+                                </Tag>
+                              </span>
+                              <span>
+                                Tình trạng:{" "}
+                                <Tag
+                                  color={
+                                    battery.stateOfHealth > 70
+                                      ? "green"
+                                      : "orange"
+                                  }
+                                >
+                                  {battery.stateOfHealth}%
+                                </Tag>
+                              </span>
+                            </div>
+                          </div>
+                        }
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            width: "100%",
+                            padding: "8px 0",
+                          }}
+                        >
+                          <div style={{ fontWeight: "bold" }}>
+                            Pin #{battery.id} - {battery.model}
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "16px",
+                              whiteSpace: "nowrap",
+                              fontSize: "12px",
+                            }}
+                          >
+                            <span>
+                              Mức sạc:{" "}
+                              <Tag
+                                color={
+                                  battery.chargeLevel > 70 ? "green" : "orange"
+                                }
+                              >
+                                {battery.chargeLevel}%
+                              </Tag>
+                            </span>
+                            <span>
+                              Tình trạng:{" "}
+                              <Tag
+                                color={
+                                  battery.stateOfHealth > 70
+                                    ? "green"
+                                    : "orange"
+                                }
+                              >
+                                {battery.stateOfHealth}%
+                              </Tag>
+                            </span>
+                          </div>
+                        </div>
+                      </Option>
+                    ))}
+                  </Select>
+                </Spin>
+              </Form.Item>
+            </Form>
+          </div>
+        )}
+      </Modal>
+      {/* Modal Từ chối xe */}
+      <Modal
+        title="Từ chối xe"
+        open={rejectReasonModalVisible}
+        onCancel={() => {
+          setRejectReasonModalVisible(false);
+          setRejectingVehicleId(null);
+          setRejectReason("");
+        }}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setRejectReasonModalVisible(false);
+              setRejectingVehicleId(null);
+              setRejectReason("");
+            }}
+            disabled={isRejectingVehicle}
+          >
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            danger
+            loading={isRejectingVehicle}
+            onClick={() => {
+              if (rejectingVehicleId) {
+                handleRejectVehicle(rejectingVehicleId, rejectReason);
+              }
+            }}
+          >
+            {isRejectingVehicle ? "Đang từ chối..." : "Từ chối xe"}
+          </Button>,
+        ]}
+      >
+        <Form layout="vertical">
+          <Form.Item label="Lý do từ chối" required>
+            <Input.TextArea
+              placeholder="Nhập lý do từ chối xe (sẽ được gửi đến email khách hàng)"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={4}
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

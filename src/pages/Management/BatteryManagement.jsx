@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   Table,
@@ -41,7 +41,7 @@ export default function BatteryManagement() {
   const stationId = user?.stationId;
 
   // 🟢 Fetch data (Battery + Type + Station)
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     setLoading(true);
     setLoadingTypes(true);
     try {
@@ -75,11 +75,11 @@ export default function BatteryManagement() {
       setLoading(false);
       setLoadingTypes(false);
     }
-  };
+  }, [role, stationId]);
 
   useEffect(() => {
     fetchAllData();
-  }, [role, stationId]);
+  }, [fetchAllData]);
 
   // 🟡 Submit (Create / Update)
   const handleSubmit = async (values) => {
@@ -420,16 +420,7 @@ export default function BatteryManagement() {
       >
         <Table
           columns={columns}
-          dataSource={batteries.filter((b) => {
-            if (!search) return true;
-            const q = search.toLowerCase();
-            return (
-              b.model?.toLowerCase().includes(q) ||
-              b.batteryTypeName?.toLowerCase().includes(q) ||
-              b.currentStationName?.toLowerCase().includes(q) ||
-              b.status?.toLowerCase().includes(q)
-            );
-          })}
+          dataSource={filteredBatteries}
           rowKey="id"
           loading={loading}
           pagination={{
