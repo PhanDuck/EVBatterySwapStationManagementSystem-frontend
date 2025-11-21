@@ -4,11 +4,6 @@ import { getToken } from "../../config/auth";
 import { Await, useNavigate, Link } from "react-router-dom";
 import { showToast } from "../../Utils/toastHandler";
 import { Modal, Checkbox, Button } from "antd";
-import {
-  CheckCircleOutlined,
-  FileTextOutlined,
-  ExclamationCircleOutlined,
-} from "@ant-design/icons";
 
 function PackagesPage() {
   const [packages, setPackages] = useState([]);

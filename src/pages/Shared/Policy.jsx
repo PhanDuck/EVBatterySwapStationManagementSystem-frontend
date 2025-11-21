@@ -1,5 +1,5 @@
 import React from "react";
-import { Row, Col, Card, Button, Affix } from "antd";
+import { Row, Col, Card, Button } from "antd";
 
 const Policy = () => {
   // 1. Mảng Mục Lục (tableOfContents)

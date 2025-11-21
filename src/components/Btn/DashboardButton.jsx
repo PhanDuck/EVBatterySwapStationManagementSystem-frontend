@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "antd";
-import { HomeOutlined } from "@ant-design/icons";
 import { MdSpaceDashboard } from "react-icons/md";
 
 const DashboardButton = () => {

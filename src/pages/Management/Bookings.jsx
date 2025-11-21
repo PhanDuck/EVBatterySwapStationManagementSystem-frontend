@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -33,8 +33,6 @@ export default function BookingsPage() {
   const user = getCurrentUser() || {};
   const role = user?.role;
   const navigate = useNavigate();
-  const initialized = useRef(false);
-
   // 🟢 Fetch dữ liệu ban đầu
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -84,10 +82,7 @@ export default function BookingsPage() {
   }, [role]);
 
   useEffect(() => {
-    if (initialized.current === false) {
-      initialized.current = true;
       fetchData();
-    }
   }, [fetchData]);
 
   // 🔍 Tìm kiếm - Tìm kiếm trực tiếp trên dữ liệu từ API
