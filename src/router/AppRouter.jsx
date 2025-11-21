@@ -18,7 +18,7 @@ import StaffDashboard from "../pages/Dashboard/StaffDashboard";
 import StationsNearbyPage from "../pages/Shared/StationsNearby";
 import StationBookingPage from "../pages/Shared/StationBooking";
 import EnterConfirmationCode from "../pages/Shared/EnterConfirmationCode";
-import SupportPage from "../pages/Shared/Support";
+
 
 
 import PrivateRoute from "./PrivateRoute";
@@ -57,7 +57,6 @@ export default function AppRouter() {
           <Route path="/about" element={<About />} />
           <Route path="/packages" element={<Packages />} />
           <Route path="/policy" element={<Policy />} />
-          <Route path="/support" element={<SupportPage />} />
           <Route path="/stations/nearby" element={<StationsNearbyPage />} />
           <Route path="/codeConfirm" element={<EnterConfirmationCode />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

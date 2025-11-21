@@ -25,16 +25,45 @@ import {
   ThunderboltOutlined,
   EyeOutlined,
   SwapOutlined,
-  SendOutlined,
   InboxOutlined,
   ArrowRightOutlined,
   ArrowLeftOutlined,
-  CheckCircleOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
+
+/**
+ * 🛠️ Helper: Lấy thông báo lỗi chuẩn từ Backend
+ * Đã fix để bắt trường hợp Backend trả về raw string
+ */
+const getErrorMessage = (error) => {
+  console.log("Error Log:", error); // Log ra để debug nếu cần
+  
+  // Trường hợp có phản hồi từ Server (4xx, 5xx)
+  if (error.response) {
+    const { data } = error.response;
+    
+    // 1. Ưu tiên: Nếu data trả về là String (như trong ảnh của bạn)
+    if (typeof data === "string") {
+      return data;
+    }
+    
+    // 2. Nếu data là Object và có thuộc tính message
+    if (data && data.message) {
+      return typeof data.message === "string" ? data.message : JSON.stringify(data.message);
+    }
+
+    // 3. Fallback: Nếu là object lạ, chuyển thành string để hiển thị
+    if (data && typeof data === "object") {
+       return JSON.stringify(data);
+    }
+  }
+
+  // Trường hợp lỗi mạng hoặc không có response
+  return error.message || "Đã có lỗi không xác định xảy ra.";
+};
 
 /**
  * Component Modal hiển thị danh sách Pin tại một Trạm
@@ -63,11 +92,12 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
       setBatteries(data);
       showToast(
         "success",
-        `Tải thành công ${data.length} pin tại trạm ${stationId}.`
+        `Tải thành công ${data.length} pin tại trạm.`
       );
     } catch (err) {
       console.log(err);
       setBatteries([]);
+      showToast("error", err.response?.data || "Đã có lỗi xảy ra");
     } finally {
       setLoading(false);
     }
@@ -197,6 +227,7 @@ const BatterySwapModal = ({
     } catch (error) {
       console.log("Lỗi tải pin cần bảo dưỡng:", error);
       setStationMaintenanceBatteries([]);
+      showToast("error", error.response?.data);
     } finally {
       setLoading(false);
     }
@@ -215,7 +246,7 @@ const BatterySwapModal = ({
       );
       setWarehouseGoodBatteries(goodPool);
     } catch (error) {
-      showToast(error, "Lỗi tải danh sách pin tốt từ kho.");
+      showToast("error", error.response?.data || "Đã có lỗi xảy ra");
     } finally {
       setLoading(false);
     }
@@ -273,12 +304,12 @@ const BatterySwapModal = ({
         });
       }
 
-      message.success(`✅ Đã đổi thành công ${selectedFaultyBatteryIds.length} pin.`);
+      showToast("success", `Đã đổi thành công ${selectedFaultyBatteryIds.length} pin.`);
       onSwapSuccess();
       onCancel();
     } catch (error) {
-      message.error("Lỗi trong quá trình đổi pin. Vui lòng thử lại.");
       console.error(error);
+      showToast("error", error.response?.data || "Đã có lỗi xảy ra");
     } finally {
       setLoading(false);
     }
@@ -466,7 +497,7 @@ const StationPage = () => {
   }, []);
 
   // ---------------------------
-  // 🚀 1. FETCH ALL STATIONS & BATTERY TYPES (Đã sửa bằng useCallback)
+  // 🚀 1. FETCH ALL STATIONS & BATTERY TYPES
   // ---------------------------
 
   const fetchStations = useCallback(async () => {
@@ -482,6 +513,7 @@ const StationPage = () => {
       setStations(data.sort((a, b) => b.id - a.id));
     } catch (err) {
       console.log("Lỗi tải danh sách trạm:", err);
+      showToast("error", err.response?.data || "Đã có lỗi xảy ra");
     }
   }, [Role]);
 
@@ -497,6 +529,7 @@ const StationPage = () => {
       setBatteryTypesMap(map);
     } catch (err) {
       console.log("Lỗi tải loại pin:", err);
+      showToast("error", err.response?.data || "Đã có lỗi xảy ra");
     }
   }, []);
 
@@ -516,19 +549,17 @@ const StationPage = () => {
     try {
       if (editingStation) {
         await api.put(`/station/${editingStation.id}`, values);
-        message.success("Trạm cập nhật thành công");
+        showToast("success","Trạm cập nhật thành công");
       } else {
         await api.post("/station", values);
-        message.success("Trạm được tạo thành công");
+        showToast("success", "Trạm được tạo thành công");
       }
       setIsModalVisible(false);
       form.resetFields();
       fetchStations();
     } catch (err) {
-      showToast(
-        err.response?.data || "Lưu trạm thất bại, vui lòng thử lại!",
-        "error"
-      );
+    
+     showToast("error", err.response?.data || "Đã có lỗi xảy ra");
     }
   };
 
@@ -545,13 +576,10 @@ const StationPage = () => {
       onOk: async () => {
         try {
           await api.delete(`/station/${id}`);
-          message.success("Trạm được xóa thành công");
+          showToast("success", "Trạm đã được xóa thành công");
           fetchStations();
         } catch (err) {
-          showToast(
-            err.response?.data || "Xóa trạm thất bại, vui lòng thử lại!",
-            "error"
-          );
+          showToast("error", err.response?.data || "Đã có lỗi xảy ra");
         }
       },
     });
