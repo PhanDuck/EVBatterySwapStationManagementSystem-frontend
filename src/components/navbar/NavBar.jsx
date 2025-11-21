@@ -2,13 +2,6 @@ import React from "react";
 import "./NavBar.css";
 import { Button, Dropdown } from "antd";
 import { Link, useNavigate } from "react-router-dom";
-//import { clearAuth } from "../../config/auth";
-import {
-  DashboardOutlined,
-  UserOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-} from "@ant-design/icons";
 import { isAuthenticated } from "../../config/auth";
 import LogoutBtn from "../Btn/LogoutBtn";
 import DashboardButton from "../Btn/DashboardButton";

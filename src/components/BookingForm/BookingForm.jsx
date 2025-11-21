@@ -16,7 +16,6 @@ const BookingFormFields = ({
   const [isStationLoading, setIsStationLoading] = useState(false);
   const [isVehicleLoading, setIsVehicleLoading] = useState(true);
   const [selectedVehicleDetails, setSelectedVehicleDetails] = useState(null);
-  // ĐÃ XÓA: preselectedStationName (vì không dùng đến)
   const [remainingSwaps, setRemainingSwaps] = useState(null);
 
   const fetchCompatibleStations = useCallback(async (vehicleId) => {
@@ -84,8 +83,6 @@ const BookingFormFields = ({
         (s) => s.id === preselectedStationId
       );
       if (station) {
-        // ĐÃ XÓA: setPreselectedStationName(station.name); -> Không cần thiết
-
         // Chỉ cần set giá trị cho form là đủ, Select sẽ tự hiển thị tên
         form.setFieldsValue({ stationId: preselectedStationId });
       }

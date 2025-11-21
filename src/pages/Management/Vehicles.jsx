@@ -782,7 +782,13 @@ const VehiclePage = () => {
               objectFit: "cover",
               borderRadius: 4,
             }}
-            preview
+            preview={{
+              mask: (
+                <Space>
+                  <EyeOutlined /> Xem
+                </Space>
+              ),
+            }}
           />
         ) : (
           <Text type="secondary">Không có ảnh</Text>
@@ -851,11 +857,14 @@ const VehiclePage = () => {
       key: "swapCount",
       width: 120,
       sorter: (a, b) => (a.swapCount || 0) - (b.swapCount || 0),
-      render: (swapCount) => (
-        <Text style={{ color: "#000000ff" }}>
-          {swapCount === undefined || swapCount === null ? "0" : swapCount}
-        </Text>
-      ),
+      render: (swapCount, record) => {
+        if (record.status === "PENDING") return null;
+        return (
+          <Text style={{ color: "#000000ff" }}>
+            {swapCount === undefined || swapCount === null ? "0" : swapCount}
+          </Text>
+        );
+      },
     },
     {
       title: "Thao tác",
@@ -863,6 +872,7 @@ const VehiclePage = () => {
       fixed: "right",
       render: (_, record) => {
         const isDriver = role === "DRIVER";
+        const isPending = record.status === "PENDING";
         return (
           <Space>
             {/* Nút Xem lịch sử cho TẤT CẢ các vai trò */}
@@ -871,6 +881,7 @@ const VehiclePage = () => {
               icon={<EyeOutlined />}
               size="small"
               onClick={() => handleViewHistory(record.id)} // Gọi hàm xem lịch sử
+              disabled={isPending}
             >
               Xem
             </Button>
@@ -896,6 +907,7 @@ const VehiclePage = () => {
                   icon={<EditOutlined />}
                   size="small"
                   onClick={() => handleEdit(record)}
+                  disabled={isPending}
                 >
                   Sửa
                 </Button>
@@ -905,7 +917,7 @@ const VehiclePage = () => {
                   icon={<DeleteOutlined />}
                   size="small"
                   onClick={() => handleDelete(record.id)}
-                  disabled={record.status === "INACTIVE"}
+                  disabled={record.status === "INACTIVE" || isPending}
                 >
                   Xóa
                 </Button>
@@ -946,7 +958,13 @@ const VehiclePage = () => {
               objectFit: "cover",
               borderRadius: 4,
             }}
-            preview
+            preview={{
+              mask: (
+                <Space>
+                  <EyeOutlined /> Xem
+                </Space>
+              ),
+            }}
           />
         ) : (
           <Text type="secondary">Không có ảnh</Text>
@@ -1535,35 +1553,81 @@ const VehiclePage = () => {
               ]}
             >
               <div>
-                <Upload
-                  beforeUpload={handleImageUpload}
-                  maxCount={1}
-                  accept="image/*"
-                  listType="picture-card"
-                  fileList={[]}
-                  onRemove={() => {
-                    setImageFile(null);
-                    setVehicleImage(null);
-                  }}
-                >
-                  {!vehicleImage && (
+                {/* Ẩn nút Upload khi đã có ảnh để giao diện gọn hơn */}
+                {!vehicleImage && (
+                  <Upload
+                    beforeUpload={handleImageUpload}
+                    maxCount={1}
+                    accept="image/*"
+                    listType="picture-card"
+                    fileList={[]}
+                    showUploadList={false}
+                  >
                     <div>
                       <UploadOutlined style={{ fontSize: 32 }} />
                       <div style={{ marginTop: 8 }}>Chọn ảnh</div>
                     </div>
-                  )}
-                </Upload>
+                  </Upload>
+                )}
+
                 {vehicleImage && (
                   <div style={{ marginTop: 16 }}>
                     <Image
                       src={vehicleImage}
-                      alt="Registration Image Preview"
+                      alt="Preview"
+                      height={150}
                       style={{
-                        maxWidth: "100%",
-                        maxHeight: 300,
-                        borderRadius: 4,
+                        borderRadius: 8,
+                        objectFit: "contain",
+                        border: "1px solid #d9d9d9",
                       }}
-                      preview
+                      // 👇 PHẦN QUAN TRỌNG: Tùy chỉnh lớp phủ khi hover
+                      preview={{
+                        mask: (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "16px", // Khoảng cách giữa chữ Xem và nút Xóa
+                              fontSize: "14px",
+                            }}
+                          >
+                            {/* Phần Xem ảnh (Mặc định của Antd sẽ click vào mask là xem) */}
+                            <Space>
+                              <EyeOutlined /> Xem
+                            </Space>
+
+                            {/* Đường gạch đứng phân cách cho đẹp */}
+                            <div
+                              style={{
+                                width: 1,
+                                height: 14,
+                                backgroundColor: "rgba(255,255,255,0.5)",
+                              }}
+                            />
+
+                            {/* Nút Xóa */}
+                            <Space
+                              className="delete-btn-hover" // Class để style nếu cần
+                              style={{
+                                cursor: "pointer",
+                                color: "#ff4d4f", // Màu đỏ cho nổi
+                                fontWeight: "bold",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation(); // ⛔ QUAN TRỌNG: Chặn không cho mở Preview ảnh lên
+                                setImageFile(null);
+                                setVehicleImage(null);
+                                form.setFieldsValue({
+                                  registrationImage: null,
+                                });
+                              }}
+                            >
+                              <DeleteOutlined /> Xóa
+                            </Space>
+                          </div>
+                        ),
+                      }}
                     />
                   </div>
                 )}
