@@ -66,11 +66,7 @@ const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
         `Tải thành công ${data.length} pin tại trạm ${stationId}.`
       );
     } catch (err) {
-      showToast(
-        "error",
-        err.response?.data ||
-          "Tải danh sách pin tại trạm thất bại, vui lòng thử lại!"
-      );
+      console.log(err);
       setBatteries([]);
     } finally {
       setLoading(false);
@@ -204,7 +200,7 @@ const BatterySwapModal = ({
         : [];
       setStationMaintenanceBatteries(batteries.sort((a, b) => b.id - a.id));
     } catch (error) {
-      handleApiError(error, "Tải pin cần bảo dưỡng tại trạm!");
+      console.log("Lỗi tải pin cần bảo dưỡng:", error);
       setStationMaintenanceBatteries([]);
     } finally {
       setLoading(false);
@@ -443,7 +439,8 @@ const BatterySwapModal = ({
               <ul>
                 {randomlySelectedGoodBatteries.map((b) => (
                   <li key={b.id}>
-                    **Pin ID {b.id}** ({batteryTypesMap[b.batteryTypeId]}) - SOH: {parseFloat(b.stateOfHealth).toFixed(2)}%
+                    **Pin ID {b.id}** ({batteryTypesMap[b.batteryTypeId]}) -
+                    SOH: {parseFloat(b.stateOfHealth).toFixed(2)}%
                   </li>
                 ))}
               </ul>
@@ -493,7 +490,7 @@ const StationPage = () => {
       const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
       setStations(data.sort((a, b) => b.id - a.id));
     } catch (err) {
-      handleApiError(err, "Tải danh sách trạm");
+      console.log("Lỗi tải danh sách trạm:", err);
     }
   }, [Role]);
 
@@ -508,7 +505,7 @@ const StationPage = () => {
       });
       setBatteryTypesMap(map);
     } catch (err) {
-      handleApiError(err, "Tải loại pin");
+      console.log("Lỗi tải loại pin:", err);
     }
   }, []);
 
@@ -537,7 +534,10 @@ const StationPage = () => {
       form.resetFields();
       fetchStations();
     } catch (err) {
-      handleApiError(err, "lưu trạm");
+      showToast(
+        err.response?.data || "Lưu trạm thất bại, vui lòng thử lại!",
+        "error"
+      );
     }
   };
 
@@ -559,7 +559,10 @@ const StationPage = () => {
           // Refresh the station list after deletion
           fetchStations();
         } catch (err) {
-          handleApiError(err, "xóa trạm");
+          showToast(
+            err.response?.data || "Xóa trạm thất bại, vui lòng thử lại!",
+            "error"
+          );
         }
       },
     });

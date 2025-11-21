@@ -51,7 +51,6 @@ export default function AccountPage() {
     fetchAccounts();
   }, []);
 
-  // creation UI/flow removed — modal is editing-only and opened from Edit buttons
 
   const handleEdit = (record) => {
     // normalize id for editing record
@@ -80,10 +79,9 @@ export default function AccountPage() {
   };
 
   const handleSubmit = async () => {
-    // Validate form fields using Ant Form API before calling the API
     try {
       const validValues = await form.validateFields();
-      // sanitize / normalize
+
       const payload = {
         fullName: String(validValues.fullName).trim(),
         email: String(validValues.email).trim().toLowerCase(),
@@ -92,64 +90,26 @@ export default function AccountPage() {
         status: validValues.status,
       };
 
-      // basic duplicate checks (client-side): email or phone already in table (excluding editing row)
-      const editingId = editingAccount
-        ? editingAccount.id ?? editingAccount._id
-        : null;
-      const dup = accounts.find((a) => {
-        const aid = a.id ?? a._id;
-        if (editingId && aid === editingId) return false;
-        return (
-          (a.email || "").toLowerCase() === payload.email ||
-          (a.phoneNumber || "") === payload.phoneNumber
-        );
-      });
-      if (dup) {
-        showToast("error", "Email hoặc số điện thoại đã tồn tại.");
-        return;
-      }
-
-      // creation is disabled — only allow updates
-      if (!editingAccount) {
-        showToast("error", "Tạo người dùng mới đã bị vô hiệu hóa.");
-        return;
-      }
-
       setSubmitting(true);
+
       const id = editingAccount.id ?? editingAccount._id;
       const res = await api.put(`/admin/user/${id}`, payload);
+
       const updated = { ...res.data, id: res.data.id ?? res.data._id };
+
       setAccounts((prev) =>
         prev.map((a) => ((a.id ?? a._id) === id ? updated : a))
       );
+
       showToast("success", "Cập nhật thành công!");
       setIsModalVisible(false);
 
       form.resetFields();
       setEditingAccount(null);
     } catch (error) {
-      // form.validateFields throws if validation fails
-      if (error.errorFields) {
-        // validation errors from Ant Form
-        return;
-      }
-      console.error(
-        "Error creating/updating user:",
-        error.response?.data || error.message
+      showToast(
+        error.response?.data?.message || "Không thể cập nhật người dùng"
       );
-      if (error?.response?.status === 401) {
-        try {
-          localStorage.removeItem("authToken");
-          sessionStorage.removeItem("authToken");
-        } catch {
-          /* ignore storage errors */
-        }
-        showToast("error", "Unauthorized — vui lòng đăng nhập lại");
-      } else {
-        showToast(
-          error.response?.data?.message || "Không thể cập nhật người dùng"
-        );
-      }
     } finally {
       setSubmitting(false);
     }
