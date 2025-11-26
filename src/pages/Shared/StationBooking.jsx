@@ -20,7 +20,6 @@ import {
 import api from "../../config/axios";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
-import relativeTime from "dayjs/plugin/relativeTime";
 
 // Import component chứa các trường form
 import BookingFormFields from "../../components/BookingForm/BookingForm";
@@ -29,8 +28,8 @@ import "../../App.css";
 import "../../index.css";
 import { showToast } from "../../Utils/toastHandler";
 
+// Set locale tiếng Việt cho dayjs
 dayjs.locale("vi");
-dayjs.extend(relativeTime);
 
 const { Title, Paragraph, Text } = Typography;
 const { Step } = Steps;
@@ -40,7 +39,10 @@ function StationBookingPage() {
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  
+  // State lưu response từ API để hiển thị kết quả
   const [bookingDetails, setBookingDetails] = useState(null);
+  
   const [searchParams] = useSearchParams();
 
   // Lấy vehicleId và stationId từ URL params
@@ -66,24 +68,29 @@ function StationBookingPage() {
 
   const onFinish = async (values) => {
     setLoading(true);
-    // Định dạng lại thời gian trước khi gửi đi để phù hợp với múi giờ Việt Nam
     const payload = {
       vehicleId: values.vehicleId,
       stationId: values.stationId,
     };
+
     try {
       const res = await api.post("/booking", payload);
-      const bookingTime = dayjs(values.bookingTime);
-      const expiryTime = bookingTime.add(3, "hours");
-      const remainingSwaps = res.data.remainingSwaps;
+      const data = res.data;
+
+      // Logic mới: Map trực tiếp dữ liệu từ API trả về
+      // Không tự tính toán thời gian ở Frontend nữa
       setBookingDetails({
-        ...res.data,
-        vehicleName: `ID ${values.vehicleId}`,
-        stationName: `ID ${values.stationId}`,
-        bookingTime: bookingTime,
-        expiryTime: expiryTime,
-        remainingSwaps: remainingSwaps,
+        confirmationCode: data.confirmationCode,
+        bookingTime: dayjs(data.bookingTime),           // Thời gian đặt
+        expiryTime: dayjs(data.reservationExpiry),      // Thời gian hết hạn
+        remainingSwaps: data.remainingSwaps,            // Số lần đổi còn lại
+        
+        // Tận dụng các trường API trả về để hiển thị đẹp hơn thay vì ID
+        stationName: data.stationName,                   
+        vehiclePlateNumber: data.vehiclePlateNumber,
+        stationLocation: data.stationLocation, 
       });
+
       setBookingSuccess(true);
       showToast("success", "Đặt lịch thành công!");
     } catch (error) {
@@ -133,31 +140,46 @@ function StationBookingPage() {
                 icon={<SmileOutlined />}
                 title="Đặt Lịch Thành Công!"
                 subTitle={
-                  <div>
+                  <div style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto' }}>
+                    {/* Mã xác nhận */}
                     <Paragraph>
                       Mã xác nhận:{" "}
-                      <strong>{bookingDetails?.confirmationCode}</strong>
+                      <Text strong copyable={{ text: bookingDetails?.confirmationCode }}>
+                         {bookingDetails?.confirmationCode}
+                      </Text>
                     </Paragraph>
+
+                    {/* Thông tin Trạm & Xe */}
+                    {bookingDetails?.stationName && (
+                         <Paragraph>Trạm: <Text strong>{bookingDetails.stationName}</Text></Paragraph>
+                    )}
+                    {bookingDetails?.vehiclePlateNumber && (
+                         <Paragraph>Biển số xe: <Text strong>{bookingDetails.vehiclePlateNumber}</Text></Paragraph>
+                    )}
+
+                    {/* Thời gian đặt (Booking Time) */}
                     <Paragraph>
-                      Lịch hẹn của bạn đã được lên lịch vào lúc{" "}
+                      Thời gian đặt:{" "}
                       <strong>
-                        {bookingDetails?.bookingTime.format("HH:mm DD/MM/YYYY")}
-                      </strong>{" "}
-                      ({bookingDetails?.bookingTime.fromNow()}).
+                        {bookingDetails?.bookingTime?.format("HH:mm - DD/MM/YYYY")}
+                      </strong>
                     </Paragraph>
+
+                    {/* Thời gian hết hạn (Expiry Time) - Lấy trực tiếp từ API */}
                     {bookingDetails?.expiryTime && (
                       <Paragraph>
-                        Lịch hẹn của bạn sẽ <b>hết hạn</b> vào lúc{" "}
-                        <b>
-                          {bookingDetails.expiryTime.format("HH:mm DD/MM/YYYY")}
-                        </b>{" "}
-                        ({bookingDetails.expiryTime.fromNow(true)} nữa).
+                        Hết hạn lúc:{" "}
+                        <Text type="danger" strong>
+                          {bookingDetails.expiryTime.format("HH:mm - DD/MM/YYYY")}
+                        </Text>
                       </Paragraph>
                     )}
+
+                    {/* Số lần đổi pin còn lại */}
                     {bookingDetails?.remainingSwaps !== undefined &&
                       bookingDetails.remainingSwaps !== null && (
                         <Paragraph style={{ marginTop: 8 }}>
-                          <Text strong>Số lần đổi pin còn lại: </Text>
+                          <Text strong>Số dư ví đổi pin: </Text>
                           <Text
                             style={{
                               color:
@@ -171,13 +193,9 @@ function StationBookingPage() {
                           </Text>
                         </Paragraph>
                       )}
-                    <Paragraph>
-                      Pin của bạn đã được chuẩn bị xong, hãy đến lấy pin trong vòng <b>3 giờ</b> kể từ lúc đặt lịch.
-                    </Paragraph>
-                    <Paragraph>
-                      <strong>
-                        Lưu ý bạn không thể hủy sau 2 giờ kể từ lúc đặt lịch.
-                      </strong>
+
+                    <Paragraph type="secondary" style={{marginTop: 16, fontStyle: 'italic'}}>
+                      * Vui lòng đến trạm trước thời gian hết hạn.
                     </Paragraph>
                   </div>
                 }
@@ -213,7 +231,7 @@ function StationBookingPage() {
                   form={form}
                   layout="vertical"
                   onFinish={onFinish}
-                  onValuesChange={handleValuesChange} // onValuesChange sẽ cập nhật Steps
+                  onValuesChange={handleValuesChange}
                   size="large"
                 >
                   {/* Nhúng các trường form từ component chung */}

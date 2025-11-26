@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapContainer,
@@ -413,7 +413,7 @@ const StationsNearby = () => {
     );
 
   return (
-    <Fragment>
+    <>
       <GlobalPopupStyles />
       <div style={styles.container}>
         
@@ -498,16 +498,13 @@ const StationsNearby = () => {
                 // --- CARD CHẾ ĐỘ KHÁCH ---
                 <div style={styles.guestCard}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                        <Text strong style={{ color: "rgba(255,255,255,0.85)", textTransform: "uppercase", fontSize: "11px", letterSpacing: "1px" }}>Chế độ khách</Text>
+                        <Text strong style={{ color: "rgba(255,255,255,0.85)", textTransform: "uppercase", fontSize: "11px", letterSpacing: "1px" }}>Chế độ tự do</Text>
                         <UserOutlined style={{ fontSize: "20px", color: "white", opacity: 0.9 }} />
                       </div>
                       <Title level={3} style={{ color: "white", margin: "0 0 8px 0", fontWeight: 700 }}>Tất Cả Trạm</Title>
                       <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: "13px" }}>
                           Bạn đang xem toàn bộ trạm trên hệ thống.
                       </Text>
-                      <div style={{ marginTop: 16 }}>
-                          <Button type="default" size="small" ghost onClick={() => navigate("/login")}>Đăng nhập để đặt lịch</Button>
-                      </div>
                 </div>
               )}
 
@@ -712,7 +709,7 @@ const StationsNearby = () => {
           )}
         </div>
       </div>
-    </Fragment>
+    </>
   );
 };
 
