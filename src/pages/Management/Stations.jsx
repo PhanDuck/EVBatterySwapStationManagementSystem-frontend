@@ -196,6 +196,13 @@ const BatterySwapModal = ({
         dataIndex: "stateOfHealth",
         render: (s) => <Tag color="green">{s}%</Tag>,
       },
+      {
+        title: "Trạng thái",
+        dataIndex: "status",
+        key: "status",
+        width: 240,
+        render: (s) => <Tag color={s === "AVAILABLE" ? "green" : "orange"}>{s}</Tag>
+    },
       !isGood && {
         title: "Bảo trì cuối",
         dataIndex: "lastMaintenanceDate",

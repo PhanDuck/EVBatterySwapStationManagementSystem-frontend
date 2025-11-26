@@ -45,7 +45,7 @@ export default function DriverDashboard() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "linear-gradient(135deg, #1890ff 0%, #722ed1 100%)", // Màu gradient đẹp
+              background: "linear-gradient(135deg, #1890ff)", 
               border: "none",
             }}
             onClick={() => navigate("/quick-swap")}

@@ -175,7 +175,7 @@ export default function QRCodePage() {
       if (res.data.stationName) setStationName(res.data.stationName);
     } catch (error) {
       setPreviewError(
-        error.response?.data?.message || "Không thể lấy thông tin pin"
+        error.response?.data || "Không thể lấy thông tin pin"
       );
     } finally {
       setLoading(false);
@@ -271,7 +271,7 @@ export default function QRCodePage() {
       showToast("success", "Đã nhận diện pin cũ.");
       setStep(4);
     } catch (e) {
-      showToast("error", e.response?.data?.message || "Lỗi đọc pin cũ");
+      showToast("error", e.response?.data || "Lỗi đọc pin cũ");
     } finally {
       setLoading(false);
     }
@@ -288,7 +288,7 @@ export default function QRCodePage() {
       showToast("success", "Đổi pin thành công!");
       navigate("/driver");
     } catch (e) {
-      showToast("error", e.response?.data?.message || "Đổi pin thất bại");
+      showToast("error", e.response?.data || "Đổi pin thất bại");
     } finally {
       setLoading(false);
     }

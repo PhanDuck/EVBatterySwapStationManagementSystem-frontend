@@ -952,7 +952,9 @@ const VehiclePage = () => {
                   icon={<DeleteOutlined />}
                   size="small"
                   onClick={() => handleDelete(record.id, record.status)}
-                  disabled={record.status === "INACTIVE"}
+                  disabled={
+                    record.status === "INACTIVE" || record.status === "UNPAID"
+                  }
                 >
                   Xóa
                 </Button>
@@ -1225,6 +1227,7 @@ const VehiclePage = () => {
 
   // 🔴 SOFT DELETE
   const handleDelete = (id, vehicleStatus) => {
+    const UserRole = role;
     // Nếu xe chưa thanh toán cọc (UNPAID), cho phép xóa trực tiếp
     if (vehicleStatus === "UNPAID") {
       Modal.confirm({
@@ -1237,16 +1240,7 @@ const VehiclePage = () => {
           try {
             // Thử endpoint /vehicle/{id}/cancel trước (nếu backend sử dụng)
             // Nếu không thì fallback sang /vehicle/{id}
-            try {
-              await api.delete(`/vehicle/${id}/cancel`);
-            } catch (error) {
-              // Nếu endpoint /cancel không tồn tại, thử endpoint thường
-              if (error.response?.status === 404) {
-                await api.delete(`/vehicle/${id}`);
-              } else {
-                throw error;
-              }
-            }
+            await api.delete(`/vehicle/${id}/cancel`);
             setVehicles((prev) => prev.filter((v) => v.id !== id));
             showToast("success", "Đã xóa phương tiện!");
           } catch (error) {
@@ -1271,16 +1265,7 @@ const VehiclePage = () => {
           try {
             // Thử endpoint /vehicle/{id}/cancel trước (nếu backend sử dụng)
             // Nếu không thì fallback sang /vehicle/{id}
-            try {
-              await api.delete(`/vehicle/${id}/cancel`);
-            } catch (error) {
-              // Nếu endpoint /cancel không tồn tại, thử endpoint thường
-              if (error.response?.status === 404) {
-                await api.delete(`/vehicle/${id}`);
-              } else {
-                throw error;
-              }
-            }
+            await api.delete(`/vehicle/${id}`);
             setVehicles((prev) =>
               prev.map((v) => (v.id === id ? { ...v, status: "INACTIVE" } : v))
             );
