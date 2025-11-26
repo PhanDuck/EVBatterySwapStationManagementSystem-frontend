@@ -9,12 +9,18 @@ import {
   Col,
   Steps,
   Result,
+  Descriptions,
+  Tag,
+  Divider
 } from "antd";
 import {
   CarOutlined,
   EnvironmentOutlined,
   SendOutlined,
   SmileOutlined,
+  ClockCircleOutlined,
+  BarcodeOutlined,
+  WalletOutlined
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
@@ -39,16 +45,12 @@ function StationBookingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   
-  // State lưu response từ API để hiển thị kết quả
   const [bookingDetails, setBookingDetails] = useState(null);
-  
   const [searchParams] = useSearchParams();
 
-  // Lấy vehicleId và stationId từ URL params
   const vehicleIdFromUrl = searchParams.get("vehicleId");
   const stationIdFromUrl = searchParams.get("stationId");
 
-  // Tự động điền form nếu có URL params
   useEffect(() => {
     if (vehicleIdFromUrl) {
       form.setFieldsValue({
@@ -76,15 +78,12 @@ function StationBookingPage() {
       const res = await api.post("/booking", payload);
       const data = res.data;
 
-      // Logic mới: Map trực tiếp dữ liệu từ API trả về
-      // Không tự tính toán thời gian ở Frontend nữa
       setBookingDetails({
         confirmationCode: data.confirmationCode,
-        bookingTime: dayjs(data.bookingTime),           // Thời gian đặt
-        expiryTime: dayjs(data.reservationExpiry),      // Thời gian hết hạn
-        remainingSwaps: data.remainingSwaps,            // Số lần đổi còn lại
+        createdAt: dayjs(data.createdAt), 
+        expiryTime: dayjs(data.reservationExpiry),      
         
-        // Tận dụng các trường API trả về để hiển thị đẹp hơn thay vì ID
+        remainingSwaps: data.remainingSwaps,            
         stationName: data.stationName,                   
         vehiclePlateNumber: data.vehiclePlateNumber,
         stationLocation: data.stationLocation, 
@@ -112,7 +111,6 @@ function StationBookingPage() {
     }
   };
 
-  // Hàm để truyền vehicleId từ URL xuống component con
   const getPreselectedVehicleId = () => {
     return vehicleIdFromUrl ? parseInt(vehicleIdFromUrl) : null;
   };
@@ -124,10 +122,69 @@ function StationBookingPage() {
     form.resetFields();
   };
 
+  const renderSuccessContent = () => {
+    if (!bookingDetails) return null;
+
+    return (
+      <div style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}>
+        {/* Khung chứa Mã xác nhận nổi bật */}
+        <div style={{ 
+            background: '#f6ffed', 
+            border: '1px dashed #b7eb8f', 
+            borderRadius: '8px', 
+            padding: '16px', 
+            textAlign: 'center',
+            marginBottom: '24px'
+        }}>
+          <Text type="secondary" style={{ fontSize: '14px' }}>
+            <BarcodeOutlined /> Mã xác nhận của bạn
+          </Text>
+          <Title level={2} style={{ color: '#52c41a', margin: '4px 0 0' }} copyable>
+            {bookingDetails.confirmationCode}
+          </Title>
+        </div>
+
+        {/* Bảng thông tin chi tiết */}
+        <Descriptions 
+          bordered 
+          column={{ xs: 1, sm: 1, md: 2 }} 
+          size="small"
+          layout="horizontal"
+        >
+          <Descriptions.Item label={<><EnvironmentOutlined /> Trạm</>} span={2}>
+            <b>{bookingDetails.stationName}</b>
+            <br />
+            <Text type="secondary" style={{fontSize: 12}}>{bookingDetails.stationLocation}</Text>
+          </Descriptions.Item>
+
+          <Descriptions.Item label={<><CarOutlined /> Biển số xe</>}>
+            <Tag color="blue">{bookingDetails.vehiclePlateNumber}</Tag>
+          </Descriptions.Item>
+
+          <Descriptions.Item label={<><WalletOutlined /> Số dư ví</>}>
+            <Text strong style={{ color: bookingDetails.remainingSwaps > 0 ? '#52c41a' : '#f5222d' }}>
+              {bookingDetails.remainingSwaps} lần
+            </Text>
+          </Descriptions.Item>
+
+          <Descriptions.Item label={<><ClockCircleOutlined /> Thời gian đặt</>}>
+            {bookingDetails.createdAt?.format("HH:mm DD/MM/YYYY")}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Hết hạn lúc (sau giờ đặt 3 tiếng)" contentStyle={{ fontWeight: 'bold', color: '#cf1322' }}>
+            {bookingDetails.expiryTime?.format("HH:mm DD/MM/YYYY")}
+          </Descriptions.Item>
+        </Descriptions>
+
+        <Divider style={{ margin: '16px 0' }} />
+      </div>
+    );
+  };
+
   return (
     <div style={{ padding: "24px", marginTop: 40, background: "#f0f2f5" }}>
       <Row justify="center">
-        <Col xs={24} sm={20} md={16} lg={16} xl={14}>
+        <Col xs={24} sm={22} md={18} lg={16} xl={14}>
           <Card
             style={{
               boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
@@ -136,93 +193,27 @@ function StationBookingPage() {
           >
             {bookingSuccess ? (
               <Result
+                status="success"
                 icon={<SmileOutlined />}
                 title="Đặt Lịch Thành Công!"
-                subTitle={
-                  <div style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto' }}>
-                    {/* Mã xác nhận */}
-                    <Paragraph>
-                      Mã xác nhận:{" "}
-                      <Text strong copyable={{ text: bookingDetails?.confirmationCode }}>
-                         {bookingDetails?.confirmationCode}
-                      </Text>
-                    </Paragraph>
-
-                    {/* Thông tin Trạm & Xe */}
-                    {bookingDetails?.stationName && (
-                         <Paragraph>Trạm: <Text strong>{bookingDetails.stationName}</Text></Paragraph>
-                    )}
-                    {bookingDetails?.vehiclePlateNumber && (
-                         <Paragraph>Biển số xe: <Text strong>{bookingDetails.vehiclePlateNumber}</Text></Paragraph>
-                    )}
-
-                    {/* Thời gian đặt (Booking Time) */}
-                    <Paragraph>
-                      Thời gian đặt:{" "}
-                      <strong>
-                        {bookingDetails?.bookingTime?.format("HH:mm - DD/MM/YYYY")}
-                      </strong>
-                    </Paragraph>
-
-                    {/* Thời gian hết hạn (Expiry Time) - Lấy trực tiếp từ API */}
-                    {bookingDetails?.expiryTime && (
-                      <Paragraph>
-                        Hết hạn lúc:{" "}
-                        <Text type="danger" strong>
-                          {bookingDetails.expiryTime.format("HH:mm - DD/MM/YYYY")}
-                        </Text>
-                      </Paragraph>
-                    )}
-
-                    {/* Số lần đổi pin còn lại */}
-                    {bookingDetails?.remainingSwaps !== undefined &&
-                      bookingDetails.remainingSwaps !== null && (
-                        <Paragraph style={{ marginTop: 8 }}>
-                          <Text strong>Số dư ví đổi pin: </Text>
-                          <Text
-                            style={{
-                              color:
-                                bookingDetails.remainingSwaps > 0
-                                  ? "#52c41a"
-                                  : "#f5222d",
-                              fontSize: "16px",
-                            }}
-                          >
-                            <b>{bookingDetails.remainingSwaps}</b> lần
-                          </Text>
-                        </Paragraph>
-                      )}
-
-                    <Paragraph type="secondary" style={{marginTop: 16, fontStyle: 'italic'}}>
-                      * Vui lòng đến trạm trước thời gian hết hạn.
-                    </Paragraph>
-                  </div>
-                }
+                subTitle="Hệ thống đã ghi nhận lịch hẹn của bạn."
                 extra={[
-                  <Button type="primary" key="new" onClick={resetBookingForm}>
-                    Tạo Lịch Hẹn Mới
+                  <Button type="primary" key="new" onClick={resetBookingForm} size="large">
+                    Đặt Lịch Mới
                   </Button>,
                 ]}
-              />
+              >
+                {renderSuccessContent()}
+              </Result>
             ) : (
               <>
-                <Title
-                  level={2}
-                  style={{ textAlign: "center", marginBottom: 16 }}
-                >
+                <Title level={2} style={{ textAlign: "center", marginBottom: 16 }}>
                   Đặt Lịch Đổi Pin
                 </Title>
-                <Paragraph
-                  type="secondary"
-                  style={{ textAlign: "center", marginBottom: 32 }}
-                >
+                <Paragraph type="secondary" style={{ textAlign: "center", marginBottom: 32 }}>
                   Nhanh chóng, tiện lợi và luôn sẵn sàng phục vụ.
                 </Paragraph>
-                <Steps
-                  current={currentStep}
-                  style={{ marginBottom: 32 }}
-                  size="small"
-                >
+                <Steps current={currentStep} style={{ marginBottom: 32 }} size="small">
                   <Step title="Chọn Xe" icon={<CarOutlined />} />
                   <Step title="Chọn Trạm" icon={<EnvironmentOutlined />} />
                 </Steps>
@@ -233,7 +224,6 @@ function StationBookingPage() {
                   onValuesChange={handleValuesChange}
                   size="large"
                 >
-                  {/* Nhúng các trường form từ component chung */}
                   <BookingFormFields
                     form={form}
                     onVehicleChange={handleValuesChange}
