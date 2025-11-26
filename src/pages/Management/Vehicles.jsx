@@ -43,7 +43,7 @@ import handleApiError from "../../Utils/handleApiError";
 import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 // --- COMPONENT CON: Hiển thị thông báo xe đang chờ duyệt (PHIÊN BẢN PRO UI) ---
 const PendingVehicleAlert = ({ vehicle }) => {
@@ -288,6 +288,13 @@ const VehiclePage = () => {
   const [rejectingVehicleId, setRejectingVehicleId] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [isRejectingVehicle, setIsRejectingVehicle] = useState(false);
+  const [depositModalVisible, setDepositModalVisible] = useState(false);
+  const [selectedVehicleForDeposit, setSelectedVehicleForDeposit] = useState(null);
+  const [isProcessingDeposit, setIsProcessingDeposit] = useState(false);
+  const [deleteReasonModalVisible, setDeleteReasonModalVisible] = useState(false);
+  const [deletingVehicleId, setDeletingVehicleId] = useState(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
 
   const user = (() => {
     try {
@@ -623,14 +630,13 @@ const VehiclePage = () => {
     if (batteryTypeId) {
       setBatteriesLoading(true);
       try {
-        // Dùng API GET /api/station-inventory/available-by-type/{batteryTypeId}
         const response = await api.get(
           `/station-inventory/available-by-type/${batteryTypeId}`
         );
 
         // Lọc pin: Pin sẵn có (status: AVAILABLE) VÀ không phải pin hiện tại của xe
-        const available = response.data.batteries.filter(
-          (battery) => battery.id !== vehicle.currentBatteryId
+        const available = response.data.batteries.filter( 
+          (battery) => battery.id !== vehicle.currentBatteryId 
         );
 
         setAvailableBatteries(available);
@@ -700,8 +706,7 @@ const VehiclePage = () => {
       console.log(
         "Available batteries for type",
         batteryTypeId,
-        ":",
-        availableList
+        ":"
       );
       console.log("Total available batteries:", availableList.length);
       setAvailableBatteries(availableList);
@@ -799,13 +804,13 @@ const VehiclePage = () => {
       dataIndex: "plateNumber",
       key: "plateNumber",
       sorter: (a, b) =>
-        (a.plateNumber || "").localeCompare(b.plateNumber || ""),
+        (a.plateNumber || "").toLowerCase().localeCompare(b.plateNumber || "").toLowerCase(),
     },
     {
       title: "Dòng xe",
       dataIndex: "model",
       key: "model",
-      sorter: (a, b) => (a.model || "").localeCompare(b.model || ""),
+      sorter: (a, b) => (a.model || "").toLowerCase().localeCompare(b.model || "").toLowerCase(),
     },
     ...(isAdmin
       ? [
@@ -814,7 +819,7 @@ const VehiclePage = () => {
             dataIndex: "driverName",
             key: "driverName",
             sorter: (a, b) =>
-              (a.driverName || "").localeCompare(b.driverName || ""),
+              (a.driverName || "").toLowerCase().localeCompare(b.driverName || "").toLowerCase(),
             render: (driverName, record) => (
               <Text>
                 {driverName ||
@@ -829,16 +834,22 @@ const VehiclePage = () => {
       dataIndex: "batteryTypeName",
       key: "batteryTypeName",
       sorter: (a, b) =>
-        (a.batteryTypeName || "").localeCompare(b.batteryTypeName),
+        (a.batteryTypeName || "").toLowerCase().localeCompare(b.batteryTypeName || "").toLowerCase(),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       sorter: (a, b) => a.status.localeCompare(b.status),
-      render: (status) => (
-        <Tag color={status === "ACTIVE" ? "green" : "red"}>{status}</Tag>
-      ),
+      render: (status) => {
+        let color = "red";
+        if (status === "ACTIVE") color = "green";
+        else if (status === "PENDING") color = "orange";
+        else if (status === "UNPAID") color = "volcano";
+        else if (status === "PAID") color = "blue";
+        else if (status === "REFUNDED") color = "purple";
+        return <Tag color={color}>{status}</Tag>;
+      },
     },
     {
       title: "Pin hiện tại",
@@ -870,62 +881,88 @@ const VehiclePage = () => {
       title: "Thao tác",
       key: "actions",
       fixed: "right",
-      render: (_, record) => {
-        const isDriver = role === "DRIVER";
-        const isPending = record.status === "PENDING";
-        return (
-          <Space>
-            {/* Nút Xem lịch sử cho TẤT CẢ các vai trò */}
-            <Button
-              type="primary" // Có thể dùng 'default' hoặc 'dashed'
-              icon={<EyeOutlined />}
-              size="small"
-              onClick={() => handleViewHistory(record.id)} // Gọi hàm xem lịch sử
-              disabled={isPending}
-            >
-              Xem
-            </Button>
+       render: (_, record) => {
+         const isDriver = role === "DRIVER";
+         const isPending = record.status === "PENDING";
+         const isUnpaid = record.status === "UNPAID";
+         const isPaid = record.status === "PAID";
+         return (
+           <Space wrap>
+             {/* Nút Xem lịch sử cho TẤT CẢ các vai trò */}
+             <Button
+               type="primary"
+               icon={<EyeOutlined />}
+               size="small"
+               onClick={() => handleViewHistory(record.id)}
+               disabled={isPending || isUnpaid}
+             >
+               Xem
+             </Button>
 
-            {!isDriver && (
-              <Space>
-                {/* Chỉ hiện nếu xe đang ACTIVE và có pin gán */}
-                <Button
-                  type="default"
-                  icon={<SwapOutlined />}
-                  size="small"
-                  onClick={() => handleSwapFaultyBattery(record)}
-                  style={{
-                    backgroundColor: "#fffbe5",
-                    borderColor: "#ffe58f",
-                  }} // Màu vàng nhẹ
-                  disabled={record.status !== "ACTIVE"}
-                >
-                  Đổi
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  size="small"
-                  onClick={() => handleEdit(record)}
-                  disabled={isPending}
-                >
-                  Sửa
-                </Button>
-                <Button
-                  type="primary"
-                  danger
-                  icon={<DeleteOutlined />}
-                  size="small"
-                  onClick={() => handleDelete(record.id)}
-                  disabled={record.status === "INACTIVE" || isPending}
-                >
-                  Xóa
-                </Button>
-              </Space>
-            )}
-          </Space>
-        );
-      },
+             {isDriver && isUnpaid && (
+               <Button
+                 type="primary"
+                 style={{ backgroundColor: "#faad14", borderColor: "#faad14" }}
+                 icon={<ThunderboltOutlined />}
+                 size="small"
+                 onClick={() => handleDepositVehicle(record)}
+               >
+                 Cọc xe
+               </Button>
+             )}
+
+             {!isDriver && (
+               <Space>
+                 {/* Chỉ hiện nếu xe đang ACTIVE và có pin gán */}
+                 <Button
+                   type="default"
+                   icon={<SwapOutlined />}
+                   size="small"
+                   onClick={() => handleSwapFaultyBattery(record)}
+                   style={{
+                     backgroundColor: "#fffbe5",
+                     borderColor: "#ffe58f",
+                   }}
+                   disabled={record.status !== "ACTIVE"}
+                 >
+                   Đổi
+                 </Button>
+                 <Button
+                   type="primary"
+                   icon={<EditOutlined />}
+                   size="small"
+                   onClick={() => handleEdit(record)}
+                   disabled={isPending || isUnpaid}
+                 >
+                   Sửa
+                 </Button>
+                 <Button
+                   type="primary"
+                   danger
+                   icon={<DeleteOutlined />}
+                   size="small"
+                   onClick={() => handleDelete(record.id, record.status)}
+                   disabled={record.status === "INACTIVE"}
+                 >
+                   Xóa
+                 </Button>
+               </Space>
+             )}
+
+             {isDriver && (isUnpaid || isPaid || isPending) && (
+               <Button
+                 type="primary"
+                 danger
+                 icon={<DeleteOutlined />}
+                 size="small"
+                 onClick={() => handleDelete(record.id, record.status)}
+               >
+                 Xóa
+               </Button>
+             )}
+           </Space>
+         );
+       },
     },
   ];
 
@@ -1155,7 +1192,7 @@ const VehiclePage = () => {
             : "Không xác định",
           driverName: null,
           swapCount: 0,
-          status: newVehicleData.status || "ACTIVE",
+          status: newVehicleData.status || "UNPAID",
           registrationImage: vehicleImage || newVehicleData.registrationImage,
           id: newVehicleData.id || Date.now(),
         };
@@ -1177,29 +1214,181 @@ const VehiclePage = () => {
   };
 
   // 🔴 SOFT DELETE
-  const handleDelete = (id) => {
-    Modal.confirm({
-      title: "Bạn có chắc muốn vô hiệu hóa xe này?",
-      content: "Hành động này sẽ chuyển trạng thái xe thành INACTIVE.",
-      okText: "Vô hiệu hóa",
-      okType: "danger",
-      cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          await api.delete(`/vehicle/${id}`);
-          setVehicles((prev) =>
-            prev.map((v) => (v.id === id ? { ...v, status: "INACTIVE" } : v))
-          );
-          showToast("success", "Đã vô hiệu hóa phương tiện!");
-        } catch (error) {
-          showToast(
-            "error",
-            error.response?.data || "Lỗi vô hiệu hóa phương tiện"
-          );
-        }
-      },
-    });
+  const handleDelete = (id, vehicleStatus) => {
+    // Nếu xe chưa thanh toán cọc (UNPAID), cho phép xóa trực tiếp
+    if (vehicleStatus === "UNPAID") {
+      Modal.confirm({
+        title: "Bạn có chắc muốn xóa xe này?",
+        content: "Xe chưa thanh toán cọc sẽ bị xóa vĩnh viễn.",
+        okText: "Xóa",
+        okType: "danger",
+        cancelText: "Hủy",
+        onOk: async () => {
+          try {
+            // Thử endpoint /vehicle/{id}/cancel trước (nếu backend sử dụng)
+            // Nếu không thì fallback sang /vehicle/{id}
+            try {
+              await api.delete(`/vehicle/${id}/cancel`);
+            } catch (error) {
+              // Nếu endpoint /cancel không tồn tại, thử endpoint thường
+              if (error.response?.status === 404) {
+                await api.delete(`/vehicle/${id}`);
+              } else {
+                throw error;
+              }
+            }
+            setVehicles((prev) => prev.filter((v) => v.id !== id));
+            showToast("success", "Đã xóa phương tiện!");
+          } catch (error) {
+            showToast(
+              "error",
+              error.response?.data || "Lỗi xóa phương tiện"
+            );
+          }
+        },
+      });
+    } else if (vehicleStatus === "PAID" || vehicleStatus === "PENDING") {
+      // Nếu xe đã thanh toán cọc, yêu cầu nhập lý do hoàn tiền
+      setDeletingVehicleId(id);
+      setDeleteReason("");
+      setDeleteReasonModalVisible(true);
+    } else {
+      // Nếu xe ở trạng thái khác (ACTIVE, INACTIVE), vô hiệu hóa
+      Modal.confirm({
+        title: "Bạn có chắc muốn vô hiệu hóa xe này?",
+        content: "Hành động này sẽ chuyển trạng thái xe thành INACTIVE.",
+        okText: "Vô hiệu hóa",
+        okType: "danger",
+        cancelText: "Hủy",
+        onOk: async () => {
+          try {
+            // Thử endpoint /vehicle/{id}/cancel trước (nếu backend sử dụng)
+            // Nếu không thì fallback sang /vehicle/{id}
+            try {
+              await api.delete(`/vehicle/${id}/cancel`);
+            } catch (error) {
+              // Nếu endpoint /cancel không tồn tại, thử endpoint thường
+              if (error.response?.status === 404) {
+                await api.delete(`/vehicle/${id}`);
+              } else {
+                throw error;
+              }
+            }
+            setVehicles((prev) =>
+              prev.map((v) => (v.id === id ? { ...v, status: "INACTIVE" } : v))
+            );
+            showToast("success", "Đã vô hiệu hóa phương tiện!");
+          } catch (error) {
+            showToast(
+              "error",
+              error.response?.data || "Lỗi vô hiệu hóa phương tiện"
+            );
+          }
+        },
+      });
+    }
   };
+
+  // ❌ Xóa xe với hoàn tiền cọc
+  const handleDeleteVehicleWithRefund = async (vehicleId, reason) => {
+    if (!reason || reason.trim() === "") {
+      message.error("Vui lòng nhập lý do hoàn tiền!");
+      return;
+    }
+
+    setIsDeletingVehicle(true);
+    try {
+      console.log("Deleting vehicle:", vehicleId, "Reason:", reason);
+      const payload = { refundReason: reason.trim() };
+      console.log("Payload being sent:", JSON.stringify(payload));
+
+      const res = await api.delete(`/vehicle/${vehicleId}`, { data: payload });
+      console.log("Delete response:", res.data);
+
+      showToast("success", "Đã xóa xe và hoàn tiền cọc!");
+
+      // Cập nhật danh sách xe - thay đổi status thành REFUNDED
+      setVehicles((prev) =>
+        prev.map((v) =>
+          v.id === vehicleId ? { ...v, status: "REFUNDED" } : v
+        )
+      );
+
+      // Đóng modal
+      setDeleteReasonModalVisible(false);
+      setDeletingVehicleId(null);
+      setDeleteReason("");
+    } catch (error) {
+      console.error("Error deleting vehicle - Full error:", error);
+      console.error("Error response:", error.response);
+      console.error("Error response data:", error.response?.data);
+      showToast("error", error.response?.data?.message || "Lỗi khi xóa xe");
+    } finally {
+      setIsDeletingVehicle(false);
+    }
+  };
+
+  // 💰 Xử lý cọc xe
+  const handleDepositVehicle = (vehicle) => {
+    setSelectedVehicleForDeposit(vehicle);
+    setDepositModalVisible(true);
+  };
+
+    // 💰 Gọi API cọc xe - Redirect đến MoMo
+    const handleConfirmDeposit = async () => {
+      if (!selectedVehicleForDeposit) {
+        message.error("Vui lòng chọn xe!");
+        return;
+      }
+
+      setIsProcessingDeposit(true);
+      try {
+        console.log("Processing deposit for vehicle:", selectedVehicleForDeposit.id);
+        
+        // Tạo redirect URL
+        const redirectUrl = window.location.origin + "/payment/result";
+
+        // Gọi API để tạo giao dịch thanh toán MoMo
+        // Endpoint: POST /vehicle/{vehicleId}/deposit/pay
+        // Gửi redirectUrl trong request body
+        const res = await api.post(
+          `/vehicle/${selectedVehicleForDeposit.id}/deposit/pay`,
+          {
+            redirectUrl: redirectUrl
+          }
+        );
+
+        console.log("Deposit response:", res.data);
+
+        // Xử lý response - Backend trả về paymentUrl
+        let paymentUrl = null;
+        
+        if (res.data?.paymentUrl) {
+          paymentUrl = res.data.paymentUrl;
+        } else if (res.data?.payUrl) {
+          paymentUrl = res.data.payUrl;
+        } else if (typeof res.data === 'string') {
+          // Nếu backend trả về URL trực tiếp dưới dạng string
+          paymentUrl = res.data;
+        }
+
+        if (paymentUrl) {
+          window.location.href = paymentUrl; // Chuyển hướng sang trang thanh toán MoMo
+        } else {
+          showToast("error", "Không tạo được liên kết thanh toán!");
+        }
+      } catch (error) {
+        console.error("Error processing deposit:", error);
+        const errorMessage =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Lỗi khi cọc xe";
+        showToast("error", errorMessage);
+      } finally {
+        setIsProcessingDeposit(false);
+      }
+    };
 
   const handleEdit = (vehicle) => {
     setEditingVehicle(vehicle);
@@ -1496,6 +1685,60 @@ const VehiclePage = () => {
           )}
         </Card>
       )}
+      {/* Modal Cọc Xe */}
+      <Modal
+        title="Cọc xe"
+        open={depositModalVisible}
+        onOk={handleConfirmDeposit}
+        onCancel={() => {
+          setDepositModalVisible(false);
+          setSelectedVehicleForDeposit(null);
+        }}
+        okText="Xác nhận cọc"
+        cancelText="Hủy"
+        confirmLoading={isProcessingDeposit}
+      >
+        {selectedVehicleForDeposit && (
+          <div>
+            <p>
+              <strong>Biển số xe:</strong> {selectedVehicleForDeposit.plateNumber}
+            </p>
+            <p>
+              <strong>Dòng xe:</strong> {selectedVehicleForDeposit.model}
+            </p>
+            <p>
+              <strong>Loại pin:</strong> {selectedVehicleForDeposit.batteryTypeName}
+            </p>
+            <p style={{ color: "#ff4d4f", marginTop: 16 }}>
+              Bạn sẽ được chuyển đến trang thanh toán để quét mã QR cọc xe.
+            </p>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal Xóa Xe Với Hoàn Tiền */}
+      <Modal
+        title="Xóa xe và hoàn tiền cọc"
+        open={deleteReasonModalVisible}
+        onOk={() => handleDeleteVehicleWithRefund(deletingVehicleId, deleteReason)}
+        onCancel={() => {
+          setDeleteReasonModalVisible(false);
+          setDeletingVehicleId(null);
+          setDeleteReason("");
+        }}
+        okText="Xác nhận xóa"
+        cancelText="Hủy"
+        confirmLoading={isDeletingVehicle}
+      >
+        <p>Vui lòng nhập lý do hoàn tiền cọc:</p>
+        <Input.TextArea
+          rows={4}
+          value={deleteReason}
+          onChange={(e) => setDeleteReason(e.target.value)}
+          placeholder="Nhập lý do hoàn tiền..."
+        />
+      </Modal>
+
       <Modal
         title={
           editingVehicle ? "Chỉnh sửa phương tiện" : "Đăng ký phương tiện mới"
@@ -1708,7 +1951,7 @@ const VehiclePage = () => {
                   optionFilterProp="label"
                 >
                   {availableBatteries.map((battery) => (
-                    <Select.Option
+                    <Option
                       key={battery.id}
                       value={battery.id}
                       label={`Pin #${battery.id} - ${battery.model}`}
@@ -1749,7 +1992,7 @@ const VehiclePage = () => {
                           </Tag>
                         </div>
                       </div>
-                    </Select.Option>
+                    </Option>
                   ))}
                 </Select>
                 {availableBatteries.length === 0 && !batteriesLoading && (
