@@ -353,7 +353,7 @@ export default function InventoryPage() {
         let url = role === "ADMIN"
           ? "/station-inventory"
           : `/station-inventory/available-by-type/${typeId}`;
-        if (!role === "ADMIN" && !typeId) return setWarehouseItems([]); // Staff cần typeId
+        if (role === "STAFF" && !typeId) return setWarehouseItems([]);
 
         const res = await api.get(url);
         let items = Array.isArray(res.data)
@@ -381,8 +381,18 @@ export default function InventoryPage() {
   useEffect(() => {
     if (stationId) {
       fetchStationData(stationId).then((typeId) => {
-        setFilterType(role === "ADMIN" ? null : typeId); // Admin mặc định không lọc, Staff lọc theo trạm
-        fetchWarehouseData(role === "ADMIN" ? null : typeId);
+        setFilterType(role === "STAFF" ? typeId : null);
+        let warehouseTypeId = null;
+        if (role === "STAFF") {
+            warehouseTypeId = typeId;
+        } else {
+            warehouseTypeId = null;
+        }
+        if (role !== "STAFF" || typeId) {
+          fetchWarehouseData(warehouseTypeId);
+        } else {
+          setWarehouseItems([]);
+        }
       });
     }
   }, [stationId, fetchStationData, fetchWarehouseData, role]);
