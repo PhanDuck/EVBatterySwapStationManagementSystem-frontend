@@ -17,9 +17,8 @@ import DriverDashboard from "../pages/Dashboard/DriverDashboard";
 import StaffDashboard from "../pages/Dashboard/StaffDashboard";
 import StationsNearbyPage from "../pages/Shared/StationsNearby";
 import StationBookingPage from "../pages/Shared/StationBooking";
-import EnterConfirmationCode from "../pages/Shared/EnterConfirmationCode";
-
-
+import EnterConfirmationCode from "../pages/Shared/EnterConfirmationCode"; // lưu ý xóa
+import QRCodePage from "../pages/Shared/QRCode";
 
 import PrivateRoute from "./PrivateRoute";
 import { getCurrentRole, isAuthenticated } from "../config/auth";
@@ -28,8 +27,6 @@ import PaymentResult from "../pages/Payment/PaymentResult";
 import ForgotPassword from "../pages/Auth/ForgotPassword";
 import ResetPassword from "../pages/Auth/ResetPassword";
 import PrivacyPolicy from "../pages/Shared/PrivacyPolicy";
-
-
 
 export default function AppRouter() {
   const authed = isAuthenticated();
@@ -58,7 +55,7 @@ export default function AppRouter() {
           <Route path="/packages" element={<Packages />} />
           <Route path="/policy" element={<Policy />} />
           <Route path="/stations/nearby" element={<StationsNearbyPage />} />
-          <Route path="/codeConfirm" element={<EnterConfirmationCode />} />
+          <Route path="/codeConfirm" element={<EnterConfirmationCode />} /> {/* lưu ý xóa: route cũ */}
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -66,6 +63,7 @@ export default function AppRouter() {
           {/* Protected */}
           <Route element={<PrivateRoute roles={["Driver"]} />}>
             <Route path="/stations/booking" element={<StationBookingPage />} />
+            <Route path="/quick-swap" element={<QRCodePage />} />
           </Route>
         </Route>
 

@@ -35,7 +35,7 @@ import {
   CheckOutlined,
   CloseOutlined,
   InfoCircleOutlined,
-  SyncOutlined,
+  SyncOutlined, // Icon xoay xoay loading
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
@@ -107,7 +107,7 @@ const PendingVehicleAlert = ({ vehicle }) => {
         borderRadius: "12px",
         padding: "24px",
         marginBottom: "24px",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)", // Đổ bóng nhẹ tạo chiều sâu
         position: "relative",
         overflow: "hidden",
       }}
@@ -120,7 +120,7 @@ const PendingVehicleAlert = ({ vehicle }) => {
           top: 0,
           bottom: 0,
           width: "6px",
-          background: "linear-gradient(180deg, #faad14 0%, #ffec3d 100%)",
+          background: "linear-gradient(180deg, #faad14 0%, #ffec3d 100%)", // Màu vàng cam warning
         }}
       />
 
@@ -154,7 +154,7 @@ const PendingVehicleAlert = ({ vehicle }) => {
             </Space>
           </Space>
 
-          {/* Phần chính sách */}
+          {/* Phần chính sách - Làm gọn lại cho dễ đọc */}
           <div
             style={{
               marginTop: 20,
@@ -172,15 +172,15 @@ const PendingVehicleAlert = ({ vehicle }) => {
                 Thời gian xử lý trung bình: <strong>30 phút</strong>.
               </li>
               <li style={{ marginBottom: 4 }}>
-                Hệ thống sẽ tự động hủy yêu cầu nếu quá <strong>12 tiếng</strong>{" "}
-                không được duyệt.
+                Hệ thống sẽ tự động hủy yêu cầu nếu quá{" "}
+                <strong>12 tiếng</strong> không được duyệt.
               </li>
               <li>Kết quả sẽ được gửi thông báo qua email của bạn.</li>
             </ul>
           </div>
         </Col>
 
-        {/* Cột 2: Đồng hồ đếm ngược */}
+        {/* Cột 2: Đồng hồ đếm ngược (Điểm nhấn) */}
         <Col xs={24} md={10} style={{ textAlign: "center" }}>
           <div
             style={{
@@ -312,14 +312,15 @@ const VehiclePage = () => {
   const role = String(user?.role || "USER")
     .trim()
     .toUpperCase();
-  const isDriver = role === "DRIVER";
-  const isAdmin = role === "ADMIN";
 
+  // Bọc hàm bằng useCallback để "đóng băng" logic, chỉ tạo lại khi isAdmin thay đổi
   const fetchVehicles = useCallback(async () => {
     setLoading(true);
     try {
-      const endpoint = isAdmin ? "/vehicle" : "/vehicle/my-vehicles";
+      // 1. Tải danh sách xe
+      const endpoint = role === "ADMIN" ? "/vehicle" : "/vehicle/my-vehicles";
       const res = await api.get(endpoint);
+
       const initialVehicleList = (
         Array.isArray(res.data)
           ? res.data
@@ -327,6 +328,7 @@ const VehiclePage = () => {
           ? res.data.data
           : []
       ).sort((a, b) => b.id - a.id);
+
       setVehicles(initialVehicleList);
     } catch (error) {
       showToast(
@@ -337,14 +339,15 @@ const VehiclePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, [role]);
 
+  // Lấy danh sách xe PENDING của riêng tài xế để hiển thị thông báo
   const myPendingVehicles = useMemo(() => {
-    if (isDriver) {
+    if (role === "DRIVER") {
       return vehicles.filter((v) => v.status === "PENDING");
     }
     return [];
-  }, [vehicles, isDriver]);
+  }, [vehicles, role]);
 
   // --- Component Modal Lịch sử Đổi Pin ---
   const VehicleSwapHistoryModal = React.memo(
@@ -352,8 +355,10 @@ const VehiclePage = () => {
       const swapCount = vehicleHistory.length;
       const canViewTransactionId = userRole === "ADMIN" || userRole === "STAFF";
 
+      // ⚙️ Component con hiển thị thông tin pin
       const BatteryInfoCard = ({ title, batteryData, type }) => {
-        const color = type === "new" ? "#52c41a" : "#faad14";
+        const color = type === "new" ? "#52c41a" : "#faad14"; // Xanh cho Pin Mới (Swap In), Vàng cho Pin Cũ (Swap Out)
+
         const isSwapIn = type === "new";
         const batteryId = isSwapIn
           ? batteryData?.swapOutBatteryId
@@ -383,6 +388,7 @@ const VehiclePage = () => {
             headStyle={{ backgroundColor: "#fafafa" }}
           >
             <Space direction="vertical" style={{ width: "100%" }}>
+              {/* 1. ID Pin */}
               <Row justify="space-between" style={{ paddingBottom: 5 }}>
                 <Col>
                   <Text strong>ID Pin:</Text>
@@ -392,6 +398,8 @@ const VehiclePage = () => {
                 </Col>
               </Row>
               <Divider style={{ margin: "5px 0" }} />
+
+              {/* 2. Loại Pin (Model) */}
               <Row justify="space-between" style={{ paddingBottom: 5 }}>
                 <Col>
                   <Text strong>Loại Pin:</Text>
@@ -401,6 +409,8 @@ const VehiclePage = () => {
                 </Col>
               </Row>
               <Divider style={{ margin: "5px 0" }} />
+
+              {/* 3. Mức sạc (Charge Level) */}
               <Row justify="space-between" style={{ paddingBottom: 5 }}>
                 <Col>
                   <Text strong>
@@ -415,6 +425,8 @@ const VehiclePage = () => {
                 </Col>
               </Row>
               <Divider style={{ margin: "5px 0" }} />
+
+              {/* 4. Tình trạng pin (State of Health) */}
               <Row justify="space-between">
                 <Col>
                   <Text strong>
@@ -432,6 +444,7 @@ const VehiclePage = () => {
       };
 
       const HistoryItem = ({ transaction, index, totalSwaps }) => {
+        // 💡 Sử dụng JS Date Object để định dạng thay vì moment
         const date = new Date(transaction.endTime);
         const timeString = date.toLocaleTimeString("vi-VN", {
           hour: "2-digit",
@@ -450,6 +463,7 @@ const VehiclePage = () => {
             }}
             bodyStyle={{ padding: "16px" }}
           >
+            {/* Header - ID Giao dịch, Thời gian, Trạm */}
             <Row
               justify="space-between"
               align="middle"
@@ -483,6 +497,7 @@ const VehiclePage = () => {
               </Col>
             </Row>
 
+            {/* Pin Cũ vs Pin Mới */}
             <Row gutter={16} align="middle">
               <Col span={11}>
                 <BatteryInfoCard
@@ -516,7 +531,7 @@ const VehiclePage = () => {
           open={open}
           onCancel={onClose}
           footer={null}
-          width={1000}
+          width={1000} // Tăng chiều rộng để phù hợp với 2 cột
           destroyOnClose={true}
         >
           <Spin spinning={loading}>
@@ -530,6 +545,7 @@ const VehiclePage = () => {
                   paddingRight: "10px",
                 }}
               >
+                {/* Sắp xếp history theo endTime mới nhất trước */}
                 {vehicleHistory.map((item, index) => (
                   <HistoryItem
                     transaction={item}
@@ -546,15 +562,20 @@ const VehiclePage = () => {
     }
   );
 
+  // 🚗 Lấy danh sách vehicle
+  // useEffect bây giờ theo dõi chính hàm fetchVehicles
+  // Vì hàm đã được bọc useCallback nên nó sẽ không bị chạy lặp vô tận
   useEffect(() => {
     fetchVehicles();
   }, [fetchVehicles]);
 
+  // 👥 Lấy danh sách tài xế (chỉ cho ADMIN)
   useEffect(() => {
-    if (isAdmin) {
+    if (role === "ADMIN") {
       const fetchDrivers = async () => {
         try {
           const res = await api.get("/admin/user");
+          // Lọc chỉ lấy những user có role = DRIVER
           const driverList = Array.isArray(res.data)
             ? res.data.filter((u) => u.role === "DRIVER")
             : [];
@@ -568,16 +589,20 @@ const VehiclePage = () => {
       };
       fetchDrivers();
     }
-  }, [isAdmin]);
+  }, [role]);
 
+  // 🚗 Lấy danh sách xe chờ duyệt từ danh sách vehicles đã có
   useEffect(() => {
     if (role === "ADMIN" && vehicles.length > 0) {
+      // Lọc xe có status = PENDING từ danh sách vehicles đã fetch
       const pendingList = vehicles.filter((v) => v.status === "PENDING");
       const sortedList = pendingList.sort((a, b) => b.id - a.id);
+      console.log("Pending vehicles (status=PENDING):", sortedList);
       setPendingVehicles(sortedList);
     }
   }, [vehicles, role]);
 
+  // 🔋 Lấy loại pin
   useEffect(() => {
     const fetchBatteryTypes = async () => {
       try {
@@ -594,11 +619,13 @@ const VehiclePage = () => {
   }, []);
 
   const handleSwapFaultyBattery = async (vehicle) => {
+    // 1. Lưu thông tin xe cần đổi pin
     setVehicleToSwap(vehicle);
     setSelectedReplacementBattery(null);
     setIsSwapModalVisible(true);
 
-    const batteryTypeId = vehicle.batteryTypeId;
+    // 2. Lấy batteryTypeId của pin hiện tại trên xe
+    const batteryTypeId = vehicle.batteryTypeId; // Lấy từ object vehicle
 
     if (batteryTypeId) {
       setBatteriesLoading(true);
@@ -607,6 +634,7 @@ const VehiclePage = () => {
           `/station-inventory/available-by-type/${batteryTypeId}`
         );
 
+        // Lọc pin: Pin sẵn có (status: AVAILABLE) VÀ không phải pin hiện tại của xe
         const available = response.data.batteries.filter(
           (battery) => battery.id !== vehicle.currentBatteryId
         );
@@ -623,6 +651,7 @@ const VehiclePage = () => {
     }
   };
 
+  // Hàm gọi API đổi pin
   const handleConfirmSwap = async () => {
     if (!vehicleToSwap || !selectedReplacementBattery) {
       message.error("Vui lòng chọn pin thay thế!");
@@ -639,8 +668,10 @@ const VehiclePage = () => {
       await api.post("/battery/swap-faulty", payload);
       message.success("Đã đổi pin lỗi thành công!");
 
+      // Cập nhật lại dữ liệu sau khi đổi pin
       await fetchVehicles();
 
+      // Đóng Modal
       setIsSwapModalVisible(false);
       setVehicleToSwap(null);
       setSelectedReplacementBattery(null);
@@ -654,12 +685,14 @@ const VehiclePage = () => {
     }
   };
 
+  // 🔋 Lấy danh sách pin AVAILABLE trong kho theo batteryTypeId
   const fetchAvailableBatteries = async (batteryTypeId) => {
     setBatteriesLoading(true);
     try {
       const res = await api.get(
         `/station-inventory/available-by-type/${batteryTypeId}`
       );
+      console.log("Available batteries response:", res.data);
 
       let availableList = [];
       if (Array.isArray(res.data)) {
@@ -670,6 +703,8 @@ const VehiclePage = () => {
         availableList = res.data.data;
       }
 
+      console.log("Available batteries for type", batteryTypeId, ":");
+      console.log("Total available batteries:", availableList.length);
       setAvailableBatteries(availableList);
     } catch (error) {
       console.error("Error fetching batteries:", error);
@@ -680,11 +715,12 @@ const VehiclePage = () => {
     }
   };
 
+  // Hàm xử lý xem lịch sử
   const handleViewHistory = async (vehicleId) => {
     setSelectedVehicleId(vehicleId);
     setIsHistoryModalVisible(true);
     setHistoryLoading(true);
-    setVehicleHistory([]);
+    setVehicleHistory([]); // Xóa lịch sử cũ
 
     try {
       const res = await api.get(
@@ -718,6 +754,7 @@ const VehiclePage = () => {
     setVehicleHistory([]);
   };
 
+  // 🧾 Cột bảng
   const columns = [
     {
       title: "ID",
@@ -773,9 +810,12 @@ const VehiclePage = () => {
       dataIndex: "model",
       key: "model",
       sorter: (a, b) =>
-        (a.model || "").toLowerCase().localeCompare(b.model || "").toLowerCase(),
+        (a.model || "")
+          .toLowerCase()
+          .localeCompare(b.model || "")
+          .toLowerCase(),
     },
-    ...(isAdmin
+    ...(role === "ADMIN"
       ? [
           {
             title: "Tài xế",
@@ -854,8 +894,10 @@ const VehiclePage = () => {
         const isDriver = role === "DRIVER";
         const isPending = record.status === "PENDING";
         const isUnpaid = record.status === "UNPAID";
+        const isPaid = record.status === "PAID";
         return (
           <Space wrap>
+            {/* Nút Xem lịch sử cho TẤT CẢ các vai trò */}
             <Button
               type="primary"
               icon={<EyeOutlined />}
@@ -880,6 +922,7 @@ const VehiclePage = () => {
 
             {!isDriver && (
               <Space>
+                {/* Chỉ hiện nếu xe đang ACTIVE và có pin gán */}
                 <Button
                   type="default"
                   icon={<SwapOutlined />}
@@ -915,7 +958,7 @@ const VehiclePage = () => {
               </Space>
             )}
 
-            {isDriver && isUnpaid && (
+            {isDriver && (isUnpaid || isPaid || isPending) && (
               <Button
                 type="primary"
                 danger
@@ -932,6 +975,7 @@ const VehiclePage = () => {
     },
   ];
 
+  // 🧾 Cột bảng xe chờ duyệt
   const pendingColumns = [
     {
       title: "ID",
@@ -1031,6 +1075,7 @@ const VehiclePage = () => {
     },
   ];
 
+  // 🟢 CREATE / UPDATE
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (values) => {
@@ -1043,6 +1088,7 @@ const VehiclePage = () => {
       plateNumber: values.plateNumber,
       model: values.model,
       batteryTypeId: values.batteryTypeId,
+      //...(editingVehicle && isAdmin && { status: values.status }),
     };
 
     let endpoint = "";
@@ -1053,6 +1099,7 @@ const VehiclePage = () => {
       endpoint = "/vehicle";
     }
 
+    // Lấy tên tài xế từ danh sách drivers
     const selectedDriver = drivers.find((d) => d.id === values.driverId);
     const driverName = selectedDriver
       ? selectedDriver.fullName
@@ -1065,19 +1112,33 @@ const VehiclePage = () => {
         : "Không xác định",
       driverName: driverName,
       id: editingVehicle ? editingVehicle.id : undefined,
+      //status: editingVehicle ? editingVehicle.status : "ACTIVE",
       status:
         values.status || (editingVehicle ? editingVehicle.status : "PENDING"),
     };
 
     try {
       if (editingVehicle) {
+        // Logic UPDATE - Không gửi ảnh khi sửa
+        console.log("Updating vehicle without image");
+        console.log("Payload:", payload);
+
+        // Gửi FormData thay vì JSON để tránh lỗi 415
         const formData = new FormData();
         formData.append("vin", payload.vin);
         formData.append("plateNumber", payload.plateNumber);
         formData.append("model", payload.model);
         formData.append("batteryTypeId", payload.batteryTypeId);
+        // if (payload.driverId) {
+        //   formData.append("driverId", payload.driverId);
+        // }
+        // if (payload.status) {
+        //   formData.append("status", payload.status);
+        // }
 
-        await api.put(endpoint, formData);
+        const response = await api.put(endpoint, formData);
+
+        console.log("Update response:", response);
 
         setVehicles((prev) =>
           prev.map((v) =>
@@ -1093,6 +1154,7 @@ const VehiclePage = () => {
         );
         showToast("success", "Cập nhật phương tiện thành công!");
       } else {
+        // Logic CREATE - Bắt buộc có ảnh
         if (!imageFile || !(imageFile instanceof File)) {
           message.error("Vui lòng chọn ảnh giấy đăng ký!");
           setIsSubmitting(false);
@@ -1100,24 +1162,37 @@ const VehiclePage = () => {
         }
 
         let res;
+        // Gửi FormData với ảnh
         const formData = new FormData();
         formData.append("vin", payload.vin);
         formData.append("plateNumber", payload.plateNumber);
         formData.append("model", payload.model);
         formData.append("batteryTypeId", payload.batteryTypeId);
         formData.append("registrationImage", imageFile);
+        console.log("Sending FormData with image:", imageFile.name);
         res = await api.post(endpoint, formData);
 
+        // Xử lý response từ backend
+        console.log("API Response:", res.data);
         let newVehicleData = payload;
         if (res.data) {
+          // Nếu backend trả về object
           if (typeof res.data === "object" && res.data.id) {
+            console.log("Format 1: Direct object with id");
             newVehicleData = res.data;
-          } else if (res.data.data && typeof res.data.data === "object") {
+          }
+          // Nếu backend trả về wrapped response (e.g., { data: {...} })
+          else if (res.data.data && typeof res.data.data === "object") {
+            console.log("Format 2: Wrapped in data field");
             newVehicleData = res.data.data;
-          } else if (res.data.success && res.data.data) {
+          }
+          // Nếu backend trả về { success: true, message: "...", data: {...} }
+          else if (res.data.success && res.data.data) {
+            console.log("Format 3: Success wrapper with data");
             newVehicleData = res.data.data;
           }
         }
+        console.log("Final newVehicleData:", newVehicleData);
 
         const newVehicle = {
           ...newVehicleData,
@@ -1147,7 +1222,9 @@ const VehiclePage = () => {
     }
   };
 
+  // 🔴 SOFT DELETE
   const handleDelete = (id, vehicleStatus) => {
+    // Nếu xe chưa thanh toán cọc (UNPAID), cho phép xóa trực tiếp
     if (vehicleStatus === "UNPAID") {
       Modal.confirm({
         title: "Bạn có chắc muốn xóa xe này?",
@@ -1157,9 +1234,12 @@ const VehiclePage = () => {
         cancelText: "Hủy",
         onOk: async () => {
           try {
+            // Thử endpoint /vehicle/{id}/cancel trước (nếu backend sử dụng)
+            // Nếu không thì fallback sang /vehicle/{id}
             try {
               await api.delete(`/vehicle/${id}/cancel`);
             } catch (error) {
+              // Nếu endpoint /cancel không tồn tại, thử endpoint thường
               if (error.response?.status === 404) {
                 await api.delete(`/vehicle/${id}`);
               } else {
@@ -1169,18 +1249,17 @@ const VehiclePage = () => {
             setVehicles((prev) => prev.filter((v) => v.id !== id));
             showToast("success", "Đã xóa phương tiện!");
           } catch (error) {
-            showToast(
-              "error",
-              error.response?.data || "Lỗi xóa phương tiện"
-            );
+            showToast("error", error.response?.data || "Lỗi xóa phương tiện");
           }
         },
       });
     } else if (vehicleStatus === "PAID" || vehicleStatus === "PENDING") {
+      // Nếu xe đã thanh toán cọc, yêu cầu nhập lý do hoàn tiền
       setDeletingVehicleId(id);
       setDeleteReason("");
       setDeleteReasonModalVisible(true);
     } else {
+      // Nếu xe ở trạng thái khác (ACTIVE, INACTIVE), vô hiệu hóa
       Modal.confirm({
         title: "Bạn có chắc muốn vô hiệu hóa xe này?",
         content: "Hành động này sẽ chuyển trạng thái xe thành INACTIVE.",
@@ -1189,9 +1268,12 @@ const VehiclePage = () => {
         cancelText: "Hủy",
         onOk: async () => {
           try {
+            // Thử endpoint /vehicle/{id}/cancel trước (nếu backend sử dụng)
+            // Nếu không thì fallback sang /vehicle/{id}
             try {
               await api.delete(`/vehicle/${id}/cancel`);
             } catch (error) {
+              // Nếu endpoint /cancel không tồn tại, thử endpoint thường
               if (error.response?.status === 404) {
                 await api.delete(`/vehicle/${id}`);
               } else {
@@ -1213,6 +1295,7 @@ const VehiclePage = () => {
     }
   };
 
+  // ❌ Xóa xe với hoàn tiền cọc
   const handleDeleteVehicleWithRefund = async (vehicleId, reason) => {
     if (!reason || reason.trim() === "") {
       message.error("Vui lòng nhập lý do hoàn tiền!");
@@ -1221,30 +1304,41 @@ const VehiclePage = () => {
 
     setIsDeletingVehicle(true);
     try {
+      console.log("Deleting vehicle:", vehicleId, "Reason:", reason);
       const payload = { refundReason: reason.trim() };
+      console.log("Payload being sent:", JSON.stringify(payload));
+
       const res = await api.delete(`/vehicle/${vehicleId}`, { data: payload });
+      console.log("Delete response:", res.data);
+
       showToast("success", "Đã xóa xe và hoàn tiền cọc!");
+
+      // Cập nhật danh sách xe - thay đổi status thành REFUNDED
       setVehicles((prev) =>
-        prev.map((v) =>
-          v.id === vehicleId ? { ...v, status: "REFUNDED" } : v
-        )
+        prev.map((v) => (v.id === vehicleId ? { ...v, status: "REFUNDED" } : v))
       );
+
+      // Đóng modal
       setDeleteReasonModalVisible(false);
       setDeletingVehicleId(null);
       setDeleteReason("");
     } catch (error) {
+      console.error("Error deleting vehicle - Full error:", error);
+      console.error("Error response:", error.response);
+      console.error("Error response data:", error.response?.data);
       showToast("error", error.response?.data?.message || "Lỗi khi xóa xe");
     } finally {
       setIsDeletingVehicle(false);
     }
   };
 
+  // 💰 Xử lý cọc xe
   const handleDepositVehicle = (vehicle) => {
     setSelectedVehicleForDeposit(vehicle);
     setDepositModalVisible(true);
   };
 
-  // --- SỬA LỖI Ở ĐÂY: Gửi redirectUrl qua Query Parameter ---
+  // 💰 Gọi API cọc xe - Redirect đến MoMo
   const handleConfirmDeposit = async () => {
     if (!selectedVehicleForDeposit) {
       message.error("Vui lòng chọn xe!");
@@ -1253,19 +1347,27 @@ const VehiclePage = () => {
 
     setIsProcessingDeposit(true);
     try {
-      // Sử dụng tên miền thật của bạn
-      const redirectUrl = "https://evbatteryswapsystem.com/payment/result";
+      console.log(
+        "Processing deposit for vehicle:",
+        selectedVehicleForDeposit.id
+      );
 
-      // Đã sửa: Truyền redirectUrl vào URL thay vì body
-      // Sử dụng encodeURIComponent để mã hóa URL an toàn
+      // Tạo redirect URL
+      const redirectUrl = window.location.origin + "/payment/result";
+
+      // Gọi API để tạo giao dịch thanh toán MoMo
+      // Endpoint: POST /vehicle/{vehicleId}/deposit/pay
+      // Gửi redirectUrl trong request body
       const res = await api.post(
-        `/vehicle/${selectedVehicleForDeposit.id}/deposit/pay?redirectUrl=${encodeURIComponent(
-          redirectUrl
-        )}`
+        `/vehicle/${selectedVehicleForDeposit.id}/deposit/pay`,
+        {
+          redirectUrl: redirectUrl,
+        }
       );
 
       console.log("Deposit response:", res.data);
 
+      // Xử lý response - Backend trả về paymentUrl
       let paymentUrl = null;
 
       if (res.data?.paymentUrl) {
@@ -1273,11 +1375,12 @@ const VehiclePage = () => {
       } else if (res.data?.payUrl) {
         paymentUrl = res.data.payUrl;
       } else if (typeof res.data === "string") {
+        // Nếu backend trả về URL trực tiếp dưới dạng string
         paymentUrl = res.data;
       }
 
       if (paymentUrl) {
-        window.location.href = paymentUrl;
+        window.location.href = paymentUrl; // Chuyển hướng sang trang thanh toán MoMo
       } else {
         showToast("error", "Không tạo được liên kết thanh toán!");
       }
@@ -1293,7 +1396,6 @@ const VehiclePage = () => {
       setIsProcessingDeposit(false);
     }
   };
-  // -------------------------------------------------------------
 
   const handleEdit = (vehicle) => {
     setEditingVehicle(vehicle);
@@ -1307,46 +1409,81 @@ const VehiclePage = () => {
       batteryTypeId: vehicle.batteryTypeId,
       status: vehicle.status,
     };
+
+    // Thêm driverId nếu là admin
+    // if (isAdmin && vehicle.driverId) {
+    //   initialValues.driverId = vehicle.driverId;
+    // }
+
     form.setFieldsValue(initialValues);
   };
 
+  // 🖼️ Xử lý upload ảnh
   const handleImageUpload = (file) => {
+    console.log("File selected:", file);
+    console.log("File type:", file.type);
+    console.log("File size:", file.size);
+
+    // Kiểm tra file type
     const isImage = file.type.startsWith("image/");
     if (!isImage) {
       message.error("Vui lòng chọn file hình ảnh!");
       return Upload.LIST_IGNORE;
     }
+
+    // Kiểm tra file size (max 5MB)
     const isLt5M = file.size / 1024 / 1024 < 5;
     if (!isLt5M) {
       showToast("error", "Ảnh phải nhỏ hơn 5MB!");
       return Upload.LIST_IGNORE;
     }
 
+    // Đọc file và hiển thị preview
     const reader = new FileReader();
     reader.onload = (e) => {
+      console.log("Image preview loaded successfully");
       setVehicleImage(e.target.result);
     };
     reader.onerror = (error) => {
+      console.error("Error reading file:", error);
       showToast("error", "Lỗi đọc file ảnh!");
     };
     reader.readAsDataURL(file);
+
+    // Lưu file để gửi lên server
     setImageFile(file);
-    return false;
+    console.log("Image file set:", file.name);
+
+    return false; // Ngăn upload tự động
   };
 
+  // ✅ Duyệt xe
   const [isApprovingVehicle, setIsApprovingVehicle] = useState(false);
 
   const handleApproveVehicle = async (vehicleId, batteryId) => {
     setIsApprovingVehicle(true);
     try {
+      console.log("Approving vehicle:", vehicleId, "with battery:", batteryId);
+
+      // Tạo payload - gửi batteryId (không phải currentBatteryId)
       const payload = {};
       if (batteryId) {
         payload.batteryId = batteryId;
       }
-      await api.put(`/vehicle/${vehicleId}/approve`, payload);
+      console.log("Payload being sent:", JSON.stringify(payload));
+
+      // Gửi request
+      const res = await api.put(`/vehicle/${vehicleId}/approve`, payload);
+      console.log("Full Approve response:", res);
+      console.log("Approve response data:", res.data);
+      console.log("Response status:", res.status);
+
       showToast("success", "Đã duyệt xe thành công!");
 
+      // Cập nhật danh sách xe chờ duyệt
       setPendingVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+
+      // Cập nhật danh sách xe chính - thay đổi status từ PENDING thành ACTIVE
       setVehicles((prev) =>
         prev.map((v) =>
           v.id === vehicleId
@@ -1363,6 +1500,12 @@ const VehiclePage = () => {
       setSelectedVehicleForApprove(null);
       setSelectedBatteryForApprove(null);
     } catch (error) {
+      console.error("Error approving vehicle - Full error:", error);
+      console.error("Error response:", error.response);
+      console.error("Error response data:", error.response?.data);
+      console.error("Error message:", error.message);
+
+      // Hiển thị thông báo lỗi chi tiết
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
@@ -1374,22 +1517,38 @@ const VehiclePage = () => {
     }
   };
 
+  // ❌ Từ chối xe
   const handleRejectVehicle = async (vehicleId, reason) => {
     if (!reason || reason.trim() === "") {
       message.error("Vui lòng nhập lý do từ chối!");
       return;
     }
+
     setIsRejectingVehicle(true);
     try {
+      console.log("Rejecting vehicle:", vehicleId, "Reason:", reason);
       const payload = { rejectionReason: reason.trim() };
-      await api.put(`/vehicle/${vehicleId}/reject`, payload);
+      console.log("Payload being sent:", JSON.stringify(payload));
+
+      const res = await api.put(`/vehicle/${vehicleId}/reject`, payload);
+      console.log("Reject response:", res.data);
+
       showToast("success", "Đã từ chối xe!");
+
+      // Cập nhật danh sách xe chờ duyệt
       setPendingVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+
+      // Cập nhật danh sách xe chính - xóa xe bị từ chối
       setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+
+      // Đóng modal
       setRejectReasonModalVisible(false);
       setRejectingVehicleId(null);
       setRejectReason("");
     } catch (error) {
+      console.error("Error rejecting vehicle - Full error:", error);
+      console.error("Error response:", error.response);
+      console.error("Error response data:", error.response?.data);
       showToast("error", error.response?.data?.message || "Lỗi khi từ chối xe");
     } finally {
       setIsRejectingVehicle(false);
@@ -1420,7 +1579,7 @@ const VehiclePage = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      {isAdmin ? (
+      {role === "ADMIN" ? (
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -1495,7 +1654,7 @@ const VehiclePage = () => {
                 style={{ width: 250 }}
               />
 
-              {isDriver && (
+              {role === "DRIVER" && (
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
@@ -1523,7 +1682,8 @@ const VehiclePage = () => {
             )}
           </Spin>
 
-          {isDriver && myPendingVehicles.length > 0 && (
+          {/* 👇 HIỂN THỊ THÔNG BÁO XE ĐANG CHỜ DUYỆT Ở DƯỚI BẢNG XE */}
+          {role === "DRIVER" && myPendingVehicles.length > 0 && (
             <div style={{ marginTop: 24 }}>
               {myPendingVehicles.map((vehicle) => (
                 <PendingVehicleAlert key={vehicle.id} vehicle={vehicle} />
@@ -1532,7 +1692,6 @@ const VehiclePage = () => {
           )}
         </Card>
       )}
-
       {/* Modal Cọc Xe */}
       <Modal
         title="Cọc xe"
@@ -1549,13 +1708,15 @@ const VehiclePage = () => {
         {selectedVehicleForDeposit && (
           <div>
             <p>
-              <strong>Biển số xe:</strong> {selectedVehicleForDeposit.plateNumber}
+              <strong>Biển số xe:</strong>{" "}
+              {selectedVehicleForDeposit.plateNumber}
             </p>
             <p>
               <strong>Dòng xe:</strong> {selectedVehicleForDeposit.model}
             </p>
             <p>
-              <strong>Loại pin:</strong> {selectedVehicleForDeposit.batteryTypeName}
+              <strong>Loại pin:</strong>{" "}
+              {selectedVehicleForDeposit.batteryTypeName}
             </p>
             <p style={{ color: "#ff4d4f", marginTop: 16 }}>
               Bạn sẽ được chuyển đến trang thanh toán để quét mã QR cọc xe.
@@ -1642,13 +1803,11 @@ const VehiclePage = () => {
               name="registrationImage"
               label="Ảnh giấy đăng ký xe"
               rules={[
-                {
-                  required: true,
-                  message: "Vui lòng chọn ảnh giấy đăng ký!",
-                },
+                { required: true, message: "Vui lòng chọn ảnh giấy đăng ký!" },
               ]}
             >
               <div>
+                {/* Ẩn nút Upload khi đã có ảnh để giao diện gọn hơn */}
                 {!vehicleImage && (
                   <Upload
                     beforeUpload={handleImageUpload}
@@ -1676,20 +1835,23 @@ const VehiclePage = () => {
                         objectFit: "contain",
                         border: "1px solid #d9d9d9",
                       }}
+                      // 👇 PHẦN QUAN TRỌNG: Tùy chỉnh lớp phủ khi hover
                       preview={{
                         mask: (
                           <div
                             style={{
                               display: "flex",
                               alignItems: "center",
-                              gap: "16px",
+                              gap: "16px", // Khoảng cách giữa chữ Xem và nút Xóa
                               fontSize: "14px",
                             }}
                           >
+                            {/* Phần Xem ảnh (Mặc định của Antd sẽ click vào mask là xem) */}
                             <Space>
                               <EyeOutlined /> Xem
                             </Space>
 
+                            {/* Đường gạch đứng phân cách cho đẹp */}
                             <div
                               style={{
                                 width: 1,
@@ -1698,15 +1860,16 @@ const VehiclePage = () => {
                               }}
                             />
 
+                            {/* Nút Xóa */}
                             <Space
-                              className="delete-btn-hover"
+                              className="delete-btn-hover" // Class để style nếu cần
                               style={{
                                 cursor: "pointer",
-                                color: "#ff4d4f",
+                                color: "#ff4d4f", // Màu đỏ cho nổi
                                 fontWeight: "bold",
                               }}
                               onClick={(e) => {
-                                e.stopPropagation();
+                                e.stopPropagation(); // ⛔ QUAN TRỌNG: Chặn không cho mở Preview ảnh lên
                                 setImageFile(null);
                                 setVehicleImage(null);
                                 form.setFieldsValue({
@@ -1747,7 +1910,7 @@ const VehiclePage = () => {
           </Form.Item>
         </Form>
       </Modal>
-
+      {/* Modal Lịch sử Đổi Pin */}
       <VehicleSwapHistoryModal
         open={isHistoryModalVisible}
         onClose={handleHistoryModalClose}
@@ -1756,7 +1919,7 @@ const VehiclePage = () => {
         vehicleId={selectedVehicleId}
         userRole={role}
       />
-
+      {/* --- Modal Đổi Pin Lỗi --- */}
       <Modal
         title={`Đổi Pin Lỗi cho xe: ${vehicleToSwap?.plateNumber}`}
         open={isSwapModalVisible}
@@ -1853,7 +2016,7 @@ const VehiclePage = () => {
           </Form>
         )}
       </Modal>
-
+      {/* Modal Duyệt xe và chọn pin */}
       <Modal
         title="Duyệt xe và chọn pin"
         open={approveModalVisible}
@@ -2012,7 +2175,7 @@ const VehiclePage = () => {
           </div>
         )}
       </Modal>
-
+      {/* Modal Từ chối xe */}
       <Modal
         title="Từ chối xe"
         open={rejectReasonModalVisible}
