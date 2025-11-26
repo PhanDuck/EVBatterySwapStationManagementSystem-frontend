@@ -79,7 +79,7 @@ const BatteryListModal = ({ station, open, onCancel, batteryTypes }) => {
 
   return (
     <Modal
-      title={`Pin tại trạm ${station?.name || ""}`}
+      title={`Pin tại ${station?.name || ""}`}
       open={open}
       onCancel={onCancel}
       footer={null}
@@ -233,10 +233,8 @@ const BatterySwapModal = ({
             pagination={{ pageSize: 5 }}
             size="small"
           />
-          <div style={{ textAlign: "right", marginTop: 10 }}>
-            <Button type="primary" onClick={handleNext}>
-              Tiếp tục
-            </Button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+            <Button type="primary" onClick={handleNext}>Tiếp tục</Button>
           </div>
         </>
       ) : (
@@ -260,17 +258,10 @@ const BatterySwapModal = ({
             pagination={{ pageSize: 5 }}
             size="small"
           />
-          <Space style={{ float: "right", marginTop: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
             <Button onClick={() => setStep(0)}>Quay lại</Button>
-            <Button
-              type="primary"
-              onClick={handleSwap}
-              loading={loading}
-              disabled={selectedGood.length !== selectedBad.length}
-            >
-              Xác nhận
-            </Button>
-          </Space>
+            <Button type="primary" onClick={handleSwap} loading={loading} disabled={selectedGood.length !== selectedBad.length}>Xác nhận</Button>
+          </div>
         </>
       )}
     </Modal>
@@ -299,6 +290,7 @@ const StationFormModal = ({
       onCancel={onCancel}
       onOk={() => form.submit()}
       okText={initialValues ? "Lưu" : "Tạo"}
+      cancelText="Hủy"
       width={700}
     >
       <Form form={form} layout="vertical" onFinish={onSubmit}>
