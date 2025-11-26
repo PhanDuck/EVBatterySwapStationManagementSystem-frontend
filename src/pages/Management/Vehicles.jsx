@@ -38,6 +38,7 @@ import {
   SyncOutlined, // Icon xoay xoay loading
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
+import { BsCashCoin } from "react-icons/bs";
 import api from "../../config/axios";
 import handleApiError from "../../Utils/handleApiError";
 import { showToast } from "../../Utils/toastHandler";
@@ -912,7 +913,7 @@ const VehiclePage = () => {
               <Button
                 type="primary"
                 style={{ backgroundColor: "#faad14", borderColor: "#faad14" }}
-                icon={<ThunderboltOutlined />}
+                icon={<BsCashCoin />}
                 size="small"
                 onClick={() => handleDepositVehicle(record)}
               >

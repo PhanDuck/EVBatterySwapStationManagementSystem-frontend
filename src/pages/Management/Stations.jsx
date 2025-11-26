@@ -13,7 +13,6 @@ import {
   Statistic,
   Row,
   Col,
-  message,
   Alert,
   Steps,
 } from "antd";
@@ -26,436 +25,406 @@ import {
   EyeOutlined,
   SwapOutlined,
   InboxOutlined,
-  ArrowRightOutlined,
-  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import { showToast } from "../../Utils/toastHandler";
 
 const { Option } = Select;
 
-//Component Modal hiển thị danh sách Pin tại một Trạm
-const BatteryListModal = ({ station, isVisible, onCancel, batteryTypes }) => {
+// --- CONSTANTS ---
+const STATUS_COLORS = {
+  ACTIVE: "green",
+  MAINTENANCE: "orange",
+  INACTIVE: "red",
+  "UNDER CONSTRUCTION": "blue",
+};
+
+// --- SUB-COMPONENT: BATTERY LIST MODAL ---
+const BatteryListModal = ({ station, open, onCancel, batteryTypes }) => {
   const [batteries, setBatteries] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Ánh xạ Battery Type ID sang Tên
-  const getBatteryTypeName = (id) => {
-    const type = batteryTypes.find((t) => t.id === id);
-    return type ? type.name : "";
-  };
-
-  // 🔋 Hàm tải danh sách pin
-  const fetchBatteries = async (stationId) => {
-    setLoading(true);
-    try {
-      const res = await api.get(`/station/${stationId}/batteries`);
-      const data = Array.isArray(res.data)
-        ? res.data
-        : res.data?.data && Array.isArray(res.data.data)
-        ? res.data.data
-        : [];
-
-      setBatteries(data);
-      showToast(
-        "success",
-        `Tải thành công ${data.length} pin tại trạm.`
-      );
-    } catch (err) {
-      console.log(err);
-      setBatteries([]);
-      showToast("error", err.response?.data || "Đã có lỗi xảy ra");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (isVisible && station?.id) {
-      fetchBatteries(station.id);
-    } else if (!isVisible) {
-      setBatteries([]); // Clear data khi modal đóng
+    if (open && station?.id) {
+      setLoading(true);
+      api
+        .get(`/station/${station.id}/batteries`)
+        .then((res) => setBatteries(Array.isArray(res.data) ? res.data : []))
+        .catch(() => setBatteries([]))
+        .finally(() => setLoading(false));
     }
-  }, [isVisible, station]);
+  }, [open, station]);
 
-  const batteryColumns = [
+  const columns = [
+    { title: "ID", dataIndex: "id", render: (t) => <b>#{t}</b> },
+    { title: "Model", dataIndex: "model" },
     {
-      title: "ID Pin",
-      dataIndex: "id",
-      key: "id",
-      width: 100,
-      render: (text) => <strong>{text}</strong>,
-    },
-    {
-      title: "Model",
-      dataIndex: "model",
-      key: "model",
-    },
-    {
-      title: "Loại Pin",
+      title: "Loại",
       dataIndex: "batteryTypeId",
-      key: "batteryTypeId",
-      render: (id) => getBatteryTypeName(id),
+      render: (id) => batteryTypes.find((t) => t.id === id)?.name,
     },
     {
-      title: "Mức sạc (%)",
+      title: "Pin (%)",
       dataIndex: "chargeLevel",
-      key: "chargeLevel",
-      render: (s) => (
-        <Tag color={s > 70 ? "green" : s > 20 ? "orange" : "red"}>{s}</Tag>
-      ),
-    },
-    {
-      title: "Tình trạng pin (%)",
-      dataIndex: "stateOfHealth",
-      key: "stateOfHealth",
-      render: (s) => (
-        <Tag color={s > 70 ? "green" : s > 20 ? "orange" : "red"}>{s}</Tag>
-      ),
+      render: (s) => <Tag color={s > 70 ? "green" : "orange"}>{s}</Tag>,
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
-      key: "status",
-      render: (status) => {
-        const colorMap = {
-          AVAILABLE: "green",
-          PENDING: "blue",
-          MAINTENANCE: "orange",
-        };
-        return <Tag color={colorMap[status] || "default"}>{status}</Tag>;
-      },
+      render: (s) => (
+        <Tag color={s === "AVAILABLE" ? "green" : "blue"}>{s}</Tag>
+      ),
     },
   ];
 
   return (
     <Modal
-      title={`Danh sách ${batteries.length}/${
-        station?.capacity || 0
-      } pin tại ${station?.name || ""}`}
-      open={isVisible}
+      title={`Pin tại trạm ${station?.name || ""}`}
+      open={open}
       onCancel={onCancel}
       footer={null}
-      width={1000}
-      destroyOnClose={true}
+      width={800}
     >
       <Table
-        columns={batteryColumns}
+        columns={columns}
         dataSource={batteries}
         loading={loading}
         rowKey="id"
-        pagination={{
-          showTotal: (total, range) =>
-            `${range[0]}-${range[1]} trên tổng ${total} pin`,
-        }}
+        pagination={{ pageSize: 5 }}
       />
     </Modal>
   );
 };
 
-/**
- * Component Modal thực hiện Quy trình Đổi Pin (Về Kho / Ra Trạm) - LOGIC CHỌN THỦ CÔNG
- */
+// --- SUB-COMPONENT: BATTERY SWAP MODAL ---
 const BatterySwapModal = ({
   station,
-  isVisible,
+  open,
   onCancel,
   batteryTypesMap,
-  onSwapSuccess,
+  onSuccess,
 }) => {
+  const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [badBatteries, setBadBatteries] = useState([]);
+  const [goodBatteries, setGoodBatteries] = useState([]);
+  const [selectedBad, setSelectedBad] = useState([]);
+  const [selectedGood, setSelectedGood] = useState([]);
 
-  // --- State BƯỚC 1: Chọn Pin lỗi (Maintenance)
-  const [stationMaintenanceBatteries, setStationMaintenanceBatteries] = useState([]);
-  const [selectedFaultyBatteryIds, setSelectedFaultyBatteryIds] = useState([]);
+  // Load bad batteries when modal opens
+  useEffect(() => {
+    if (open && station?.id) {
+      setStep(0);
+      setSelectedBad([]);
+      setSelectedGood([]);
+      setLoading(true);
+      api
+        .get(`/station/${station.id}/batteries/needs-maintenance`)
+        .then((res) => setBadBatteries(res.data?.batteries || []))
+        .catch(() => setBadBatteries([]))
+        .finally(() => setLoading(false));
+    }
+  }, [open, station]);
 
-  // --- State BƯỚC 2: Chọn Pin tốt (Available) từ kho
-  const [warehouseGoodBatteries, setWarehouseGoodBatteries] = useState([]);
-  const [selectedGoodBatteryIds, setSelectedGoodBatteryIds] = useState([]);
+  const handleNext = async () => {
+    if (!selectedBad.length)
+      return showToast("warning", "Chọn ít nhất 1 pin lỗi");
+    const typeId = badBatteries[0]?.batteryTypeId;
+    if (!typeId) return;
 
-  const stationBatteryTypeId = useMemo(() => {
-    if (!stationMaintenanceBatteries.length) return null;
-    return stationMaintenanceBatteries[0].batteryTypeId;
-  }, [stationMaintenanceBatteries]);
-
-  // Hàm tải Pin lỗi tại trạm
-  const fetchMaintenanceBatteries = useCallback(async (stationId) => {
-    if (!stationId) return;
     setLoading(true);
     try {
       const res = await api.get(
-        `/station/${stationId}/batteries/needs-maintenance`
+        `/station-inventory/available-by-type/${typeId}`
       );
-      const batteries = Array.isArray(res.data?.batteries)
-        ? res.data.batteries
-        : [];
-      setStationMaintenanceBatteries(batteries.sort((a, b) => b.id - a.id));
-    } catch (error) {
-      console.log("Lỗi tải pin cần bảo dưỡng:", error);
-      setStationMaintenanceBatteries([]);
-      showToast("error", error.response?.data);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Hàm tải Pin tốt từ kho (SOH > 90%)
-  const fetchWarehouseGoodBatteries = async (typeId) => {
-    setLoading(true);
-    try {
-      const res = await api.get(`/station-inventory/available-by-type/${typeId}`);
-      const rawBatteries = res.data?.batteries || (Array.isArray(res.data) ? res.data : []);
-      
-      // Lọc pin SOH > 90%
-      const goodPool = rawBatteries.filter(
-        (b) => b.status === "AVAILABLE" && parseFloat(b.stateOfHealth) > 90
+      setGoodBatteries(
+        (res.data?.batteries || []).filter(
+          (b) => b.status === "AVAILABLE" && b.stateOfHealth > 90
+        )
       );
-      setWarehouseGoodBatteries(goodPool);
-    } catch (error) {
-      showToast("error", error.response?.data || "Đã có lỗi xảy ra");
+      setStep(1);
+    } catch {
+      showToast("error", "Lỗi tải pin kho");
     } finally {
       setLoading(false);
     }
   };
 
-  // Effect khởi tạo khi mở Modal
-  useEffect(() => {
-    if (isVisible && station?.id) {
-      setCurrentStep(0);
-      setSelectedFaultyBatteryIds([]);
-      setSelectedGoodBatteryIds([]);
-      setWarehouseGoodBatteries([]);
-      fetchMaintenanceBatteries(station.id);
-    }
-  }, [isVisible, station, fetchMaintenanceBatteries]);
-
-  // Chuyển sang Bước 2
-  const handleNextStep = async () => {
-    if (selectedFaultyBatteryIds.length === 0) {
-      return message.warning("Vui lòng chọn ít nhất 1 pin lỗi để đổi.");
-    }
-    if (!stationBatteryTypeId) {
-      return message.error("Không xác định được loại pin của trạm.");
-    }
-    
-    // Tải danh sách pin tốt từ kho trước khi chuyển bước
-    await fetchWarehouseGoodBatteries(stationBatteryTypeId);
-    setCurrentStep(1);
-  };
-
-  // Xử lý Submit (Gọi API)
-  const handleConfirmSwap = async () => {
-    // Kiểm tra số lượng
-    if (selectedGoodBatteryIds.length !== selectedFaultyBatteryIds.length) {
-        return message.error(`Vui lòng chọn đúng ${selectedFaultyBatteryIds.length} pin tốt để thay thế.`);
-    }
-
+  const handleSwap = async () => {
+    if (selectedGood.length !== selectedBad.length)
+      return showToast("error", "Số lượng pin không khớp");
     setLoading(true);
     try {
-      // 1. Chuyển pin lỗi về kho
-      for (const batteryId of selectedFaultyBatteryIds) {
-        await api.post("/station-inventory/move-to-warehouse", null, {
-          params: { batteryId, stationId: station.id },
-        });
-      }
-
-      // 2. Chuyển pin tốt ra trạm
-      for (const batteryId of selectedGoodBatteryIds) {
-        await api.post("/station-inventory/move-to-station", null, {
-          params: {
-            batteryId,
-            stationId: station.id,
-            batteryTypeId: stationBatteryTypeId,
-          },
-        });
-      }
-
-      showToast("success", `Đã đổi thành công ${selectedFaultyBatteryIds.length} pin.`);
-      onSwapSuccess();
+      await Promise.all(
+        selectedBad.map((id) =>
+          api.post("/station-inventory/move-to-warehouse", null, {
+            params: { batteryId: id, stationId: station.id },
+          })
+        )
+      );
+      await Promise.all(
+        selectedGood.map((id) =>
+          api.post("/station-inventory/move-to-station", null, {
+            params: {
+              batteryId: id,
+              stationId: station.id,
+              batteryTypeId: badBatteries[0].batteryTypeId,
+            },
+          })
+        )
+      );
+      showToast("success", "Đổi pin thành công");
+      onSuccess();
       onCancel();
-    } catch (error) {
-      console.error(error);
-      showToast("error", error.response?.data || "Đã có lỗi xảy ra");
+    } catch {
+      showToast("error", "Lỗi đổi pin");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Cấu hình bảng ---
-  const getColumns = (isGoodBatteryTable = false) => [
-    { title: "ID Pin", dataIndex: "id", key: "id", width: 80, render: (t) => <b>#{t}</b> },
-    { 
-        title: "Loại Pin", 
-        dataIndex: "batteryTypeId", 
-        key: "type", 
-        width: 200,
-        render: (id) => batteryTypesMap[id] || "" 
-    },
-    {
-      title: "SOH (%)",
-      dataIndex: "stateOfHealth",
-      key: "soh",
-      width: 100,
-      render: (soh) => (
-        <Tag color={parseFloat(soh) > 90 ? "green" : "orange"}>
-            {parseFloat(soh).toFixed(2)}%
-        </Tag>
-      ),
-    },
-    {
-        title: "Trạng thái",
-        dataIndex: "status",
-        key: "status",
-        width: 120,
-        render: (s) => <Tag color={s === "AVAILABLE" ? "green" : "orange"}>{s}</Tag>
-    },
-    // Cột ngày bảo trì chỉ hiện ở bảng Pin Lỗi
-    !isGoodBatteryTable && {
+  const columns = (isGood) =>
+    [
+      { title: "ID", dataIndex: "id", render: (t) => <b>#{t}</b> },
+      {
+        title: "Loại",
+        dataIndex: "batteryTypeId",
+        render: (id) => batteryTypesMap[id],
+      },
+      {
+        title: "SOH",
+        dataIndex: "stateOfHealth",
+        render: (s) => <Tag color="green">{s}%</Tag>,
+      },
+      !isGood && {
         title: "Bảo trì cuối",
         dataIndex: "lastMaintenanceDate",
-        width: 150,
-        render: (d) => d ? new Date(d).toLocaleDateString() : ""
-    }
-  ].filter(Boolean);
-
-  // Config chọn dòng Bước 1
-  const faultyRowSelection = {
-    selectedRowKeys: selectedFaultyBatteryIds,
-    onChange: (keys) => setSelectedFaultyBatteryIds(keys),
-  };
-
-  // Config chọn dòng Bước 2 (Giới hạn số lượng)
-  const goodRowSelection = {
-    selectedRowKeys: selectedGoodBatteryIds,
-    onChange: (keys) => {
-        // Chặn không cho chọn quá số lượng pin lỗi
-        if (keys.length > selectedFaultyBatteryIds.length) return;
-        setSelectedGoodBatteryIds(keys);
-    },
-    getCheckboxProps: (record) => ({
-        // Disable các ô còn lại khi đã chọn đủ số lượng
-        disabled: selectedGoodBatteryIds.length >= selectedFaultyBatteryIds.length && !selectedGoodBatteryIds.includes(record.id)
-    })
-  };
+        render: (d) => (d ? new Date(d).toLocaleDateString() : "-"),
+      },
+    ].filter(Boolean);
 
   return (
     <Modal
-      title={`Quy trình đổi pin cho ${station?.name}`}
-      open={isVisible}
+      title={`Đổi pin trạm ${station?.name}`}
+      open={open}
       onCancel={onCancel}
       footer={null}
-      width={1000}
-      maskClosable={false}
-      destroyOnClose={true}
+      width={900}
     >
       <Steps
-        current={currentStep}
+        current={step}
         items={[
-          { title: "Chọn Pin Lỗi (Tại Trạm)", icon: <EnvironmentOutlined /> },
-          { title: "Chọn Pin Tốt (Tại Kho)", icon: <InboxOutlined /> },
+          { title: "Chọn Pin Lỗi (Trạm)", icon: <EnvironmentOutlined /> },
+          { title: "Chọn Pin Tốt (Kho)", icon: <InboxOutlined /> },
         ]}
-        style={{ marginBottom: 24 }}
+        style={{ marginBottom: 20 }}
       />
 
-      {/* --- BƯỚC 1: CHỌN PIN LỖI --- */}
-      {currentStep === 0 && (
-        <Space direction="vertical" style={{ width: "100%" }}>
-            <Alert 
-                message="Bước 1: Chọn pin cần bảo dưỡng để chuyển về kho"
-                description={`Đã chọn: ${selectedFaultyBatteryIds.length} pin`}
-                type="warning" showIcon
-            />
-            <Table
-                dataSource={stationMaintenanceBatteries}
-                columns={getColumns(false)}
-                rowSelection={faultyRowSelection}
-                rowKey="id"
-                pagination={{ pageSize: 5 }}
-                loading={loading}
-                size="small"
-            />
-            <div style={{ textAlign: "right", marginTop: 16 }}>
-                <Space>
-                    <Button onClick={onCancel}>Hủy</Button>
-                    <Button 
-                        type="primary" 
-                        onClick={handleNextStep} 
-                        icon={<ArrowRightOutlined />}
-                        disabled={selectedFaultyBatteryIds.length === 0}
-                        loading={loading}
-                    >
-                        Tiếp tục chọn Pin thay thế
-                    </Button>
-                </Space>
-            </div>
-        </Space>
-      )}
-
-      {/* --- BƯỚC 2: CHỌN PIN TỐT --- */}
-      {currentStep === 1 && (
-        <Space direction="vertical" style={{ width: "100%" }}>
-            <Alert 
-                message={`Bước 2: Vui lòng chọn đủ ${selectedFaultyBatteryIds.length} pin tốt từ kho để thay thế`}
-                description={`Đã chọn: ${selectedGoodBatteryIds.length} / ${selectedFaultyBatteryIds.length}`}
-                type={selectedGoodBatteryIds.length === selectedFaultyBatteryIds.length ? "success" : "info"} 
-                showIcon
-            />
-             {/* Cảnh báo nếu kho không đủ pin */}
-             {warehouseGoodBatteries.length < selectedFaultyBatteryIds.length && (
-                <Alert 
-                    message="Cảnh báo: Kho không đủ pin tốt để thay thế!" 
-                    type="error" 
-                    showIcon 
-                    style={{marginBottom: 8}}
-                />
-            )}
-
-            <Table
-                dataSource={warehouseGoodBatteries}
-                columns={getColumns(true)}
-                rowSelection={goodRowSelection}
-                rowKey="id"
-                pagination={{ pageSize: 5 }}
-                size="small"
-            />
-            <div style={{ textAlign: "right", marginTop: 16 }}>
-                <Space>
-                    <Button onClick={() => setCurrentStep(0)} icon={<ArrowLeftOutlined />}>Quay lại</Button>
-                    <Button 
-                        type="primary" 
-                        onClick={handleConfirmSwap} 
-                        icon={<SwapOutlined />}
-                        loading={loading}
-                        // Chỉ cho phép xác nhận khi chọn đủ số lượng
-                        disabled={selectedGoodBatteryIds.length !== selectedFaultyBatteryIds.length}
-                    >
-                        Xác nhận Đổi Pin
-                    </Button>
-                </Space>
-            </div>
-        </Space>
+      {step === 0 ? (
+        <>
+          <Table
+            dataSource={badBatteries}
+            columns={columns(false)}
+            rowSelection={{
+              selectedRowKeys: selectedBad,
+              onChange: setSelectedBad,
+            }}
+            rowKey="id"
+            pagination={{ pageSize: 5 }}
+            size="small"
+          />
+          <div style={{ textAlign: "right", marginTop: 10 }}>
+            <Button type="primary" onClick={handleNext}>
+              Tiếp tục
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <Alert
+            message={`Chọn đủ ${selectedBad.length} pin tốt`}
+            type={
+              selectedGood.length === selectedBad.length ? "success" : "warning"
+            }
+            showIcon
+            style={{ marginBottom: 10 }}
+          />
+          <Table
+            dataSource={goodBatteries}
+            columns={columns(true)}
+            rowSelection={{
+              selectedRowKeys: selectedGood,
+              onChange: setSelectedGood,
+            }}
+            rowKey="id"
+            pagination={{ pageSize: 5 }}
+            size="small"
+          />
+          <Space style={{ float: "right", marginTop: 10 }}>
+            <Button onClick={() => setStep(0)}>Quay lại</Button>
+            <Button
+              type="primary"
+              onClick={handleSwap}
+              loading={loading}
+              disabled={selectedGood.length !== selectedBad.length}
+            >
+              Xác nhận
+            </Button>
+          </Space>
+        </>
       )}
     </Modal>
   );
 };
 
-const StationPage = () => {
-  const [stations, setStations] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingStation, setEditingStation] = useState(null);
+// --- SUB-COMPONENT: STATION FORM MODAL ---
+const StationFormModal = ({
+  open,
+  onCancel,
+  onSubmit,
+  initialValues,
+  batteryTypes,
+}) => {
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (open) form.setFieldsValue(initialValues || {});
+    else form.resetFields();
+  }, [open, initialValues, form]);
+
+  return (
+    <Modal
+      title={initialValues ? "Cập nhật trạm" : "Thêm trạm mới"}
+      open={open}
+      onCancel={onCancel}
+      onOk={() => form.submit()}
+      okText={initialValues ? "Lưu" : "Tạo"}
+      width={700}
+    >
+      <Form form={form} layout="vertical" onFinish={onSubmit}>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="name"
+              label="Tên trạm"
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="location"
+              label="Địa chỉ"
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="city" label="Tỉnh/TP" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="district"
+              label="Quận/Huyện"
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="latitude"
+              label="Vĩ độ"
+              rules={[{ required: true }]}
+            >
+              <InputNumber style={{ width: "100%" }} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="longitude"
+              label="Kinh độ"
+              rules={[{ required: true }]}
+            >
+              <InputNumber style={{ width: "100%" }} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="capacity"
+              label="Sức chứa"
+              rules={[{ required: true }]}
+            >
+              <InputNumber min={1} style={{ width: "100%" }} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="contactInfo"
+              label="Liên hệ"
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="batteryTypeId"
+              label="Loại pin"
+              rules={[{ required: true }]}
+            >
+              <Select>
+                {batteryTypes.map((t) => (
+                  <Option key={t.id} value={t.id}>
+                    {t.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          {initialValues && (
+            <Col span={12}>
+              <Form.Item
+                name="status"
+                label="Trạng thái"
+                rules={[{ required: true }]}
+              >
+                <Select>
+                  {Object.keys(STATUS_COLORS).map((s) => (
+                    <Option key={s} value={s}>
+                      {s}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          )}
+        </Row>
+      </Form>
+    </Modal>
+  );
+};
+
+// --- MAIN PAGE COMPONENT ---
+export default function StationPage() {
+  const [stations, setStations] = useState([]);
+  const [batteryTypes, setBatteryTypes] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Modal States
+  const [formModal, setFormModal] = useState({ open: false, data: null });
+  const [listModal, setListModal] = useState({ open: false, data: null });
+  const [swapModal, setSwapModal] = useState({ open: false, data: null });
+
+  // Filter
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [batteryTypes, setBatteryTypes] = useState([]);
-  const [batteryTypesMap, setBatteryTypesMap] = useState({});
-  const [isBatteryListModalVisible, setIsBatteryListModalVisible] =
-    useState(false);
-  const [isBatterySwapModalVisible, setIsBatterySwapModalVisible] =
-    useState(false);
-  const [viewingStation, setViewingStation] = useState(null);
 
-  const Role = useMemo(() => {
+  const userRole = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("currentUser"))?.role;
     } catch {
@@ -463,181 +432,118 @@ const StationPage = () => {
     }
   }, []);
 
-  // ---------------------------
-  // 🚀 1. FETCH ALL STATIONS & BATTERY TYPES
-  // ---------------------------
-
-  const fetchStations = useCallback(async () => {
-    let apiPath =
-      Role === "ADMIN"
-        ? "/station"
-        : "/staff-station-assignment/my-stations";
+  // API Calls
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await api.get(apiPath);
-      const data = Array.isArray(res.data)
-        ? res.data
-        : res.data?.data || [];
-      setStations(data.sort((a, b) => b.id - a.id));
-    } catch (err) {
-      console.log("Lỗi tải danh sách trạm:", err);
-      showToast("error", err.response?.data || "Đã có lỗi xảy ra");
+      const [stationRes, typeRes] = await Promise.all([
+        api.get(
+          userRole === "ADMIN"
+            ? "/station"
+            : "/staff-station-assignment/my-stations"
+        ),
+        api.get("/battery-type"),
+      ]);
+      setStations(
+        (Array.isArray(stationRes.data) ? stationRes.data : []).sort(
+          (a, b) => b.id - a.id
+        )
+      );
+      setBatteryTypes(Array.isArray(typeRes.data) ? typeRes.data : []);
+    } catch (e) {
+      showToast("error", e.response?.data || "Lỗi tải dữ liệu");
+    } finally {
+      setLoading(false);
     }
-  }, [Role]);
-
-  const fetchBatteryTypes = useCallback(async () => {
-    try {
-      const res = await api.get("/battery-type");
-      const data = Array.isArray(res.data) ? res.data : [];
-      setBatteryTypes(data);
-      const map = {};
-      data.forEach((type) => {
-        map[type.id] = `${type.name}`;
-      });
-      setBatteryTypesMap(map);
-    } catch (err) {
-      console.log("Lỗi tải loại pin:", err);
-      showToast("error", err.response?.data || "Đã có lỗi xảy ra");
-    }
-  }, []);
+  }, [userRole]);
 
   useEffect(() => {
-    fetchStations();
-    fetchBatteryTypes();
-  }, [fetchStations, fetchBatteryTypes]); 
+    loadData();
+  }, [loadData]);
 
-  const handleSwapSuccess = () => {
-    fetchStations();
-  };
-
-  // ---------------------------
-  // 🚀 2. CREATE / UPDATE STATION
-  // ---------------------------
-  const handleSubmit = async (values) => {
+  // Handlers
+  const handleSave = async (values) => {
     try {
-      if (editingStation) {
-        await api.put(`/station/${editingStation.id}`, values);
-        showToast("success","Trạm cập nhật thành công");
+      if (formModal.data) {
+        await api.put(`/station/${formModal.data.id}`, values);
+        showToast("success", "Cập nhật thành công");
       } else {
         await api.post("/station", values);
-        showToast("success", "Trạm được tạo thành công");
+        showToast("success", "Tạo mới thành công");
       }
-      setIsModalVisible(false);
-      form.resetFields();
-      fetchStations();
-    } catch (err) {
-    
-     showToast("error", err.response?.data || "Đã có lỗi xảy ra");
+      setFormModal({ open: false, data: null });
+      loadData();
+    } catch (e) {
+      showToast("error", e.response?.data || "Lỗi lưu dữ liệu");
     }
   };
 
-  // ---------------------------
-  // 🚀 3. DELETE STATION
-  // ---------------------------
   const handleDelete = (id) => {
     Modal.confirm({
-      title: "Bạn có chắc là xóa trạm này?",
-      content: "Hành động này sẽ xóa vĩnh viễn trạm.",
-      okText: "Có, Xóa",
+      title: "Xác nhận xóa?",
+      content: "Hành động này không thể hoàn tác.",
       okType: "danger",
-      cancelText: "Không",
       onOk: async () => {
         try {
           await api.delete(`/station/${id}`);
-          showToast("success", "Trạm đã được xóa thành công");
-          fetchStations();
-        } catch (err) {
-          showToast("error", err.response?.data || "Đã có lỗi xảy ra");
+          showToast("success", "Đã xóa trạm");
+          loadData();
+        } catch (e) {
+          showToast("error", e.response?.data || "Lỗi xóa trạm");
         }
       },
     });
   };
 
-  // ---------------------------
-  // Handlers
-  // ---------------------------
-  const handleAdd = () => {
-    setEditingStation(null);
-    setIsModalVisible(true);
-    form.resetFields();
+  // Derived Data
+  const batteryMap = useMemo(
+    () =>
+      batteryTypes.reduce((acc, cur) => ({ ...acc, [cur.id]: cur.name }), {}),
+    [batteryTypes]
+  );
+
+  const filteredData = useMemo(() => {
+    const q = searchText.toLowerCase();
+    return stations.filter(
+      (s) =>
+        (statusFilter === "all" || s.status === statusFilter) &&
+        ((s.name || "").toLowerCase().includes(q) ||
+          (s.location || "").toLowerCase().includes(q))
+    );
+  }, [stations, searchText, statusFilter]);
+
+  const stats = {
+    total: stations.length,
+    active: stations.filter((s) => s.status === "ACTIVE").length,
+    capacity: stations.reduce((sum, s) => sum + (s.capacity || 0), 0),
+    current: stations.reduce((sum, s) => sum + (s.currentBatteryCount || 0), 0),
   };
 
-  const handleEdit = (station) => {
-    setEditingStation(station);
-    setIsModalVisible(true);
-    form.setFieldsValue(station);
-  };
-
-  const handleViewBatteries = (station) => {
-    setViewingStation(station);
-    setIsBatteryListModalVisible(true);
-  };
-
-  const handleOpenSwapModal = (station) => {
-    setViewingStation(station);
-    setIsBatterySwapModalVisible(true);
-  };
-
-  // ---------------------------
-  // Columns
-  // ---------------------------
   const columns = [
+    { title: "ID", dataIndex: "id", width: 60, render: (t) => <b>#{t}</b> },
+    { title: "Trạm", dataIndex: "name" },
+    { title: "Địa chỉ", dataIndex: "location", width: 300 },
     {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-      sorter: (a, b) => a.id - b.id,
-      render: (text) => (
-        <Space>
-          <EnvironmentOutlined />
-          <strong>{text}</strong>
-        </Space>
-      ),
-    },
-    {
-      title: "Trạm",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "Địa chỉ",
-      dataIndex: "location",
-      key: "location",
-      width: 340,
-      render: (text) => (
-        <div style={{ whiteSpace: "normal", wordBreak: "break-word" }}>
-          {text}
-        </div>
-      ),
-    },
-    {
-      title: "Số lượng pin",
-      dataIndex: "capacity",
-      key: "capacity",
-      render: (capacity, record) => (
-        <Space direction="vertical" size="small">
+      title: "Pin / Sức chứa",
+      key: "cap",
+      render: (_, r) => (
+        <Space direction="vertical" size={0}>
           <span>
-            <strong>{record.currentBatteryCount || 0}</strong> / {capacity} pin
+            <b>{r.currentBatteryCount || 0}</b> / {r.capacity}
           </span>
           <div
             style={{
-              width: "100px",
-              height: "6px",
-              backgroundColor: "#bec2bf",
-              borderRadius: "3px",
-              overflow: "hidden",
+              width: 100,
+              height: 4,
+              background: "#eee",
+              borderRadius: 2,
             }}
           >
             <div
               style={{
-                width: `${(record.currentBatteryCount / capacity) * 100}%`,
+                width: `${(r.currentBatteryCount / r.capacity) * 100}%`,
                 height: "100%",
-                backgroundColor:
-                  record.currentBatteryCount > capacity * 0.5
-                    ? "#52c41a"
-                    : record.currentBatteryCount > capacity * 0.2
-                    ? "#faad14"
-                    : "#ff4d4f",
-                transition: "width 0.3s ease",
+                background: "#52c41a",
               }}
             />
           </div>
@@ -647,184 +553,127 @@ const StationPage = () => {
     {
       title: "Trạng thái",
       dataIndex: "status",
-      key: "status",
-      render: (status) => {
-        const colorMap = {
-          ACTIVE: "green",
-          MAINTENANCE: "orange",
-          INACTIVE: "red",
-          "UNDER CONSTRUCTION": "blue",
-        };
-        return (
-          <Tag color={colorMap[status?.toUpperCase()] || "default"}>
-            {status}
-          </Tag>
-        );
-      },
+      render: (s) => <Tag color={STATUS_COLORS[s]}>{s}</Tag>,
     },
-    {
-      title: "Số điện thoại",
-      dataIndex: "contactInfo",
-      key: "contactInfo",
-    },
-    {
-      title: "Tỉnh/Thành phố",
-      dataIndex: "city",
-      key: "city",
-    },
+    { title: "Liên hệ", dataIndex: "contactInfo" },
     {
       title: "Thao tác",
-      key: "actions",
+      key: "act",
       fixed: "right",
-      width: 250,
-      render: (_, record) => (
-        <Space size="middle">
+      render: (_, r) => (
+        <Space>
           <Button
-            type="default"
-            icon={<EyeOutlined />}
             size="small"
-            onClick={() => handleViewBatteries(record)}
+            icon={<EyeOutlined />}
+            onClick={() => setListModal({ open: true, data: r })}
           >
             Xem
           </Button>
-
           <Button
+            size="small"
             type="primary"
             icon={<SwapOutlined />}
-            size="small"
-            onClick={() => handleOpenSwapModal(record)}
+            onClick={() => setSwapModal({ open: true, data: r })}
           >
             Đổi Pin
           </Button>
-          {Role === "ADMIN" && (
-            <Space size="small">
+          {userRole === "ADMIN" && (
+            <>
               <Button
+                size="small"
                 type="primary"
                 icon={<EditOutlined />}
-                size="small"
-                onClick={() => handleEdit(record)}
+                onClick={() => setFormModal({ open: true, data: r })}
               >
                 Sửa
               </Button>
               <Button
+                size="small"
                 type="primary"
                 danger
                 icon={<DeleteOutlined />}
-                size="small"
-                onClick={() => handleDelete(record.id)}
+                onClick={() => handleDelete(r.id)}
               >
                 Xóa
               </Button>
-            </Space>
+            </>
           )}
         </Space>
       ),
     },
   ];
 
-  // ---------------------------
-  // Filters + Summary
-  // ---------------------------
-  const filteredStations = useMemo(() => {
-    const q = searchText?.trim().toLowerCase();
-    return stations.filter((s) => {
-      if (statusFilter !== "all" && s.status !== statusFilter) return false;
-      if (q) {
-        const name = (s.name || "").toLowerCase();
-        const address = (s.location || "").toLowerCase();
-        if (!name.includes(q) && !address.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [stations, searchText, statusFilter]);
-
-  const totalStations = stations.length;
-  const activeStations = stations.filter((s) => s.status === "ACTIVE").length;
-  const totalCapacity = stations.reduce(
-    (sum, s) => sum + (s.capacity || 0),
-    0
-  );
-  const totalCurrentBatteries = stations.reduce(
-    (sum, s) => sum + (s.currentBatteryCount || 0),
-    0
-  );
-
-  // ---------------------------
-  // JSX Render
-  // ---------------------------
   return (
-    <div style={{ padding: "24px" }}>
-      {/* Summary */}
-      <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-        <Col xs={24} sm={12} md={8} lg={6}>
+    <div style={{ padding: 24 }}>
+      {/* Stats Cards */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col span={6}>
           <Card>
             <Statistic
-              title="Tổng số trạm"
-              value={totalStations}
+              title="Tổng trạm"
+              value={stats.total}
               prefix={<EnvironmentOutlined />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
+        <Col span={6}>
           <Card>
             <Statistic
               title="Trạm hoạt động"
-              value={activeStations}
+              value={stats.active}
               valueStyle={{ color: "#3f8600" }}
               prefix={<EnvironmentOutlined />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
+        <Col span={6}>
           <Card>
             <Statistic
               title="Tổng sức chứa"
-              value={totalCapacity}
-              suffix="pin"
+              value={stats.capacity}
               prefix={<InboxOutlined />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
+        <Col span={6}>
           <Card>
             <Statistic
-              title="Tổng số pin tại trạm"
-              value={totalCurrentBatteries}
-              suffix="pin"
+              title="Pin hiện có"
+              value={stats.current}
               prefix={<ThunderboltOutlined />}
             />
           </Card>
         </Col>
       </Row>
 
-      {/* Table */}
+      {/* Main Table */}
       <Card
         title="Quản lý trạm đổi pin"
         extra={
           <Space>
             <Input
-              placeholder="Tìm theo tên hoặc địa chỉ"
-              allowClear
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 300 }}
+              placeholder="Tìm kiếm..."
               value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 200 }}
             />
             <Select
               value={statusFilter}
-              onChange={(val) => setStatusFilter(val)}
-              style={{ width: 180 }}
+              onChange={setStatusFilter}
+              style={{ width: 150 }}
             >
-              <Option value="all"> Chọn trạng thái</Option>
-              <Option value="ACTIVE">ACTIVE</Option>
-              <Option value="MAINTENANCE">MAINTENANCE</Option>
-              <Option value="INACTIVE">INACTIVE</Option>
-              <Option value="UNDER CONSTRUCTION">UNDER CONSTRUCTION</Option>
+              <Option value="all">Tất cả</Option>
+              {Object.keys(STATUS_COLORS).map((k) => (
+                <Option key={k} value={k}>
+                  {k}
+                </Option>
+              ))}
             </Select>
-            {Role === "ADMIN" && (
+            {userRole === "ADMIN" && (
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={handleAdd}
+                onClick={() => setFormModal({ open: true, data: null })}
               >
                 Thêm Trạm
               </Button>
@@ -833,184 +682,37 @@ const StationPage = () => {
         }
       >
         <Table
+          dataSource={filteredData}
           columns={columns}
-          dataSource={filteredStations}
           rowKey="id"
+          loading={loading}
           scroll={{ x: 1200 }}
-          pagination={{
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} trên tổng ${total} trạm`,
-          }}
         />
       </Card>
 
-      {/* Modal Form */}
-      <Modal
-        title={editingStation ? "Sửa trạm" : "Thêm trạm mới"}
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-        width={700}
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="name"
-                label="Tên trạm"
-                rules={[{ required: true, message: "Hãy nhập tên trạm!" }]}
-              >
-                <Input placeholder="Nhập tên trạm" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="location"
-                label="Địa chỉ"
-                rules={[{ required: true, message: "Hãy nhập địa chỉ!" }]}
-              >
-                <Input placeholder="Nhập địa chỉ" />
-              </Form.Item>
-            </Col>
-          </Row>
+      {/* Modals */}
+      <StationFormModal
+        open={formModal.open}
+        initialValues={formModal.data}
+        onCancel={() => setFormModal({ open: false, data: null })}
+        onSubmit={handleSave}
+        batteryTypes={batteryTypes}
+      />
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="city"
-                label="Tỉnh/Thành phố"
-                rules={[
-                  { required: true, message: "Hãy nhập tỉnh/thành phố!" },
-                ]}
-              >
-                <Input placeholder="Ví dụ TP.HCM" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="district"
-                label="Quận/Huyện"
-                rules={[{ required: true, message: "Hãy nhập quận/huyện!" }]}
-              >
-                <Input placeholder="Ví dụ: Quận 7" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="latitude"
-                label="Vĩ độ"
-                rules={[{ required: true, message: "Hãy nhập vĩ độ!" }]}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Ví dụ: 10.7300"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="longitude"
-                label="Kinh độ"
-                rules={[{ required: true, message: "Hãy nhập kinh độ!" }]}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Ví dụ: 106.7000"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="capacity"
-                label="Sức chứa"
-                rules={[{ required: true, message: "Hãy nhập sức chứa!" }]}
-              >
-                <InputNumber min={1} style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="contactInfo"
-                label="Số liên hệ"
-                rules={[{ required: true, message: "Hãy nhập số liên hệ!" }]}
-              >
-                <Input placeholder="Nhập số liên hệ" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="batteryTypeId"
-                label="Loại pin"
-                rules={[{ required: true, message: "Hãy chọn loại pin!" }]}
-              >
-                <Select placeholder="Chọn loại pin">
-                  {batteryTypes.map((type) => (
-                    <Option key={type.id} value={type.id}>
-                      {type.name} (Voltage: {type.voltage}, Capacity:{" "}
-                      {type.capacityAh}Ah)
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            {editingStation && (
-              <Col span={12}>
-                <Form.Item
-                  name="status"
-                  label="Trạng thái"
-                  rules={[
-                    { required: true, message: "Hãy chọn trạng thái!" },
-                  ]}
-                >
-                  <Select placeholder="Select status">
-                    <Option value="ACTIVE">ACTIVE</Option>
-                    <Option value="MAINTENANCE">MAINTENANCE</Option>
-                    <Option value="INACTIVE">INACTIVE</Option>
-                    <Option value="UNDER CONSTRUCTION">
-                      UNDER CONSTRUCTION
-                    </Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-            )}
-          </Row>
-
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                {editingStation ? "Cập nhật" : "Tạo"}
-              </Button>
-              <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-      {/* MODAL HIỂN THỊ DANH SÁCH PIN */}
       <BatteryListModal
-        station={viewingStation}
-        isVisible={isBatteryListModalVisible}
-        onCancel={() => setIsBatteryListModalVisible(false)}
+        open={listModal.open}
+        station={listModal.data}
+        onCancel={() => setListModal({ open: false, data: null })}
         batteryTypes={batteryTypes}
       />
 
       <BatterySwapModal
-        station={viewingStation}
-        isVisible={isBatterySwapModalVisible}
-        onCancel={() => setIsBatterySwapModalVisible(false)}
-        batteryTypesMap={batteryTypesMap}
-        onSwapSuccess={handleSwapSuccess}
+        open={swapModal.open}
+        station={swapModal.data}
+        onCancel={() => setSwapModal({ open: false, data: null })}
+        batteryTypesMap={batteryMap}
+        onSuccess={loadData}
       />
     </div>
   );
-};
-
-export default StationPage;
+}

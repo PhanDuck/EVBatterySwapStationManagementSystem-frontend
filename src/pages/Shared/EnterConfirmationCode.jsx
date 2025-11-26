@@ -19,182 +19,346 @@ import {
   HeartOutlined,
   CarOutlined,
   UserOutlined,
-  CloseOutlined, // Thêm icon Close
+  CloseOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import { showToast } from "../../Utils/toastHandler";
 
-export default function SwapAnimation() {
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [confirmedCode, setConfirmedCode] = useState("");
-  const [step, setStep] = useState(1);
-  const [newBattery, setNewBattery] = useState(null);
-  const [oldBattery, setOldBattery] = useState(null);
-  const [transactionInfo, setTransactionInfo] = useState({
-    vehiclePlate: null,
-    driverName: null,
-  });
-  const [isSwapped, setIsSwapped] = useState(false);
-  const { Title, Text } = Typography;
+const { Title, Text } = Typography;
 
-  const BatteryInfoCard = ({ title, batteryData, loading, type }) => {
-    const color = type === "new" ? "#52c41a" : "#faad14";
-    const borderColor = type === "new" ? "#b7eb8f" : "#ffe58f";
-    const bg = type === "new" ? "#f6ffed" : "#fffbe6";
+// --- SUB-COMPONENT: Battery Card ---
+const BatteryCard = ({ title, data, type, loading }) => {
+  const color = type === "new" ? "#52c41a" : "#faad14";
+  const bg = type === "new" ? "#f6ffed" : "#fffbe6";
+  const border = type === "new" ? "#b7eb8f" : "#ffe58f";
 
-    if (loading) {
-      return (
-        <Card bordered style={{ height: 250, textAlign: "center" }}>
-          <Spin tip="Đang tải..." style={{ marginTop: 80 }} />
-        </Card>
-      );
-    }
-
-    if (!batteryData) {
-      return (
-        <Card
-          bordered
-          style={{
-            height: 250,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Text type="secondary">Chưa có thông tin pin</Text>
-        </Card>
-      );
-    }
-
+  if (loading)
     return (
-      <Card
-        title={
-          <Text strong style={{ color: color }}>
-            {title}
-          </Text>
-        }
-        style={{ borderColor: borderColor, height: "100%", minHeight: 250 }}
-        headStyle={{ backgroundColor: bg }}
-      >
-        <Space direction="vertical" style={{ width: "100%" }}>
-          <Row justify="space-between">
-            <Text strong>ID Pin:</Text>
-            <Text>{batteryData.batteryId}</Text>
-          </Row>
-          <Divider style={{ margin: "8px 0" }} />
-          <Row justify="space-between">
-            <Text strong>Loại Pin:</Text>
-            <Text>{batteryData.model}</Text>
-          </Row>
-          <Divider style={{ margin: "8px 0" }} />
-          <Row justify="space-between">
-            <Text strong>
-              <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc (%):
-            </Text>
-            <Tag color={batteryData.chargeLevel > 70 ? "green" : "orange"}>
-              {batteryData.chargeLevel}
-            </Tag>
-          </Row>
-          <Divider style={{ margin: "8px 0" }} />
-          <Row justify="space-between">
-            <Text strong>
-              <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng (%):
-            </Text>
-            <Tag color={batteryData.stateOfHealth > 70 ? "green" : "orange"}>
-              {batteryData.stateOfHealth}
-            </Tag>
-          </Row>
-        </Space>
+      <Card bordered style={{ height: 250, textAlign: "center" }}>
+        <Spin tip="Đang tải..." style={{ marginTop: 80 }} />
       </Card>
     );
-  };
+  if (!data)
+    return (
+      <Card
+        bordered
+        style={{
+          height: 250,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text type="secondary">Chưa có thông tin pin</Text>
+      </Card>
+    );
 
-  const handleGetNewBattery = async () => {
-    if (!code || code.length !== 6)
+  return (
+    <Card
+      title={
+        <Text strong style={{ color }}>
+          {title}
+        </Text>
+      }
+      style={{ borderColor: border, height: "100%", minHeight: 250 }}
+      headStyle={{ backgroundColor: bg }}
+    >
+      <Space direction="vertical" style={{ width: "100%" }}>
+        <Row justify="space-between">
+          <Text strong>ID Pin:</Text>
+          <Text>{data.batteryId}</Text>
+        </Row>
+        <Divider style={{ margin: "8px 0" }} />
+        <Row justify="space-between">
+          <Text strong>Loại Pin:</Text>
+          <Text>{data.model}</Text>
+        </Row>
+        <Divider style={{ margin: "8px 0" }} />
+        <Row justify="space-between">
+          <Text strong>
+            <ThunderboltOutlined style={{ color: "#faad14" }} /> Mức sạc (%):
+          </Text>
+          <Tag color={data.chargeLevel > 70 ? "green" : "orange"}>
+            {data.chargeLevel}
+          </Tag>
+        </Row>
+        <Divider style={{ margin: "8px 0" }} />
+        <Row justify="space-between">
+          <Text strong>
+            <HeartOutlined style={{ color: "#ff4d4f" }} /> Tình trạng (%):
+          </Text>
+          <Tag color={data.stateOfHealth > 70 ? "green" : "orange"}>
+            {data.stateOfHealth}
+          </Tag>
+        </Row>
+      </Space>
+    </Card>
+  );
+};
+
+// --- MAIN COMPONENT ---
+export default function SwapAnimation() {
+  const [inputCode, setInputCode] = useState("");
+  const [confirmedCode, setConfirmedCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1);
+
+  const [newBattery, setNewBattery] = useState(null);
+  const [oldBattery, setOldBattery] = useState(null);
+  const [txInfo, setTxInfo] = useState({ plate: null, driver: null });
+  const [isSwapped, setIsSwapped] = useState(false);
+
+  // --- API HANDLERS ---
+  const onVerifyCode = async () => {
+    if (!inputCode || inputCode.length !== 6)
       return showToast("warning", "⚠️ Vui lòng nhập đúng mã gồm 6 ký tự.");
     setLoading(true);
     try {
       const res = await api.get("/swap-transaction/new-battery", {
-        params: { code: code },
+        params: { code: inputCode },
       });
       setNewBattery(res.data);
-      setTransactionInfo({
-        vehiclePlate: res.data.vehiclePlate,
-        driverName: res.data.driverName,
-      });
-      setConfirmedCode(code);
-      setStep(2);
+      setTxInfo({ plate: res.data.vehiclePlate, driver: res.data.driverName });
+      setConfirmedCode(inputCode);
+      setStep(2); // Chuyển sang màn hình "Cho pin vào"
       showToast("success", "✅ Xác nhận mã thành công!");
-    } catch (error) {
-      showToast(
-        "error",
-        error.response?.data || "❌ Lấy thông tin không thành công!"
-      );
+    } catch (e) {
+      showToast("error", e.response?.data || "❌ Lỗi xác thực mã!");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- STEP 2 -> 3: Lấy thông tin pin mới xong, chuyển sang bước "Cho pin vào" ---
-  // Ở code cũ step 2 là hiển thị pin mới và nút cho pin vào luôn
-  // Nhưng theo yêu cầu mới: Step 2 chỉ hiện thông tin xe/pin mới -> Bấm tiếp tục -> Step 3 (Bảng to Cho pin vào)
-  // Tuy nhiên để đơn giản hoá luồng code cũ của bạn:
-  // Step 2 hiện tại của bạn đang là: Hiện thông tin pin mới và nút "Cho pin vào".
-  // Tôi sẽ sửa Step 2 này thành màn hình CHỜ (Preview), sau đó bấm nút mới sang màn hình Cho Pin Vào.
-
-  // --- SỬA HÀM NÀY: Gọi API lấy pin cũ ---
-  const handleInsertNewBattery = async () => {
+  const onInsertBattery = async () => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((r) => setTimeout(r, 1000));
       const res = await api.get("/swap-transaction/old-battery", {
-        params: { code: code },
+        params: { code: inputCode },
       });
       setOldBattery(res.data);
-      setStep(3); // Chuyển sang bước 3 (So sánh & Đổi) - Lưu ý: Tôi dồn Step lại cho gọn
+      setStep(3); // Chuyển sang màn hình so sánh
       showToast("success", "Đã nhận diện pin cũ. Sẵn sàng đổi.");
-    } catch (error) {
-      showToast("error", error.response?.data || "Lỗi lấy thông tin pin cũ!");
+    } catch (e) {
+      showToast("error", e.response?.data || "Lỗi lấy thông tin pin cũ!");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleExecuteSwap = async () => {
+  const onSwap = async () => {
     setLoading(true);
-    const newBatteryBeforeSwap = newBattery;
-    const oldBatteryBeforeSwap = oldBattery;
+    const tempNew = newBattery;
+    const tempOld = oldBattery;
     try {
       await api.post(
         "/swap-transaction/swap-by-code",
         {},
-        { params: { code: code } }
+        { params: { code: inputCode } }
       );
-      showToast("success", " Đổi pin thành công!");
-      setOldBattery(newBatteryBeforeSwap);
-      setNewBattery(oldBatteryBeforeSwap);
+      showToast("success", "Đổi pin thành công!");
+      // Hoán đổi vị trí hiển thị để mô phỏng kết quả
+      setOldBattery(tempNew);
+      setNewBattery(tempOld);
       setIsSwapped(true);
       setStep(4); // Hoàn tất
-    } catch (error) {
-      showToast("error", error.response?.data || "Đổi không thành công!");
+    } catch (e) {
+      showToast("error", e.response?.data || "Đổi không thành công!");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetForNewSwap = () => {
-    setCode("");
+  const onReset = () => {
+    setInputCode("");
     setConfirmedCode("");
     setNewBattery(null);
     setOldBattery(null);
     setStep(1);
-    setTransactionInfo({ vehiclePlate: null, driverName: null });
+    setTxInfo({ plate: null, driver: null });
     setIsSwapped(false);
     showToast("info", "Vui lòng nhập mã xác nhận mới.");
   };
 
-  // --- RENDER LOGIC ---
+  // --- RENDER STEPS ---
+
+  // Step 1: Nhập mã
+  const renderInputSection = () => (
+    <Card
+      title={
+        <Title level={4} style={{ margin: 0, textAlign: "center" }}>
+          Nhập mã xác nhận
+        </Title>
+      }
+      style={{
+        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+        borderRadius: "8px",
+        maxWidth: 400,
+        margin: "0 auto",
+      }}
+    >
+      <Input
+        placeholder="Nhập mã gồm 6 ký tự"
+        value={inputCode}
+        maxLength={6}
+        onChange={(e) => {
+          const val = e.target.value;
+          setInputCode(val);
+          if (step > 1 && val !== confirmedCode) onReset();
+        }}
+        style={{ marginBottom: 12 }}
+        disabled={step > 1 || loading}
+      />
+      {step === 4 ? (
+        <Button type="default" block onClick={onReset} icon={<PlusOutlined />}>
+          Nhập mã mới
+        </Button>
+      ) : (
+        <Button
+          type="primary"
+          block
+          onClick={onVerifyCode}
+          loading={loading && step === 1}
+          disabled={!inputCode || inputCode.length !== 6 || step > 1}
+          icon={<CheckCircleOutlined />}
+        >
+          Kiểm tra mã
+        </Button>
+      )}
+
+      {step > 1 && (
+        <div style={{ marginTop: 16 }}>
+          <Divider style={{ margin: "8px 0" }} />
+          <Row justify="space-between">
+            <Text strong>
+              <UserOutlined /> Tài xế:
+            </Text>
+            <Text>{txInfo.driver}</Text>
+          </Row>
+          <Row justify="space-between" style={{ marginTop: 8 }}>
+            <Text strong>
+              <CarOutlined /> Biển số:
+            </Text>
+            <Text>{txInfo.plate}</Text>
+          </Row>
+        </div>
+      )}
+    </Card>
+  );
+
+  // Step 2: Cho pin vào (Bảng lớn giữa màn hình)
+  const renderInsertSection = () => (
+    <div style={{ padding: "20px 0", textAlign: "center" }}>
+      <Title level={5} style={{ marginBottom: 30 }}>
+        Vui lòng cho pin cũ vào khay đã mở
+      </Title>
+      <Card
+        bordered
+        style={{
+          height: 300,
+          maxWidth: 500,
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#f0f5ff",
+          border: "3px dashed #1890ff",
+          borderRadius: 16,
+        }}
+      >
+        <Button
+          type="primary"
+          size="large"
+          onClick={onInsertBattery}
+          loading={loading}
+          icon={<PlusOutlined />}
+          style={{ width: 200, height: 60, fontSize: 18, borderRadius: 30 }}
+        >
+          {loading ? "Đang xử lý..." : "Cho pin vào"}
+        </Button>
+        <div style={{ marginTop: 24 }}>
+          <Text type="secondary" style={{ fontSize: 16 }}>
+            Mở nắp khay pin và đặt pin cũ vào
+          </Text>
+        </div>
+      </Card>
+    </div>
+  );
+
+  // Step 3 & 4: So sánh và Swap
+  const renderSwapSection = () => (
+    <div>
+      <Row gutter={24} align="middle">
+        {/* Cột Trái */}
+        <Col span={11}>
+          <BatteryCard
+            title={isSwapped ? "Pin mới (Đã lắp vào)" : "Pin cũ (Đã tháo ra)"}
+            data={isSwapped ? oldBattery : oldBattery}
+            type={isSwapped ? "new" : "old"}
+          />
+        </Col>
+
+        {/* Icon Giữa */}
+        <Col span={2} style={{ textAlign: "center" }}>
+          <SwapOutlined
+            style={{ fontSize: 24, color: isSwapped ? "#52c41a" : "#1890ff" }}
+          />
+        </Col>
+
+        {/* Cột Phải */}
+        <Col span={11}>
+          <BatteryCard
+            title={isSwapped ? "Pin cũ (Đã tháo ra)" : "Pin mới (Sẽ lắp vào)"}
+            data={isSwapped ? newBattery : newBattery}
+            type={isSwapped ? "old" : "new"}
+          />
+        </Col>
+      </Row>
+
+      {/* Nút Thao tác (Step 3) */}
+      {step === 3 && !isSwapped && (
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: 30,
+            display: "flex",
+            justifyContent: "center",
+            gap: 16,
+          }}
+        >
+          <Button
+            size="large"
+            icon={<CloseOutlined />}
+            onClick={() => setStep(2)}
+            disabled={loading}
+            style={{ height: 45, paddingLeft: 30, paddingRight: 30 }}
+          >
+            Hủy
+          </Button>
+          <Button
+            type="primary"
+            size="large"
+            icon={<CheckCircleOutlined />}
+            onClick={onSwap}
+            loading={loading}
+            style={{ height: 45, paddingLeft: 30, paddingRight: 30 }}
+          >
+            Xác nhận Đổi Pin
+          </Button>
+        </div>
+      )}
+
+      {/* Thông báo thành công (Step 4) */}
+      {isSwapped && (
+        <div style={{ textAlign: "center", marginTop: 20 }}>
+          <Tag color="success" style={{ fontSize: 16, padding: "8px 16px" }}>
+            <CheckCircleOutlined /> Đổi piin hoàn tất
+          </Tag>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div
@@ -210,76 +374,9 @@ export default function SwapAnimation() {
         size={24}
         style={{ width: "100%", maxWidth: 900 }}
       >
-        {/* 1. KHU VỰC NHẬP MÃ */}
-        <Card
-          title={
-            <Title level={4} style={{ margin: 0, textAlign: "center" }}>
-              Nhập mã xác nhận
-            </Title>
-          }
-          style={{
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-            borderRadius: "8px",
-            maxWidth: 400,
-            margin: "0 auto",
-          }}
-        >
-          <Input
-            placeholder="Nhập mã gồm 6 ký tự"
-            value={code}
-            maxLength={6}
-            onChange={(e) => {
-              const newCode = e.target.value;
-              setCode(newCode);
-              if (step > 1 && newCode !== confirmedCode)
-                handleResetForNewSwap();
-            }}
-            style={{ marginBottom: 12 }}
-            disabled={step > 1 || loading}
-          />
-          {step === 4 ? (
-            <Button
-              type="default"
-              block
-              onClick={handleResetForNewSwap}
-              icon={<PlusOutlined />}
-            >
-              Nhập mã mới
-            </Button>
-          ) : (
-            <Button
-              type="primary"
-              block
-              onClick={handleGetNewBattery}
-              loading={loading && step === 1}
-              disabled={!code || code.length !== 6 || step > 1}
-              icon={<CheckCircleOutlined />}
-            >
-              Kiểm tra mã
-            </Button>
-          )}
+        {renderInputSection()}
 
-          {/* Thông tin xe/tài xế */}
-          {step > 1 && (
-            <div style={{ marginTop: 16 }}>
-              <Divider style={{ margin: "8px 0" }} />
-              <Row justify="space-between">
-                <Text strong>
-                  <UserOutlined /> Tài xế:
-                </Text>
-                <Text>{transactionInfo.driverName}</Text>
-              </Row>
-              <Row justify="space-between" style={{ marginTop: 8 }}>
-                <Text strong>
-                  <CarOutlined /> Biển số:
-                </Text>
-                <Text>{transactionInfo.vehiclePlate}</Text>
-              </Row>
-            </div>
-          )}
-        </Card>
-
-        {/* 2. KHU VỰC ĐỔI PIN (STEP 2, 3, 4) */}
+        {/* Chỉ hiện khu vực đổi pin khi đã qua bước nhập mã */}
         {step > 1 && (
           <Card
             title={
@@ -292,141 +389,8 @@ export default function SwapAnimation() {
               borderRadius: "8px",
             }}
           >
-            {/* STEP 2: MÀN HÌNH "CHO PIN VÀO" (BẢNG LỚN DUY NHẤT) */}
-            {step === 2 && !isSwapped && (
-              <div style={{ padding: "20px 0", textAlign: "center" }}>
-                <Title level={5} style={{ marginBottom: 30 }}>
-                  Vui lòng cho pin vào khay
-                </Title>
-                <Card
-                  bordered
-                  style={{
-                    height: 300,
-                    maxWidth: 500,
-                    margin: "0 auto",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: "#f0f5ff",
-                    border: "3px dashed #1890ff",
-                    borderRadius: 16,
-                  }}
-                >
-                  <Button
-                    type="primary"
-                    size="large"
-                    onClick={handleInsertNewBattery}
-                    loading={loading}
-                    icon={<PlusOutlined />}
-                    style={{
-                      width: 200,
-                      height: 60,
-                      fontSize: 18,
-                      borderRadius: 30,
-                    }}
-                  >
-                    {loading ? "Đang xử lý..." : "Cho pin vào"}
-                  </Button>
-                  <div style={{ marginTop: 24 }}>
-                    <Text type="secondary" style={{ fontSize: 16 }}>
-                      Mở nắp khay pin trống và đặt pin cũ vào
-                    </Text>
-                  </div>
-                </Card>
-              </div>
-            )}
-
-            {/* STEP 3: HIỂN THỊ 2 BẢNG + NÚT XÁC NHẬN/HỦY */}
-            {(step === 3 || step === 4) && (
-              <div>
-                <Row gutter={24} align="middle">
-                  {/* Cột Trái: Pin Cũ (lấy từ oldBattery) hoặc Pin Mới (nếu đã swap) */}
-                  <Col span={11}>
-                    <BatteryInfoCard
-                      title={
-                        isSwapped
-                          ? "Pin mới (Đã lắp vào)"
-                          : "Pin cũ (Đã tháo ra)"
-                      }
-                      batteryData={isSwapped ? oldBattery : oldBattery}
-                      type={isSwapped ? "new" : "old"}
-                    />
-                  </Col>
-
-                  {/* Icon Swap */}
-                  <Col span={2} style={{ textAlign: "center" }}>
-                    <SwapOutlined
-                      style={{
-                        fontSize: 24,
-                        color: isSwapped ? "#52c41a" : "#1890ff",
-                      }}
-                    />
-                  </Col>
-
-                  {/* Cột Phải: Pin Mới (lấy từ newBattery) hoặc Pin Cũ (nếu đã swap) */}
-                  <Col span={11}>
-                    <BatteryInfoCard
-                      title={
-                        isSwapped
-                          ? "Pin cũ (Đã tháo ra)"
-                          : "Pin mới (Sẽ lắp vào)"
-                      }
-                      batteryData={isSwapped ? newBattery : newBattery}
-                      type={isSwapped ? "old" : "new"}
-                    />
-                  </Col>
-                </Row>
-
-                {/* Nút Thao tác (Chỉ hiện ở Step 3 - Chưa Swap) */}
-                {step === 3 && !isSwapped && (
-                  <div
-                    style={{
-                      textAlign: "center",
-                      marginTop: 30,
-                      display: "flex",
-                      justifyContent: "center",
-                      gap: 16,
-                    }}
-                  >
-                    {/* Nút Hủy: Quay lại bước cho pin vào */}
-                    <Button
-                      size="large"
-                      icon={<CloseOutlined />}
-                      onClick={() => setStep(2)} // Quay lại Step 2
-                      disabled={loading}
-                      style={{ height: 45, paddingLeft: 30, paddingRight: 30 }}
-                    >
-                      Hủy
-                    </Button>
-
-                    {/* Nút Xác Nhận */}
-                    <Button
-                      type="primary"
-                      size="large"
-                      icon={<CheckCircleOutlined />}
-                      onClick={handleExecuteSwap}
-                      loading={loading}
-                      style={{ height: 45, paddingLeft: 30, paddingRight: 30 }}
-                    >
-                      Xác nhận Đổi Pin
-                    </Button>
-                  </div>
-                )}
-
-                {/* Thông báo thành công (Step 4) */}
-                {isSwapped && (
-                  <div style={{ textAlign: "center", marginTop: 20 }}>
-                    <Tag
-                      color="success"
-                      style={{ fontSize: 16, padding: "8px 16px" }}
-                    >
-                      <CheckCircleOutlined /> Đổi pin hoàn tất
-                    </Tag>
-                  </div>
-                )}
-              </div>
-            )}
+            {step === 2 && !isSwapped && renderInsertSection()}
+            {(step === 3 || step === 4) && renderSwapSection()}
           </Card>
         )}
       </Space>
