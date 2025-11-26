@@ -45,7 +45,7 @@ import { showToast } from "../../Utils/toastHandler";
 const { Option } = Select;
 const { Title, Text } = Typography;
 
-// --- COMPONENT CON: Hiển thị thông báo xe đang chờ duyệt (PHIÊN BẢN PRO UI) ---
+// --- COMPONENT CON: Hiển thị thông báo xe đang chờ duyệt ---
 const PendingVehicleAlert = ({ vehicle }) => {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0 });
   const [isExpired, setIsExpired] = useState(false);
@@ -1332,13 +1332,13 @@ const VehiclePage = () => {
     }
   };
 
-  // 💰 Xử lý cọc xe
+  //  Xử lý cọc xe
   const handleDepositVehicle = (vehicle) => {
     setSelectedVehicleForDeposit(vehicle);
     setDepositModalVisible(true);
   };
 
-  // 💰 Gọi API cọc xe - Redirect đến MoMo
+  //  Gọi API cọc xe - Redirect đến MoMo
   const handleConfirmDeposit = async () => {
     if (!selectedVehicleForDeposit) {
       message.error("Vui lòng chọn xe!");

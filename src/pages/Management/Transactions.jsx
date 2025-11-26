@@ -190,17 +190,7 @@ const TransactionsPage = () => {
           onChange={(e) => setSearchText(e.target.value)}
         />
 
-        <Select
-          value={typeFilter}
-          onChange={setTypeFilter}
-          style={{ width: 150 }}
-        >
-          <Option value="all">Tất cả loại</Option>
-          <Option value="Battery Swap">Battery Swap</Option>
-          <Option value="Subscription">Subscription</Option>
-          <Option value="Refund">Refund</Option>
-          <Option value="Penalty">Penalty</Option>
-        </Select>
+        
         <RangePicker
           onChange={(vals) =>
             setDateRange(vals?.map((d) => d.format("YYYY-MM-DD")))
@@ -229,18 +219,7 @@ const TransactionsPage = () => {
         cancelText="Hủy"
       >
         <Form form={form} layout="vertical">
-          <Form.Item
-            label="Loại giao dịch"
-            name="type"
-            rules={[{ required: true, message: "Chọn loại giao dịch" }]}
-          >
-            <Select>
-              <Option value="Battery Swap">Battery Swap</Option>
-              <Option value="Subscription">Subscription</Option>
-              <Option value="Refund">Refund</Option>
-              <Option value="Penalty">Penalty</Option>
-            </Select>
-          </Form.Item>
+          
 
           <Form.Item
             label="Số tiền ($) "

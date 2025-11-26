@@ -11,6 +11,7 @@ import {
   MdDashboard,
   MdElectricBike,
   MdLocationOn,
+  MdOutlineQrCode2
 } from "react-icons/md";
 import { TbMessageCircleQuestion } from "react-icons/tb";
 import { RiUserLocationLine } from "react-icons/ri";
@@ -41,6 +42,11 @@ export default function RoleSidebar({ role = "ADMIN", collapsed = false }) {
       },
       { path: "inventories", label: "Quản lý tồn kho", icon: <FiBox /> },
       { path: "bookings", label: "Quản lý đặt lịch", icon: <FiCalendar /> },
+      {
+        path: "qr",
+        label: "Quản lý mã QR",
+        icon: <MdOutlineQrCode2 />,
+      },
       {
         path: "service-packages",
         label: "Quản lý gói cước",

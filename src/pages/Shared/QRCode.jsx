@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Button,
@@ -23,7 +23,8 @@ import {
   ArrowLeftOutlined,
   PlusOutlined,
   WarningOutlined,
-  SendOutlined,
+  CloseOutlined,
+  SendOutlined
 } from "@ant-design/icons";
 import QrScanner from "react-qr-scanner";
 import api from "../../config/axios";
@@ -32,15 +33,13 @@ import { showToast } from "../../Utils/toastHandler";
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// --- 1. MAPPING LOẠI PIN TỪ ID SANG TÊN ---
+// --- CONFIG & HELPERS ---
 const BATTERY_TYPES = {
   1: "Standard 48V-20Ah",
   2: "Premium 52V-22Ah",
   3: "Max Power 60V-30Ah",
-  // Thêm các loại khác nếu cần
 };
 
-// Helper: Tách ID từ URL
 const extractStationId = (text) => {
   try {
     if (!text) return null;
@@ -49,18 +48,18 @@ const extractStationId = (text) => {
       const urlStr = text.startsWith("http")
         ? text
         : `http://dummy.com?${text}`;
-      const url = new URL(urlStr);
-      return url.searchParams.get("stationId");
+      return new URL(urlStr).searchParams.get("stationId");
     }
     return text;
-  } catch (e) {
+  } catch {
     return text;
   }
 };
 
-const BatteryInfoCard = ({ title, batteryData, type, loading }) => {
-  const color = type === "new" ? "#52c41a" : "#faad14";
-  const borderColor = type === "new" ? "#b7eb8f" : "#ffe58f";
+// --- SUB-COMPONENT GỌN NHẸ ---
+const BatteryCard = ({ title, data, type, loading }) => {
+  const bg = type === "new" ? "#f6ffed" : "#fffbe6";
+  const border = type === "new" ? "#b7eb8f" : "#ffe58f";
 
   if (loading)
     return (
@@ -68,7 +67,7 @@ const BatteryInfoCard = ({ title, batteryData, type, loading }) => {
         <Spin tip="Đang tải..." style={{ marginTop: 80 }} />
       </Card>
     );
-  if (!batteryData)
+  if (!data)
     return (
       <Card
         style={{
@@ -82,25 +81,21 @@ const BatteryInfoCard = ({ title, batteryData, type, loading }) => {
       </Card>
     );
 
-  const id =
-    batteryData.batteryId || batteryData.newBatteryId || batteryData.id;
-  const model =
-    batteryData.model ||
-    batteryData.newBatteryModel ||
-    batteryData.batteryModel;
-  const charge =
-    batteryData.chargeLevel || batteryData.newBatteryChargeLevel || 0;
-  const soh = batteryData.stateOfHealth || batteryData.newBatteryHealth || 0;
+  // Rút gọn việc lấy dữ liệu từ nhiều nguồn API khác nhau
+  const id = data.batteryId || data.newBatteryId || data.id;
+  const model = data.model || data.newBatteryModel || data.batteryModel;
+  const charge = data.chargeLevel || data.newBatteryChargeLevel || 0;
+  const soh = data.stateOfHealth || data.newBatteryHealth || 0;
 
   return (
     <Card
       title={
-        <Text strong style={{ color }}>
+        <Text strong style={{ color: type === "new" ? "#52c41a" : "#faad14" }}>
           {title}
         </Text>
       }
-      style={{ borderColor: borderColor, height: "100%", minHeight: 250 }}
-      headStyle={{ backgroundColor: type === "new" ? "#f6ffed" : "#fffbe6" }}
+      style={{ borderColor: border, height: "100%", minHeight: 250 }}
+      headStyle={{ backgroundColor: bg }}
     >
       <Space direction="vertical" style={{ width: "100%" }}>
         <Row justify="space-between">
@@ -131,203 +126,177 @@ const BatteryInfoCard = ({ title, batteryData, type, loading }) => {
   );
 };
 
+// --- MAIN COMPONENT ---
 export default function QRCodePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const stationIdFromUrl = searchParams.get("stationId");
+  const [stationId, setStationId] = useState(() => searchParams.get("stationId"));
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const isProcessingScan = useRef(false);
+  const isScanning = useRef(false);
 
-  // Data State
+  // Data
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
   const [previewData, setPreviewData] = useState(null);
   const [previewError, setPreviewError] = useState(null);
-  const [oldBatteryData, setOldBatteryData] = useState(null);
+  const [oldBattery, setOldBattery] = useState(null);
 
   const [stationName, setStationName] = useState(null);
-  // State lưu tên loại pin của trạm
   const [stationBatteryType, setStationBatteryType] = useState(null);
 
-  useEffect(() => {
-    if (stationIdFromUrl) {
-      setStep(2);
-      fetchMyVehicles(stationIdFromUrl);
-      fetchStationInfo(stationIdFromUrl);
-    } else {
-      setStep(1);
-    }
-  }, [stationIdFromUrl]);
-
-  // Hàm lấy thông tin trạm (Name và Battery Type ID)
-  const fetchStationInfo = async (sId) => {
+  const fetchStationInfo = useCallback(async (sId) => {
     try {
       const res = await api.get(`/station`);
-      if (Array.isArray(res.data)) {
-        const found = res.data.find((s) => String(s.id) === String(sId));
-        if (found) {
-          setStationName(found.name);
-
-          // Map ID -> NAME
-          const typeId = found.batteryTypeId;
-          const typeName = BATTERY_TYPES[typeId] || `Loại pin ID: ${typeId}`;
-          setStationBatteryType(typeName);
-        }
+      const found = res.data?.find((s) => String(s.id) === String(sId));
+      if (found) {
+        setStationName(found.name);
+        const typeName =
+          BATTERY_TYPES[found.batteryTypeId] ||
+          `Loại pin ID: ${found.batteryTypeId}`;
+        setStationBatteryType(typeName);
       }
-    } catch (error) {
-      console.error("Lỗi lấy thông tin trạm:", error);
+    } catch (e) {
+      console.error(e);
     }
-  };
+  }, []);
 
-  const handleScan = (data) => {
-    if (isProcessingScan.current) return;
-    if (data) {
-      const scannedText = data?.text || data;
-      if (scannedText) {
-        isProcessingScan.current = true;
-        const cleanId = extractStationId(scannedText);
-        if (!cleanId) {
-          showToast("error", "Mã QR không hợp lệ!");
-          isProcessingScan.current = false;
-          return;
-        }
-        showToast("success", `Đã kết nối trạm`);
-        setSearchParams({ stationId: cleanId });
-        isProcessingScan.current = false;
-      }
-    }
-  };
-
-  const handleError = (err) => {};
-
-  const fetchMyVehicles = async (sId) => {
-    setLoading(true);
-    try {
-      const res = await api.get("/vehicle/my-vehicles");
-      const list = Array.isArray(res.data) ? res.data : [];
-      setVehicles(list);
-
-      if (list.length > 0) {
-        const validVehicle = list.find(
-          (v) => v.status !== "PENDING" && v.status !== "UNPAID"
-        );
-        if (validVehicle) {
-          setSelectedVehicleId(validVehicle.id);
-          fetchPreview(sId, validVehicle.id);
-        }
-      } else {
-        showToast("warning", "Bạn chưa có xe điện nào!");
-      }
-    } catch (error) {
-      showToast("error", "Không thể tải danh sách xe.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPreview = async (sId, vId) => {
+  const fetchPreview = useCallback(async (sId, vId) => {
     if (!sId || !vId) return;
-
     setLoading(true);
     setPreviewError(null);
     setPreviewData(null);
-
     try {
       const res = await api.get("/quick-swap/preview", {
         params: { stationId: sId, vehicleId: vId },
       });
       setPreviewData(res.data);
-
-      // Nếu API preview trả về stationName thì cập nhật lại
-      if (res.data.stationName) {
-        setStationName(res.data.stationName);
-      }
+      if (res.data.stationName) setStationName(res.data.stationName);
     } catch (error) {
-      const msg =
-        error.response?.data?.message ||
-        error.response?.data ||
-        "Không thể lấy thông tin pin";
-      setPreviewError(msg);
-      showToast("error", msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVehicleChange = (val) => {
-    setSelectedVehicleId(val);
-    fetchPreview(stationIdFromUrl, val);
-  };
-
-  const handleConfirmVehicle = () => {
-    if (!previewData) {
-      showToast("error", "Chưa lấy được thông tin pin mới.");
-      return;
-    }
-    setStep(3);
-  };
-
-  const handleInsertBattery = async () => {
-    setLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const res = await api.get("/quick-swap/old-battery", {
-        params: { vehicleId: selectedVehicleId },
-      });
-      setOldBatteryData(res.data);
-      showToast("success", "Pin đã được nhận diện. Sẵn sàng đổi.");
-      setStep(4);
-    } catch (error) {
-      showToast(
-        "error",
-        error.response?.data?.message || "Lỗi khi đọc thông tin pin cũ"
+      setPreviewError(
+        error.response?.data?.message || "Không thể lấy thông tin pin"
       );
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const fetchVehicles = useCallback(async () => {
+    try {
+      const res = await api.get("/vehicle/my-vehicles");
+      const list = Array.isArray(res.data) ? res.data : [];
+      setVehicles(list);
+      // Auto select xe hợp lệ
+      const valid = list.find(
+        (v) => v.status !== "PENDING" && v.status !== "UNPAID"
+      );
+      if (valid) {
+        setSelectedVehicleId(valid.id);
+        if (stationId) fetchPreview(stationId, valid.id);
+      } else {
+        showToast("warning", "Bạn chưa có xe điện nào khả dụng!");
+      }
+    } catch {
+      showToast("error", "Lỗi tải danh sách xe.");
+    }
+  }, [stationId, fetchPreview]);
+
+  // Gom các API cần gọi khi vào trang
+  const loadData = useCallback(
+    async (sId) => {
+      setLoading(true);
+      await Promise.all([fetchVehicles(), fetchStationInfo(sId)]);
+      setLoading(false);
+    },
+    [fetchVehicles, fetchStationInfo]
+  );
+
+  // --- 1. LOGIC ẨN URL & LOAD DATA ---
+  useEffect(() => {
+    const currentUrlId = searchParams.get("stationId");
+    if (currentUrlId) {
+       // Nếu thấy ID trên URL -> Lưu vào state -> Xóa khỏi URL ngay
+       setStationId(currentUrlId);
+       navigate("/quick-swap", { replace: true }); // Ẩn đi
+    }
+  }, [searchParams, navigate]);
+
+  // Khi stationId (trong bộ nhớ) có giá trị -> Load dữ liệu
+  useEffect(() => {
+    if (stationId) {
+      setStep(2);
+      loadData(stationId);
+    } else {
+      setStep(1);
+    }
+  }, [stationId, loadData]);
+
+  // --- HANDLERS ---
+  const onScan = (data) => {
+    if (isScanning.current || !data) return;
+    const text = data?.text || data;
+    if (text) {
+      isScanning.current = true;
+      const id = extractStationId(text);
+      if (id) {
+        showToast("success", "Đã kết nối trạm");
+        setSearchParams({ stationId: id });
+      } else {
+        showToast("error", "QR không hợp lệ");
+      }
+      isScanning.current = false;
+    }
   };
 
-  const handleExecuteSwap = async () => {
+  const onVehicleSelect = (val) => {
+    setSelectedVehicleId(val);
+    fetchPreview(stationId, val);
+  };
+
+  const onConfirmVehicle = () => {
+    if (!previewData)
+      return showToast("error", "Chưa lấy được thông tin pin mới.");
+    setStep(3);
+  };
+
+  const onInsertBattery = async () => {
     setLoading(true);
     try {
-      await api.post("/quick-swap/execute", {
-        stationId: stationIdFromUrl,
-        vehicleId: selectedVehicleId,
-        batteryId: previewData.newBatteryId,
+      await new Promise((r) => setTimeout(r, 1000));
+      const res = await api.get("/quick-swap/old-battery", {
+        params: { vehicleId: selectedVehicleId },
       });
-
-      showToast("success", "Đổi pin nhanh thành công!");
-      navigate("/driver");
-    } catch (error) {
-      showToast("error", error.response?.data?.message || "Đổi pin thất bại");
+      setOldBattery(res.data);
+      showToast("success", "Đã nhận diện pin cũ.");
+      setStep(4);
+    } catch (e) {
+      showToast("error", e.response?.data?.message || "Lỗi đọc pin cũ");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- HÀM XỬ LÝ NÚT QUAY LẠI ---
-  const handleBack = () => {
-    // Nếu đang ở bước 3, 4 -> Quay về bước trước đó
-    if (step > 1) {
-      // TRƯỜNG HỢP ĐẶC BIỆT: Nếu đang ở Step 2 (Chọn xe)
-      if (step === 2) {
-        // Nếu có stationId trên URL (tức là vào thẳng bước 2, ko qua bước 1) -> Về Dashboard
-        if (stationIdFromUrl) {
-          navigate("/driver");
-        } else {
-          // Nếu không có ID trên URL (tức là đã qua bước 1 quét mã) -> Về bước 1
-          setStep(1);
-        }
-      } else {
-        // Các bước 3, 4 cứ lùi 1 bước
-        setStep(step - 1);
-      }
-    } else {
-      // Đang ở Step 1 -> Về Dashboard
+  const onSwap = async () => {
+    setLoading(true);
+    try {
+      await api.post("/quick-swap/execute", {
+        stationId: stationId,
+        vehicleId: selectedVehicleId,
+        batteryId: previewData.newBatteryId,
+      });
+      showToast("success", "Đổi pin thành công!");
       navigate("/driver");
+    } catch (e) {
+      showToast("error", e.response?.data?.message || "Đổi pin thất bại");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const onBack = () => {
+    if (step === 1 || (step === 2 && stationId)) navigate("/driver");
+    else setStep((s) => s - 1);
   };
 
   return (
@@ -337,8 +306,8 @@ export default function QRCodePage() {
           <Space>
             <QrcodeOutlined style={{ color: "#1890ff" }} />
             <span>
-              Đổi pin nhanh tại
-              {stationName && (
+              Đổi pin nhanh tại{" "}
+              {stationName ? (
                 <span
                   style={{
                     fontWeight: "bold",
@@ -348,12 +317,14 @@ export default function QRCodePage() {
                 >
                   {stationName}
                 </span>
+              ) : (
+                <Spin size="small" style={{ marginLeft: 10 }} />
               )}
             </span>
           </Space>
         }
         extra={
-          <Button icon={<ArrowLeftOutlined />} onClick={handleBack}>
+          <Button icon={<ArrowLeftOutlined />} onClick={onBack}>
             Quay lại
           </Button>
         }
@@ -376,8 +347,8 @@ export default function QRCodePage() {
             >
               <QrScanner
                 delay={500}
-                onError={handleError}
-                onScan={handleScan}
+                onError={() => {}}
+                onScan={onScan}
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 constraints={{ video: { facingMode: "environment" } }}
               />
@@ -401,35 +372,31 @@ export default function QRCodePage() {
           </div>
         )}
 
-        {/* STEP 2: CHỌN XE & XÁC NHẬN */}
+        {/* STEP 2: SELECT & PREVIEW */}
         {step === 2 && (
           <div style={{ padding: "10px 0" }}>
             <div style={{ textAlign: "center", marginBottom: 20 }}>
               <Title level={5} style={{ marginBottom: 10 }}>
                 Chọn xe của bạn
               </Title>
-
               <Select
                 style={{ width: "100%", maxWidth: 500 }}
                 placeholder="Chọn xe"
                 size="large"
                 value={selectedVehicleId}
-                onChange={handleVehicleChange}
+                onChange={onVehicleSelect}
                 optionLabelProp="label"
               >
                 {vehicles.map((v) => {
                   const status = v.status ? v.status.toUpperCase() : "";
-                  let isDisabled = false;
-                  let statusText = "";
-
-                  if (status === "PENDING") {
-                    isDisabled = true;
-                    statusText = "Xe đang chờ duyệt";
-                  } else if (status === "UNPAID") {
-                    isDisabled = true;
-                    statusText = "Xe chưa thanh toán";
-                  }
-
+                  const isDisabled =
+                    status === "PENDING" || status === "UNPAID";
+                  const statusText =
+                    status === "PENDING"
+                      ? "Xe đang chờ duyệt"
+                      : status === "UNPAID"
+                      ? "Xe chưa thanh toán"
+                      : "";
                   return (
                     <Option
                       key={v.id}
@@ -437,11 +404,7 @@ export default function QRCodePage() {
                       disabled={isDisabled}
                       label={`${v.plateNumber} - ${v.model}`}
                     >
-                      <Row
-                        justify="space-between"
-                        align="middle"
-                        style={{ width: "100%" }}
-                      >
+                      <Row justify="space-between" align="middle">
                         <Col>
                           <span style={{ fontWeight: 500 }}>
                             {v.plateNumber}
@@ -467,15 +430,13 @@ export default function QRCodePage() {
                 })}
               </Select>
 
-              {/* HIỂN THỊ LOẠI PIN TỪ THÔNG TIN TRẠM */}
               {stationBatteryType && (
                 <div style={{ marginTop: 8 }}>
                   <Text type="secondary" style={{ fontSize: "15px" }}>
                     <ThunderboltOutlined
                       style={{ marginRight: 6, color: "#faad14" }}
                     />
-                    Loại pin hỗ trợ tại trạm:{" "}
-                    <Text strong>{stationBatteryType}</Text>
+                    Loại pin hỗ trợ: <Text strong>{stationBatteryType}</Text>
                   </Text>
                 </div>
               )}
@@ -504,7 +465,7 @@ export default function QRCodePage() {
                       <Col span={24}>
                         <Divider style={{ margin: "12px 0" }} />
                         <Text type="secondary">
-                          <ThunderboltOutlined /> Pin mới sẵn sàng tại trạm:{" "}
+                          <ThunderboltOutlined /> Pin mới sẵn sàng:{" "}
                         </Text>
                         <Text strong>
                           {previewData.newBatteryModel} (
@@ -514,10 +475,9 @@ export default function QRCodePage() {
                     </Row>
                   </Card>
                 )}
-
                 {previewError && (
                   <Alert
-                    message="Không thể đổi pin cho xe này"
+                    message="Không thể đổi pin"
                     description={previewError}
                     type="error"
                     showIcon
@@ -531,7 +491,7 @@ export default function QRCodePage() {
                     type="primary"
                     size="large"
                     icon={<SendOutlined />}
-                    onClick={handleConfirmVehicle}
+                    onClick={onConfirmVehicle}
                     loading={loading}
                     disabled={!!previewError || !previewData}
                     style={{ height: 45, paddingLeft: 30, paddingRight: 30 }}
@@ -544,52 +504,53 @@ export default function QRCodePage() {
           </div>
         )}
 
-        {/* ... (STEP 3 và 4 giữ nguyên) ... */}
+        {/* STEP 3: INSERT BATTERY */}
         {step === 3 && (
-          <div style={{ padding: "20px 0" }}>
-            <Title level={4} style={{ textAlign: "center", marginBottom: 30 }}>
-              Cho pin cũ vào trạm
+          <div style={{ padding: "20px 0", textAlign: "center" }}>
+            <Title level={4} style={{ marginBottom: 30 }}>
+              Cho pin vào khay
             </Title>
-            <Row gutter={[24, 24]} align="middle">
-              <Col xs={24} md={11}>
-                <Card
-                  bordered
-                  style={{
-                    height: 250,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: "#fafafa",
-                    border: "2px dashed #d9d9d9",
-                  }}
-                >
-                  <Button
-                    type="primary"
-                    size="large"
-                    onClick={handleInsertBattery}
-                    loading={loading}
-                    icon={<PlusOutlined />}
-                    style={{ width: 180, height: 50 }}
-                  >
-                    Cho pin vào
-                  </Button>
-                </Card>
-              </Col>
-              <Col xs={24} md={2} style={{ textAlign: "center" }}>
-                <SwapOutlined style={{ fontSize: 24, color: "#d9d9d9" }} />
-              </Col>
-              <Col xs={24} md={11}>
-                <BatteryInfoCard
-                  title="Pin mới (Sẽ lắp vào)"
-                  batteryData={previewData}
-                  type="new"
-                />
-              </Col>
-            </Row>
+            <Card
+              bordered
+              style={{
+                height: 300,
+                maxWidth: 600,
+                margin: "0 auto",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "#f0f5ff",
+                border: "3px dashed #1890ff",
+                borderRadius: 16,
+              }}
+            >
+              <Button
+                type="primary"
+                size="large"
+                onClick={onInsertBattery}
+                loading={loading}
+                icon={<PlusOutlined />}
+                style={{
+                  width: 250,
+                  height: 60,
+                  fontSize: 20,
+                  borderRadius: 30,
+                  boxShadow: "0 4px 10px rgba(24, 144, 255, 0.3)",
+                }}
+              >
+                {loading ? "Đang nhận diện..." : "Cho pin vào"}
+              </Button>
+              <div style={{ marginTop: 24 }}>
+                <Text type="secondary" style={{ fontSize: 16 }}>
+                  Hãy đặt pin cũ vào khay đã mở
+                </Text>
+              </div>
+            </Card>
           </div>
         )}
 
+        {/* STEP 4: COMPARE & SWAP */}
         {step === 4 && (
           <div style={{ padding: "20px 0" }}>
             <Title
@@ -604,9 +565,9 @@ export default function QRCodePage() {
             </Title>
             <Row gutter={[24, 24]} align="middle">
               <Col xs={24} md={11}>
-                <BatteryInfoCard
+                <BatteryCard
                   title="Pin cũ (Đã tháo ra)"
-                  batteryData={oldBatteryData}
+                  data={oldBattery}
                   type="old"
                 />
               </Col>
@@ -617,20 +578,37 @@ export default function QRCodePage() {
                 />
               </Col>
               <Col xs={24} md={11}>
-                <BatteryInfoCard
+                <BatteryCard
                   title="Pin mới (Sẽ lắp vào)"
-                  batteryData={previewData}
+                  data={previewData}
                   type="new"
                 />
               </Col>
             </Row>
             <Divider />
-            <div style={{ textAlign: "center", marginTop: 30 }}>
+            <div
+              style={{
+                textAlign: "center",
+                marginTop: 30,
+                display: "flex",
+                justifyContent: "center",
+                gap: 16,
+              }}
+            >
+              <Button
+                size="large"
+                icon={<CloseOutlined />}
+                onClick={() => setStep(3)}
+                disabled={loading}
+                style={{ height: 45, paddingLeft: 30, paddingRight: 30 }}
+              >
+                Hủy
+              </Button>
               <Button
                 type="primary"
                 size="large"
                 icon={<CheckCircleOutlined />}
-                onClick={handleExecuteSwap}
+                onClick={onSwap}
                 loading={loading}
                 style={{ height: 45, paddingLeft: 30, paddingRight: 30 }}
               >

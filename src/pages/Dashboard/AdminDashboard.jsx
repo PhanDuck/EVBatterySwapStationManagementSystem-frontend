@@ -14,6 +14,7 @@ import ServicePackagesPage from "../Management/ServicePackages";
 import Inventories from "../Management/Inventory";
 import Assignments from "../Management/Assignment";
 import Profile from "../Management/Profile";
+import Qr from "../Management/QrManagement";
 
 export default function AdminDashboard() {
   return (
@@ -35,6 +36,7 @@ export default function AdminDashboard() {
         <Route path="tickets" element={<SupportTickets />} />
         <Route path="service-packages" element={<ServicePackagesPage />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="qr" element={<Qr />} />
         <Route path="*" element={<div>Không tìm thấy trang!</div>} />
       </Routes>
     </MainLayout>

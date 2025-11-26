@@ -16,7 +16,6 @@ import {
   PlusOutlined,
   CloseCircleOutlined,
   InfoCircleOutlined, // Thêm icon Info
-  QrcodeOutlined,
 } from "@ant-design/icons";
 import api from "../../config/axios";
 import dayjs from "dayjs";
@@ -344,20 +343,6 @@ export default function BookingsPage() {
               onChange={(e) => setSearch(e.target.value)}
               style={{ width: 280 }}
             />
-
-            {role === "DRIVER" && (
-                <Button 
-                    type="primary" 
-                    icon={<QrcodeOutlined />} 
-                    style={{ 
-                        background: "linear-gradient(90deg, #1890ff 0%, #722ed1 100%)",
-                        border: "none"
-                    }}
-                    onClick={() => navigate("/quick-swap")} // CHỈ CẦN CHUYỂN HƯỚNG
-                >
-                    Đổi Pin Nhanh
-                </Button>
-            )}
 
             {role === "DRIVER" && (
               <Button
