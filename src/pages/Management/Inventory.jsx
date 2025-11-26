@@ -295,14 +295,13 @@ export default function InventoryPage() {
   const [sohModal, setSohModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
 
-  const userRole = getCurrentRole()?.toUpperCase();
-  const isAdmin = userRole === "ADMIN";
+  const role = getCurrentRole()?.toUpperCase();
 
   // --- 1. DATA FETCHING ---
   const fetchStations = useCallback(async () => {
     try {
       const res = await api.get(
-        isAdmin ? "/station" : "/staff-station-assignment/my-stations"
+        role === "ADMIN" ? "/station" : "/staff-station-assignment/my-stations"
       );
       const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
       setStations(data);
@@ -310,7 +309,7 @@ export default function InventoryPage() {
     } catch {
       showToast("error", "Lỗi tải trạm");
     }
-  }, [isAdmin, stationId]);
+  }, [role, stationId]);
 
   const fetchTypes = useCallback(async () => {
     try {
@@ -329,44 +328,48 @@ export default function InventoryPage() {
     if (!sId) return setStationItems([]);
     setLoading(true);
     try {
-      const res = await api.get(`/station/${sId}/batteries`);
+      const res = await api.get(
+        role === "ADMIN"
+          ? `/station/${sId}/batteries`
+          : `/station/${sId}/batteries/needs-maintenance`
+      );
       const items = Array.isArray(res.data)
         ? res.data
         : res.data?.batteries || [];
       setStationItems(items.sort((a, b) => b.id - a.id));
       return items[0]?.batteryTypeId; // Trả về loại pin của trạm
-    } catch {
-      showToast("error", "Lỗi tải pin trạm");
+    } catch (e) {
+      showToast("error", e.response?.data || "Lỗi tải pin trạm");
       return null;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [role]);
 
   const fetchWarehouseData = useCallback(
     async (typeId) => {
       setLoading(true);
       try {
-        let url = isAdmin
+        let url = role === "ADMIN"
           ? "/station-inventory"
           : `/station-inventory/available-by-type/${typeId}`;
-        if (!isAdmin && !typeId) return setWarehouseItems([]); // Staff cần typeId
+        if (!role === "ADMIN" && !typeId) return setWarehouseItems([]); // Staff cần typeId
 
         const res = await api.get(url);
         let items = Array.isArray(res.data)
           ? res.data
           : res.data?.batteries || [];
 
-        if (isAdmin && typeId)
+        if (role === "ADMIN" && typeId)
           items = items.filter((i) => i.batteryTypeId === typeId);
         setWarehouseItems(items.sort((a, b) => b.id - a.id));
-      } catch {
-        showToast("error", "Lỗi tải kho");
+      } catch (e) {
+        showToast("error", e.response?.data || "Lỗi tải kho");
       } finally {
         setLoading(false);
       }
     },
-    [isAdmin]
+    [role]
   );
 
   // --- EFFECTS ---
@@ -378,11 +381,11 @@ export default function InventoryPage() {
   useEffect(() => {
     if (stationId) {
       fetchStationData(stationId).then((typeId) => {
-        setFilterType(isAdmin ? null : typeId); // Admin mặc định không lọc, Staff lọc theo trạm
-        fetchWarehouseData(isAdmin ? null : typeId);
+        setFilterType(role === "ADMIN" ? null : typeId); // Admin mặc định không lọc, Staff lọc theo trạm
+        fetchWarehouseData(role === "ADMIN" ? null : typeId);
       });
     }
-  }, [stationId, fetchStationData, fetchWarehouseData, isAdmin]);
+  }, [stationId, fetchStationData, fetchWarehouseData, role]);
 
   // --- HANDLERS ---
   const handleMoveToWarehouse = async (item) => {
@@ -392,7 +395,7 @@ export default function InventoryPage() {
       });
       showToast("success", `Pin ${item.id} đã về kho`);
       fetchStationData(stationId);
-      fetchWarehouseData(isAdmin ? null : filterType);
+      fetchWarehouseData(role === "ADMIN" ? null : filterType);
     } catch (e) {
       showToast("error", e.response?.data || "Lỗi chuyển kho");
     }
@@ -420,8 +423,7 @@ export default function InventoryPage() {
   // Tính toán Filter & Search
   const filterData = (list, isStation) => {
     let data = list;
-    if (isStation && !isAdmin) return data; // Staff thấy hết
-    if (isStation && isAdmin && !showAllStation)
+    if (isStation && role === "ADMIN" && !showAllStation)
       data = data.filter((b) => b.status === "MAINTENANCE");
     if (searchId) data = data.filter((b) => String(b.id).includes(searchId));
     return data;
@@ -510,7 +512,7 @@ export default function InventoryPage() {
       fixed: "right",
       width: COL_WIDTH.ACTION,
       render: (_, r) =>
-        isAdmin &&
+        role === "ADMIN" &&
         r.status === "MAINTENANCE" && (
           <Button
             size="small"
@@ -553,7 +555,7 @@ export default function InventoryPage() {
                 </Option>
               ))}
             </Select>
-            {isAdmin && (
+            {role === "ADMIN" && (
               <Button onClick={() => setShowAllStation(!showAllStation)}>
                 {showAllStation ? "Xem bảo trì" : "Xem tất cả"}
               </Button>
@@ -590,7 +592,7 @@ export default function InventoryPage() {
             >
               Chuyển ra trạm
             </Button>
-            {isAdmin && filterType && (
+            {role === "ADMIN" && filterType && (
               <Button
                 onClick={() => {
                   setFilterType(null);
@@ -601,7 +603,7 @@ export default function InventoryPage() {
                 Bỏ lọc
               </Button>
             )}
-            {isAdmin && !filterType && (
+            {role === "ADMIN" && !filterType && (
               <Button
                 onClick={() => {
                   setFilterType(stationType.batteryTypeId);

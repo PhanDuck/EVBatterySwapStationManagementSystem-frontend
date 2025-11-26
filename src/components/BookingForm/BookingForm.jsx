@@ -146,17 +146,6 @@ const BookingFormFields = ({
               <Text type="secondary">{selectedVehicleDetails.plateNumber}</Text>
             </div>
           )}
-
-          {remainingSwaps !== null && (
-            <div>
-              <Text strong>Số lần đổi pin còn lại: </Text>
-              <Text
-                style={{ color: remainingSwaps > 0 ? "#52c41a" : "#f5222d" }}
-              >
-                **{remainingSwaps}** lần
-              </Text>
-            </div>
-          )}
         </div>
       ) : null}
 

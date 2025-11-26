@@ -353,7 +353,7 @@ export default function SwapAnimation() {
       {isSwapped && (
         <div style={{ textAlign: "center", marginTop: 20 }}>
           <Tag color="success" style={{ fontSize: 16, padding: "8px 16px" }}>
-            <CheckCircleOutlined /> Đổi piin hoàn tất
+            <CheckCircleOutlined /> Đổi pin hoàn tất
           </Tag>
         </div>
       )}
