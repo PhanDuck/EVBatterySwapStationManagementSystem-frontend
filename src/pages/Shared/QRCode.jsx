@@ -41,19 +41,20 @@ const BATTERY_TYPES = {
 };
 
 const extractStationId = (text) => {
-  try {
-    if (!text) return null;
-    if (!isNaN(text)) return text;
-    if (text.includes("http") || text.includes("stationId=")) {
-      const urlStr = text.startsWith("http")
-        ? text
-        : `http://dummy.com?${text}`;
-      return new URL(urlStr).searchParams.get("stationId");
-    }
-    return text;
-  } catch {
-    return text;
+  if (!text) return null;
+  if (!isNaN(text) && text.trim() !== "") {
+    return text.trim();
   }
+  try {
+    const url = new URL(text);
+    const stationId = url.searchParams.get("stationId");
+    if (stationId) {
+      return stationId;
+    }
+  } catch (e) {
+    console.error("Not a valid URL, trying to treat as raw text", e);
+  }
+  return null;
 };
 
 // --- SUB-COMPONENT GỌN NHẸ ---

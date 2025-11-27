@@ -189,8 +189,7 @@ export default function QrManagement() {
         }}
       >
         <Title level={2} style={{ margin: 0 }}>
-          <QrcodeOutlined style={{ color: "#ff4d4f", marginRight: 10 }} /> Quản
-          lý mã QR Trạm
+          <QrcodeOutlined style={{ color: "#ff4d4f", marginRight: 10 }} /> Quản lý mã QR Trạm
         </Title>
       </Card>
 
